@@ -46,7 +46,6 @@ from services.errors.account import (
     LinkAccountIntegrateError,
     MemberNotInTenantError,
     NoPermissionError,
-    RemoveOwnerError,
     RoleAlreadyAssignedError,
     TenantNotFoundError,
 )
@@ -790,9 +789,6 @@ class TenantService:
 
         ta_operator = TenantAccountJoin.query.filter_by(tenant_id=tenant.id, account_id=operator.id).first()
 
-        logging.info(
-            f"Tenant {tenant.id} operator {operator.id} with role {ta_operator.role} is trying to {action} member {member.id if member else None}"
-        )
         if not ta_operator or ta_operator.role not in perms[action]:
             raise NoPermissionError(f"No permission to {action} member.")
 
@@ -803,11 +799,6 @@ class TenantService:
             raise CannotOperateSelfError("Cannot operate self.")
 
         TenantService.check_member_permission(tenant, operator, account, "remove")
-        
-        # Additional check to ensure the target account is not owner
-        if TenantService.get_user_role(account, tenant) == TenantAccountRole.OWNER:
-            raise RemoveOwnerError("Cannot remove owner from tenant.")
-            
 
         ta = TenantAccountJoin.query.filter_by(tenant_id=tenant.id, account_id=account.id).first()
         if not ta:
