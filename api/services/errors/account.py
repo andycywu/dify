@@ -53,6 +53,10 @@ class MemberNotInTenantError(BaseServiceError):
     pass
 
 
+class RemoveOwnerError(BaseServiceError):
+    pass
+
+
 class RoleAlreadyAssignedError(BaseServiceError):
     pass
 
