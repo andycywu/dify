@@ -60,9 +60,14 @@ class Dataset(Base):
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
     embedding_model = db.Column(db.String(255), nullable=True)
     embedding_model_provider = db.Column(db.String(255), nullable=True)
+    keyword_number = db.Column(db.Integer, nullable=True, server_default=db.text("10"))
     collection_binding_id = db.Column(StringUUID, nullable=True)
     retrieval_model = db.Column(JSONB, nullable=True)
     built_in_field_enabled = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
+    icon_info = db.Column(JSONB, nullable=True)
+    runtime_mode = db.Column(db.String(255), nullable=True, server_default=db.text("'general'::character varying"))
+    pipeline_id = db.Column(StringUUID, nullable=True)
+    chunk_structure = db.Column(db.String(255), nullable=True)
 
     @property
     def dataset_keyword_table(self):
@@ -1142,3 +1147,59 @@ class DatasetMetadataBinding(Base):
     document_id = db.Column(StringUUID, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
     created_by = db.Column(StringUUID, nullable=False)
+
+
+class PipelineBuiltInTemplate(Base):  # type: ignore[name-defined]
+    __tablename__ = "pipeline_built_in_templates"
+    __table_args__ = (db.PrimaryKeyConstraint("id", name="pipeline_built_in_template_pkey"),)
+
+    id = db.Column(StringUUID, server_default=db.text("uuid_generate_v4()"))
+    pipeline_id = db.Column(StringUUID, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    icon = db.Column(db.JSON, nullable=False)
+    copyright = db.Column(db.String(255), nullable=False)
+    privacy_policy = db.Column(db.String(255), nullable=False)
+    position = db.Column(db.Integer, nullable=False)
+    install_count = db.Column(db.Integer, nullable=False, default=0)
+    language = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
+
+
+class PipelineCustomizedTemplate(Base):  # type: ignore[name-defined]
+    __tablename__ = "pipeline_customized_templates"
+    __table_args__ = (
+        db.PrimaryKeyConstraint("id", name="pipeline_customized_template_pkey"),
+        db.Index("pipeline_customized_template_tenant_idx", "tenant_id"),
+    )
+
+    id = db.Column(StringUUID, server_default=db.text("uuid_generate_v4()"))
+    tenant_id = db.Column(StringUUID, nullable=False)
+    pipeline_id = db.Column(StringUUID, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    icon = db.Column(db.JSON, nullable=False)
+    position = db.Column(db.Integer, nullable=False)
+    install_count = db.Column(db.Integer, nullable=False, default=0)
+    language = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
+
+
+class Pipeline(Base):  # type: ignore[name-defined]
+    __tablename__ = "pipelines"
+    __table_args__ = (db.PrimaryKeyConstraint("id", name="pipeline_pkey"),)
+
+    id = db.Column(StringUUID, server_default=db.text("uuid_generate_v4()"))
+    tenant_id: Mapped[str] = db.Column(StringUUID, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=False, server_default=db.text("''::character varying"))
+    mode = db.Column(db.String(255), nullable=False)
+    workflow_id = db.Column(StringUUID, nullable=True)
+    is_public = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
+    is_published = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
+    created_by = db.Column(StringUUID, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
+    updated_by = db.Column(StringUUID, nullable=True)
+    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())

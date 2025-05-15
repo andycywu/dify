@@ -3,6 +3,7 @@ from flask import Blueprint
 from libs.external_api import ExternalApi
 
 from .app.app_import import AppImportApi, AppImportCheckDependenciesApi, AppImportConfirmApi
+from .datasets.rag_pipeline import data_source
 from .explore.audio import ChatAudioApi, ChatTextApi
 from .explore.completion import ChatApi, ChatStopApi, CompletionApi, CompletionStopApi
 from .explore.conversation import (
@@ -75,7 +76,6 @@ from .billing import billing, compliance
 
 # Import datasets controllers
 from .datasets import (
-    data_source,
     datasets,
     datasets_document,
     datasets_segments,
