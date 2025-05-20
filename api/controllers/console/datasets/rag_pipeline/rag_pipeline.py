@@ -38,7 +38,7 @@ class PipelineTemplateListApi(Resource):
     @account_initialization_required
     @enterprise_license_required
     def get(self):
-        type = request.args.get("type", default="built-in", type=str, choices=["built-in", "customized"])
+        type = request.args.get("type", default="built-in", type=str)
         language = request.args.get("language", default="en-US", type=str)
         # get pipeline templates
         pipeline_templates = RagPipelineService.get_pipeline_templates(type, language)
@@ -101,13 +101,15 @@ class CustomizedPipelineTemplateApi(Resource):
     @enterprise_license_required
     def post(self, template_id: str):
         with Session(db.engine) as session:
-            template = session.query(PipelineCustomizedTemplate).filter(PipelineCustomizedTemplate.id == template_id).first()
+            template = (
+                session.query(PipelineCustomizedTemplate).filter(PipelineCustomizedTemplate.id == template_id).first()
+            )
             if not template:
                 raise ValueError("Customized pipeline template not found.")
             pipeline = session.query(Pipeline).filter(Pipeline.id == template.pipeline_id).first()
             if not pipeline:
                 raise ValueError("Pipeline not found.")
-            
+
             dsl = RagPipelineDslService.export_rag_pipeline_dsl(pipeline, include_secret=True)
         return {"data": dsl}, 200
 

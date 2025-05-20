@@ -309,8 +309,10 @@ class RagPipelineDslService:
                         dataset_collection_binding = (
                             db.session.query(DatasetCollectionBinding)
                             .filter(
-                                DatasetCollectionBinding.provider_name == knowledge_configuration.index_method.embedding_setting.embedding_provider_name,
-                                DatasetCollectionBinding.model_name == knowledge_configuration.index_method.embedding_setting.embedding_model_name,
+                                DatasetCollectionBinding.provider_name
+                                == knowledge_configuration.index_method.embedding_setting.embedding_provider_name,
+                                DatasetCollectionBinding.model_name
+                                == knowledge_configuration.index_method.embedding_setting.embedding_model_name,
                                 DatasetCollectionBinding.type == "dataset",
                             )
                             .order_by(DatasetCollectionBinding.created_at)
@@ -516,17 +518,14 @@ class RagPipelineDslService:
         dependencies: Optional[list[PluginDependency]] = None,
     ) -> Pipeline:
         """Create a new app or update an existing one."""
-        pipeline_data = data.get("pipeline", {})
-        pipeline_mode = pipeline_data.get("mode")
-        if not pipeline_mode:
-            raise ValueError("loss pipeline mode")
+        pipeline_data = data.get("rag_pipeline", {})
         # Set icon type
-        icon_type_value = icon_type or pipeline_data.get("icon_type")
+        icon_type_value = pipeline_data.get("icon_type")
         if icon_type_value in ["emoji", "link"]:
             icon_type = icon_type_value
         else:
             icon_type = "emoji"
-        icon = icon or str(pipeline_data.get("icon", ""))
+        icon = str(pipeline_data.get("icon", ""))
 
         if pipeline:
             # Update existing pipeline
@@ -544,7 +543,6 @@ class RagPipelineDslService:
             pipeline = Pipeline()
             pipeline.id = str(uuid4())
             pipeline.tenant_id = account.current_tenant_id
-            pipeline.mode = pipeline_mode.value
             pipeline.name = pipeline_data.get("name", "")
             pipeline.description = pipeline_data.get("description", "")
             pipeline.icon_type = icon_type
@@ -580,9 +578,6 @@ class RagPipelineDslService:
             variable_factory.build_conversation_variable_from_mapping(obj) for obj in conversation_variables_list
         ]
         rag_pipeline_variables_list = workflow_data.get("rag_pipeline_variables", [])
-        rag_pipeline_variables = [
-            variable_factory.build_pipeline_variable_from_mapping(obj) for obj in rag_pipeline_variables_list
-        ]
 
         rag_pipeline_service = RagPipelineService()
         current_draft_workflow = rag_pipeline_service.get_draft_workflow(pipeline=pipeline)
@@ -612,6 +607,7 @@ class RagPipelineDslService:
             account=account,
             environment_variables=environment_variables,
             conversation_variables=conversation_variables,
+            rag_pipeline_variables=rag_pipeline_variables_list,
         )
 
         return pipeline

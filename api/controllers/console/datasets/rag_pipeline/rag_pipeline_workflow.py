@@ -43,7 +43,7 @@ from services.app_generate_service import AppGenerateService
 from services.errors.app import WorkflowHashNotEqualError
 from services.errors.llm import InvokeRateLimitError
 from services.rag_pipeline.rag_pipeline import RagPipelineService
-from services.tools.builtin_tools_manage_service import BuiltinToolManageService
+from services.rag_pipeline.rag_pipeline_manage_service import RagPipelineManageService
 from services.workflow_service import DraftWorkflowDeletionError, WorkflowInUseError
 
 logger = logging.getLogger(__name__)
@@ -90,11 +90,10 @@ class DraftRagPipelineApi(Resource):
         if "application/json" in content_type:
             parser = reqparse.RequestParser()
             parser.add_argument("graph", type=dict, required=True, nullable=False, location="json")
-            parser.add_argument("features", type=dict, required=True, nullable=False, location="json")
             parser.add_argument("hash", type=str, required=False, location="json")
             parser.add_argument("environment_variables", type=list, required=False, location="json")
             parser.add_argument("conversation_variables", type=list, required=False, location="json")
-            parser.add_argument("pipeline_variables", type=dict, required=False, location="json")
+            parser.add_argument("rag_pipeline_variables", type=list, required=False, location="json")
             args = parser.parse_args()
         elif "text/plain" in content_type:
             try:
@@ -102,8 +101,8 @@ class DraftRagPipelineApi(Resource):
                 if "graph" not in data or "features" not in data:
                     raise ValueError("graph or features not found in data")
 
-                if not isinstance(data.get("graph"), dict) or not isinstance(data.get("features"), dict):
-                    raise ValueError("graph or features is not a dict")
+                if not isinstance(data.get("graph"), dict):
+                    raise ValueError("graph is not a dict")
 
                 args = {
                     "graph": data.get("graph"),
@@ -111,7 +110,7 @@ class DraftRagPipelineApi(Resource):
                     "hash": data.get("hash"),
                     "environment_variables": data.get("environment_variables"),
                     "conversation_variables": data.get("conversation_variables"),
-                    "pipeline_variables": data.get("pipeline_variables"),
+                    "rag_pipeline_variables": data.get("rag_pipeline_variables"),
                 }
             except json.JSONDecodeError:
                 return {"message": "Invalid JSON data"}, 400
@@ -130,21 +129,15 @@ class DraftRagPipelineApi(Resource):
             conversation_variables = [
                 variable_factory.build_conversation_variable_from_mapping(obj) for obj in conversation_variables_list
             ]
-            pipeline_variables_list = args.get("pipeline_variables") or {}
-            pipeline_variables = {
-                k: [variable_factory.build_pipeline_variable_from_mapping(obj) for obj in v]
-                for k, v in pipeline_variables_list.items()
-            }
             rag_pipeline_service = RagPipelineService()
             workflow = rag_pipeline_service.sync_draft_workflow(
                 pipeline=pipeline,
                 graph=args["graph"],
-                features=args["features"],
                 unique_hash=args.get("hash"),
                 account=current_user,
                 environment_variables=environment_variables,
                 conversation_variables=conversation_variables,
-                pipeline_variables=pipeline_variables,
+                rag_pipeline_variables=args.get("rag_pipeline_variables") or [],
             )
         except WorkflowHashNotEqualError:
             raise DraftWorkflowNotSync()
@@ -476,7 +469,7 @@ class RagPipelineConfigApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    def get(self):
+    def get(self, pipeline_id):
         return {
             "parallel_depth_limit": dify_config.WORKFLOW_PARALLEL_DEPTH_LIMIT,
         }
@@ -636,12 +629,15 @@ class RagPipelineSecondStepApi(Resource):
         # The role of the current user in the ta table must be admin, owner, or editor
         if not current_user.is_editor:
             raise Forbidden()
-        datasource_provider = request.args.get("datasource_provider", required=True, type=str)
+        node_id = request.args.get("node_id", required=True, type=str)
 
         rag_pipeline_service = RagPipelineService()
-        return rag_pipeline_service.get_second_step_parameters(
-            pipeline=pipeline, datasource_provider=datasource_provider
+        variables = rag_pipeline_service.get_second_step_parameters(
+            pipeline=pipeline, node_id=node_id
         )
+        return {
+            "variables": variables,
+        }
 
 
 class RagPipelineWorkflowRunListApi(Resource):
@@ -713,14 +709,7 @@ class DatasourceListApi(Resource):
 
         tenant_id = user.current_tenant_id
 
-        return jsonable_encoder(
-            [
-                provider.to_dict()
-                for provider in BuiltinToolManageService.list_rag_pipeline_datasources(
-                    tenant_id,
-                )
-            ]
-        )
+        return jsonable_encoder(RagPipelineManageService.list_rag_pipeline_datasources(tenant_id))
 
 
 api.add_resource(
@@ -792,5 +781,9 @@ api.add_resource(
 )
 api.add_resource(
     DatasourceListApi,
-    "/rag/pipelines/datasources",
+    "/rag/pipelines/datasource-plugins",
+)
+api.add_resource(
+    RagPipelineSecondStepApi,
+    "/rag/pipelines/<uuid:pipeline_id>/workflows/processing/paramters",
 )

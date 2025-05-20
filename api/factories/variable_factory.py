@@ -80,9 +80,9 @@ def build_environment_variable_from_mapping(mapping: Mapping[str, Any], /) -> Va
 
 
 def build_pipeline_variable_from_mapping(mapping: Mapping[str, Any], /) -> Variable:
-    if not mapping.get("name"):
-        raise VariableError("missing name")
-    return _build_variable_from_mapping(mapping=mapping, selector=[PIPELINE_VARIABLE_NODE_ID, mapping["name"]])
+    if not mapping.get("variable"):
+        raise VariableError("missing variable")
+    return mapping["variable"]
 
 
 def _build_variable_from_mapping(*, mapping: Mapping[str, Any], selector: Sequence[str]) -> Variable:
@@ -122,7 +122,6 @@ def _build_variable_from_mapping(*, mapping: Mapping[str, Any], selector: Sequen
     if not result.selector:
         result = result.model_copy(update={"selector": selector})
     return cast(Variable, result)
-
 
 def build_segment(value: Any, /) -> Segment:
     if value is None:
