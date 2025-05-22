@@ -39,7 +39,6 @@ from core.variables.variables import (
 from core.workflow.constants import (
     CONVERSATION_VARIABLE_NODE_ID,
     ENVIRONMENT_VARIABLE_NODE_ID,
-    PIPELINE_VARIABLE_NODE_ID,
 )
 
 
