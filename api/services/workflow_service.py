@@ -253,6 +253,7 @@ class WorkflowService:
             conversation_variables=draft_workflow.conversation_variables,
             marked_name=marked_name,
             marked_comment=marked_comment,
+            features=draft_workflow.features,
         )
 
         # commit db session changes
