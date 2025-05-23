@@ -139,6 +139,8 @@ class Workflow(Base):
         "rag_pipeline_variables", db.Text, nullable=False, server_default="{}"
     )
 
+    VERSION_DRAFT = "draft"
+
     @classmethod
     def new(
         cls,
@@ -203,7 +205,9 @@ class Workflow(Base):
             features["file_upload"]["number_limits"] = image_number_limits
             features["file_upload"]["allowed_file_upload_methods"] = image_transfer_methods
             features["file_upload"]["allowed_file_types"] = features["file_upload"].get("allowed_file_types", ["image"])
-            features["file_upload"]["allowed_file_extensions"] = []
+            features["file_upload"]["allowed_file_extensions"] = features["file_upload"].get(
+                "allowed_file_extensions", []
+            )
             del features["file_upload"]["image"]
             self._features = json.dumps(features)
         return self._features
@@ -375,6 +379,10 @@ class Workflow(Base):
             {item["variable"]: item for item in values},
             ensure_ascii=False,
         )
+
+    @staticmethod
+    def version_from_datetime(d: datetime) -> str:
+        return str(d)
 
 
 class WorkflowRunStatus(StrEnum):
@@ -843,7 +851,7 @@ def _naive_utc_datetime():
 
 class WorkflowDraftVariable(Base):
     @staticmethod
-    def unique_columns() -> list[str]:
+    def unique_app_id_node_id_name() -> list[str]:
         return [
             "app_id",
             "node_id",
@@ -851,7 +859,7 @@ class WorkflowDraftVariable(Base):
         ]
 
     __tablename__ = "workflow_draft_variables"
-    __table_args__ = (UniqueConstraint(*unique_columns()),)
+    __table_args__ = (UniqueConstraint(*unique_app_id_node_id_name()),)
 
     # id is the unique identifier of a draft variable.
     id: Mapped[str] = mapped_column(StringUUID, primary_key=True, server_default=db.text("uuid_generate_v4()"))
@@ -1016,10 +1024,11 @@ class WorkflowDraftVariable(Base):
         name: str,
         value: Segment,
         visible: bool = True,
+        editable: bool = True,
     ) -> "WorkflowDraftVariable":
         variable = cls._new(app_id=app_id, node_id=node_id, name=name, value=value)
         variable.visible = visible
-        variable.editable = True
+        variable.editable = editable
         return variable
 
     @property
