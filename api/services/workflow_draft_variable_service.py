@@ -3,17 +3,19 @@ import logging
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from sqlalchemy import orm
+from sqlalchemy import Engine, orm
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.expression import and_, or_
 
 from core.app.entities.app_invoke_entities import InvokeFrom
-from core.file.constants import is_dummy_output_variable
-from core.variables import Segment
+from core.variables import Segment, Variable
 from core.variables.consts import MIN_SELECTORS_LENGTH
 from core.workflow.constants import CONVERSATION_VARIABLE_NODE_ID, ENVIRONMENT_VARIABLE_NODE_ID, SYSTEM_VARIABLE_NODE_ID
 from core.workflow.nodes import NodeType
+from core.workflow.variable_loader import VariableLoader
 from factories import variable_factory
+from factories.variable_factory import build_segment, segment_to_variable
 from models.workflow import WorkflowDraftVariable, is_system_variable_editable
 
 _logger = logging.getLogger(__name__)
@@ -25,6 +27,36 @@ class WorkflowDraftVariableList:
     total: int | None = None
 
 
+class DraftVarLoader(VariableLoader):
+    # This implements the VariableLoader interface for loading draft variables.
+    #
+    # ref: core.workflow.variable_loader.VariableLoader
+    def __init__(self, engine: Engine, app_id: str) -> None:
+        self._engine = engine
+        self._app_id = app_id
+
+    def load_variables(self, selectors: list[list[str]]) -> list[Variable]:
+        if not selectors:
+            return []
+        with Session(bind=self._engine, expire_on_commit=False) as session:
+            srv = WorkflowDraftVariableService(session)
+            draft_vars = srv.get_draft_variables_by_selectors(self._app_id, selectors)
+        variables = []
+        for draft_var in draft_vars:
+            segment = build_segment(
+                draft_var.value,
+            )
+            variable = segment_to_variable(
+                segment=segment,
+                selector=draft_var.get_selector(),
+                id=draft_var.id,
+                name=draft_var.name,
+                description=draft_var.description,
+            )
+            variables.append(variable)
+        return variables
+
+
 class WorkflowDraftVariableService:
     _session: Session
 
@@ -34,6 +66,28 @@ class WorkflowDraftVariableService:
     def get_variable(self, variable_id: str) -> WorkflowDraftVariable | None:
         return self._session.query(WorkflowDraftVariable).filter(WorkflowDraftVariable.id == variable_id).first()
 
+    def get_draft_variables_by_selectors(
+        self,
+        app_id: str,
+        selectors: Sequence[list[str]],
+    ) -> list[WorkflowDraftVariable]:
+        ors = []
+        for selector in selectors:
+            node_id, name = selector
+            ors.append(and_(WorkflowDraftVariable.node_id == node_id, WorkflowDraftVariable.name == name))
+
+        # NOTE(QuantumGhost): Although the number of `or` expressions may be large, as long as
+        # each expression includes conditions on both `node_id` and `name` (which are covered by the unique index),
+        # PostgreSQL can efficiently retrieve the results using a bitmap index scan.
+        #
+        # Alternatively, a `SELECT` statement could be constructed for each selector and
+        # combined using `UNION` to fetch all rows.
+        # Benchmarking indicates that both approaches yield comparable performance.
+        variables = (
+            self._session.query(WorkflowDraftVariable).where(WorkflowDraftVariable.app_id == app_id, or_(*ors)).all()
+        )
+        return variables
+
     def save_output_variables(self, app_id: str, node_id: str, node_type: NodeType, output: Mapping[str, Any]):
         variable_builder = _DraftVariableBuilder(app_id=app_id)
         variable_builder.build(node_id=node_id, node_type=node_type, output=output)
@@ -42,29 +96,25 @@ class WorkflowDraftVariableService:
         if not draft_variables:
             return
 
-        # We may use SQLAlchemy ORM operation here. However, considering the fact that:
+        # Although we could use SQLAlchemy ORM operations here, we choose not to for several reasons:
         #
-        # 1. The variable saving process writes multiple rows into one table (`workflow_draft_variables`).
-        #   Use batch insertion may increase performance dramatically.
-        # 2. If we use ORM operation, we need to either:
+        # 1. The variable saving process involves writing multiple rows to the
+        #    `workflow_draft_variables` table. Batch insertion significantly improves performance.
+        # 2. Using the ORM would require either:
         #
-        #     a. Check the existence for each variable before insertion.
-        #     b. Try insertion first, then do update if insertion fails due to unique index violation.
+        #    a. Checking for the existence of each variable before insertion,
+        #      resulting in 2n SQL statements for n variables and potential concurrency issues.
+        #    b. Attempting insertion first, then updating if a unique index violation occurs,
+        #      which still results in n to 2n SQL statements.
         #
-        #   Neither of the above is satisfactory.
+        #    Both approaches are inefficient and suboptimal.
+        # 3. We do not need to retrieve the results of the SQL execution or populate ORM
+        #    model instances with the returned values.
+        # 4. Batch insertion with `ON CONFLICT DO UPDATE` allows us to insert or update all
+        #    variables in a single SQL statement, avoiding the issues above.
         #
-        #   - For implementation "a", we need to issue `2n` sqls for `n` variables in output.
-        #     Besides, it's still suffer from concurrency issues.
-        #   - For implementation "b", we need to issue `n` - `2n` sqls (depending on the existence of
-        #     specific variable), which is lesser than plan "a" but still far from ideal.
-        #
-        # 3. We do not need the value of SQL execution, nor do we need populate those values back to ORM model
-        #    instances.
-        # 4. Batch insertion can be combined with `ON CONFLICT DO UPDATE`, allows us to insert or update
-        #    all variables in one SQL statement, and avoid all problems above.
-        #
-        # Given reasons above, we use query builder instead of using ORM layer,
-        # and rely on dialect specific insert operations.
+        # For these reasons, we use the SQLAlchemy query builder and rely on dialect-specific
+        # insert operations instead of the ORM layer.
         if node_type == NodeType.CODE:
             # Clear existing variable for code node.
             self._session.query(WorkflowDraftVariable).filter(
@@ -213,26 +263,6 @@ def should_save_output_variables_for_draft(
     return True
 
 
-# def should_save_output_variables_for_draft(invoke_from: InvokeFrom, node_exec: WorkflowNodeExecution) -> bool:
-#     # Only save output variables for debugging execution of workflow.
-#     if invoke_from != InvokeFrom.DEBUGGER:
-#         return False
-#     exec_metadata = node_exec.execution_metadata_dict
-#     if exec_metadata is None:
-#         # No execution metadata, assume the node is not in loop or iteration.
-#         return True
-#
-#     # Currently we do not save output variables for nodes inside loop or iteration.
-#     loop_id = exec_metadata.get(NodeRunMetadataKey.LOOP_ID)
-#     if loop_id is not None:
-#         return False
-#     iteration_id = exec_metadata.get(NodeRunMetadataKey.ITERATION_ID)
-#     if iteration_id is not None:
-#         return False
-#     return True
-#
-
-
 class _DraftVariableBuilder:
     _app_id: str
     _draft_vars: list[WorkflowDraftVariable]
@@ -280,7 +310,8 @@ class _DraftVariableBuilder:
         original_node_id = node_id
         for name, value in output.items():
             value_seg = variable_factory.build_segment(value)
-            if is_dummy_output_variable(name):
+            node_id, name = self._normalize_variable_for_start_node(node_id, name)
+            if node_id != SYSTEM_VARIABLE_NODE_ID:
                 self._draft_vars.append(
                     WorkflowDraftVariable.new_node_variable(
                         app_id=self._app_id,
@@ -302,20 +333,9 @@ class _DraftVariableBuilder:
                 )
 
     @staticmethod
-    def _normalize_variable_for_start_node(node_type: NodeType, node_id: str, name: str):
-        if node_type != NodeType.START:
-            return node_id, name
-
-            # TODO(QuantumGhost): need special handling for dummy output variable in
-            # `Start` node.
+    def _normalize_variable_for_start_node(node_id: str, name: str) -> tuple[str, str]:
         if not name.startswith(f"{SYSTEM_VARIABLE_NODE_ID}."):
             return node_id, name
-        _logger.debug(
-            "Normalizing variable: node_type=%s, node_id=%s, name=%s",
-            node_type,
-            node_id,
-            name,
-        )
         node_id, name_ = name.split(".", maxsplit=1)
         return node_id, name_
 
