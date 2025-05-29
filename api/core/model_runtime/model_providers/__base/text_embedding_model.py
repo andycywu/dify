@@ -96,10 +96,15 @@ class TextEmbeddingModel(AIModel):
         :param credentials: model credentials
         :return: max chunks
         """
+        import logging
+
+        logger = logging.getLogger(__name__)
         model_schema = self.get_model_schema(model, credentials)
 
         if model_schema and ModelPropertyKey.MAX_CHUNKS in model_schema.model_properties:
             max_chunks: int = model_schema.model_properties[ModelPropertyKey.MAX_CHUNKS]
+            logger.info(f"[text_embedding_model] max_chunks from model schema: {max_chunks}")
             return max_chunks
 
+        logger.info("[text_embedding_model] max_chunks not set in model schema, using default: 1")
         return 1

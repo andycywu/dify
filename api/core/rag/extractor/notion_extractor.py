@@ -77,24 +77,34 @@ class NotionExtractor(BaseExtractor):
         return docs
 
     def _get_notion_database_data(self, database_id: str, query_dict: dict[str, Any] = {}) -> list[Document]:
-        """Get all the pages from a Notion database."""
+        """Get all the pages from a Notion database, with pagination support."""
         assert self._notion_access_token is not None, "Notion access token is required"
-        res = requests.post(
-            DATABASE_URL_TMPL.format(database_id=database_id),
-            headers={
-                "Authorization": "Bearer " + self._notion_access_token,
-                "Content-Type": "application/json",
-                "Notion-Version": "2022-06-28",
-            },
-            json=query_dict,
-        )
-
-        data = res.json()
+        all_results = []
+        next_cursor = None
+        while True:
+            payload = dict(query_dict)
+            if next_cursor:
+                payload["start_cursor"] = next_cursor
+            res = requests.post(
+                DATABASE_URL_TMPL.format(database_id=database_id),
+                headers={
+                    "Authorization": "Bearer " + self._notion_access_token,
+                    "Content-Type": "application/json",
+                    "Notion-Version": "2022-06-28",
+                },
+                json=payload,
+            )
+            data = res.json()
+            if data.get("results"):
+                all_results.extend(data["results"])
+            if not data.get("has_more") or not data.get("next_cursor"):
+                break
+            next_cursor = data["next_cursor"]
 
         database_content = []
-        if "results" not in data or data["results"] is None:
+        if not all_results:
             return []
-        for result in data["results"]:
+        for result in all_results:
             properties = result["properties"]
             data = {}
             value: Any
@@ -136,8 +146,11 @@ class NotionExtractor(BaseExtractor):
         result_lines_arr = []
         start_cursor = None
         block_url = BLOCK_CHILD_URL_TMPL.format(block_id=page_id)
+        page_count = 0
         while True:
-            query_dict: dict[str, Any] = {} if not start_cursor else {"start_cursor": start_cursor}
+            query_dict: dict[str, Any] = {"page_size": 100}
+            if start_cursor:
+                query_dict["start_cursor"] = start_cursor
             try:
                 res = requests.request(
                     "GET",
@@ -154,6 +167,14 @@ class NotionExtractor(BaseExtractor):
                 data = res.json()
             except requests.RequestException as e:
                 raise ValueError("Error fetching Notion block data") from e
+            logger.info(
+                "[Notion] Page %d: fetched %d blocks, next_cursor=%s, has_more=%s",
+                page_count + 1,
+                len(data.get('results', [])),
+                data.get('next_cursor'),
+                data.get('has_more'),
+            )
+            page_count += 1
             if "results" not in data or not isinstance(data["results"], list):
                 raise ValueError("Error fetching Notion block data")
             for result in data["results"]:
@@ -186,7 +207,8 @@ class NotionExtractor(BaseExtractor):
                     else:
                         result_lines_arr.append(cur_result_text + "\n\n")
 
-            if data["next_cursor"] is None:
+            # 修正分頁 break 條件
+            if not data.get("has_more") or not data.get("next_cursor"):
                 break
             else:
                 start_cursor = data["next_cursor"]
@@ -198,8 +220,11 @@ class NotionExtractor(BaseExtractor):
         result_lines_arr = []
         start_cursor = None
         block_url = BLOCK_CHILD_URL_TMPL.format(block_id=block_id)
+        page_count = 0
         while True:
-            query_dict: dict[str, Any] = {} if not start_cursor else {"start_cursor": start_cursor}
+            query_dict: dict[str, Any] = {"page_size": 100}
+            if start_cursor:
+                query_dict["start_cursor"] = start_cursor
 
             res = requests.request(
                 "GET",
@@ -212,6 +237,14 @@ class NotionExtractor(BaseExtractor):
                 params=query_dict,
             )
             data = res.json()
+            logger.info(
+                "[Notion] _read_block page %d: fetched %d blocks, next_cursor=%s, has_more=%s",
+                page_count + 1,
+                len(data.get('results', [])),
+                data.get('next_cursor'),
+                data.get('has_more')
+            )
+            page_count += 1
             if "results" not in data or data["results"] is None:
                 break
             for result in data["results"]:
@@ -243,7 +276,8 @@ class NotionExtractor(BaseExtractor):
                     else:
                         result_lines_arr.append(cur_result_text + "\n\n")
 
-            if data["next_cursor"] is None:
+            # 修正分頁 break 條件
+            if not data.get("has_more") or not data.get("next_cursor"):
                 break
             else:
                 start_cursor = data["next_cursor"]
@@ -258,8 +292,11 @@ class NotionExtractor(BaseExtractor):
         result_lines_arr = []
         start_cursor = None
         block_url = BLOCK_CHILD_URL_TMPL.format(block_id=block_id)
+        page_count = 0
         while not done:
-            query_dict: dict[str, Any] = {} if not start_cursor else {"start_cursor": start_cursor}
+            query_dict: dict[str, Any] = {"page_size": 100}
+            if start_cursor:
+                query_dict["start_cursor"] = start_cursor
 
             res = requests.request(
                 "GET",
@@ -272,6 +309,14 @@ class NotionExtractor(BaseExtractor):
                 params=query_dict,
             )
             data = res.json()
+            logger.info(
+                "[Notion] _read_table_rows page %d: fetched %d blocks, next_cursor=%s, has_more=%s",
+                page_count + 1,
+                len(data.get('results', [])),
+                data.get('next_cursor'),
+                data.get('has_more')
+            )
+            page_count += 1
             # get table headers text
             table_header_cell_texts = []
             table_header_cells = data["results"][0]["table_row"]["cells"]
@@ -299,7 +344,8 @@ class NotionExtractor(BaseExtractor):
                 # Add row to Markdown table
                 markdown_table += "| " + " | ".join(column_texts) + " |\n"
             result_lines_arr.append(markdown_table)
-            if data["next_cursor"] is None:
+            # 修正分頁 break 條件
+            if not data.get("has_more") or not data.get("next_cursor"):
                 done = True
                 break
             else:
