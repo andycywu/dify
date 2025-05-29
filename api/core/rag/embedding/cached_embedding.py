@@ -55,6 +55,9 @@ class CacheEmbedding(Embeddings):
                     if model_schema and ModelPropertyKey.MAX_CHUNKS in model_schema.model_properties
                     else 1
                 )
+                logger.info(
+                    f"[CacheEmbedding] Using max_chunks: {max_chunks} for model: {self._model_instance.model}"
+                    )        
                 for i in range(0, len(embedding_queue_texts), max_chunks):
                     batch_texts = embedding_queue_texts[i : i + max_chunks]
 

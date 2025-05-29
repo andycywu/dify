@@ -1,0 +1,18 @@
+model: text-embedding-ada-002
+label:
+  en_US: text-embedding-ada-002
+model_type: text-embedding
+model_properties:
+  max_chunks: 1000  # 你可以根據需求調整這個數值
+  context_size: 8191
+parameter_rules:
+  - name: input
+    type: string
+    help:
+      en_US: Input text for embedding
+    required: true
+pricing:
+  input: '0.10'
+  output: '0.10'
+  unit: '1'
+  currency: USD
