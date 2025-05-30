@@ -1,0 +1,389 @@
+# flyctl launch added from .gitignore
+# Byte-compiled / optimized / DLL files
+**/__pycache__
+**/*.py[cod]
+**/*$py.class
+
+# C extensions
+**/*.so
+
+# Distribution / packaging
+**/.Python
+**/build
+**/develop-eggs
+**/dist
+**/downloads
+**/eggs
+**/.eggs
+**/lib
+**/lib64
+**/parts
+**/sdist
+**/var
+**/wheels
+**/pip-wheel-metadata
+**/share/python-wheels
+**/*.egg-info
+**/.installed.cfg
+**/*.egg
+**/MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+**/*.manifest
+**/*.spec
+
+# Installer logs
+**/pip-log.txt
+**/pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+**/htmlcov
+**/.tox
+**/.nox
+**/.coverage
+**/.coverage.*
+**/.cache
+**/nosetests.xml
+**/coverage.xml
+**/coverage.json
+**/*.cover
+**/*.py,cover
+**/.hypothesis
+**/.pytest_cache
+
+# Translations
+**/*.mo
+**/*.pot
+
+# Django stuff:
+**/*.log
+**/local_settings.py
+**/db.sqlite3
+**/db.sqlite3-journal
+
+# Flask stuff:
+**/instance
+**/.webassets-cache
+
+# Scrapy stuff:
+**/.scrapy
+
+# Sphinx documentation
+**/docs/_build
+
+# PyBuilder
+**/target
+
+# Jupyter Notebook
+**/.ipynb_checkpoints
+
+# IPython
+**/profile_default
+**/ipython_config.py
+
+# pyenv
+**/.python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+**/__pypackages__
+
+# Celery stuff
+**/celerybeat-schedule
+**/celerybeat.pid
+
+# SageMath parsed files
+**/*.sage.py
+
+# Environments
+**/.env
+**/.env-local
+**/.venv
+**/env
+**/venv
+**/ENV
+**/env.bak
+**/venv.bak
+**/.conda
+
+# Spyder project settings
+**/.spyderproject
+**/.spyproject
+
+# Rope project settings
+**/.ropeproject
+
+# mkdocs documentation
+site
+
+# mypy
+**/.mypy_cache
+**/.dmypy.json
+**/dmypy.json
+
+# Pyre type checker
+**/.pyre
+**/.idea/'
+
+**/.DS_Store
+**/web/.vscode/settings.json
+
+# Intellij IDEA Files
+**/.idea/*
+!**/.idea/vcs.xml
+!**/.idea/icon.png
+**/.ideaDataSources
+**/*.iml
+**/api/.idea
+
+**/api/.env
+**/api/storage/*
+
+**/docker-legacy/volumes/app/storage/*
+**/docker-legacy/volumes/db/data/*
+**/docker-legacy/volumes/redis/data/*
+**/docker-legacy/volumes/weaviate/*
+**/docker-legacy/volumes/qdrant/*
+**/docker-legacy/volumes/etcd/*
+**/docker-legacy/volumes/minio/*
+**/docker-legacy/volumes/milvus/*
+**/docker-legacy/volumes/chroma/*
+**/docker-legacy/volumes/opensearch/data/*
+**/docker-legacy/volumes/pgvectors/data/*
+**/docker-legacy/volumes/pgvector/data/*
+
+**/docker/volumes/app/storage/*
+**/docker/volumes/certbot/*
+**/docker/volumes/db/data/*
+**/docker/volumes/redis/data/*
+**/docker/volumes/weaviate/*
+**/docker/volumes/qdrant/*
+**/docker/tidb/volumes/*
+**/docker/volumes/etcd/*
+**/docker/volumes/minio/*
+**/docker/volumes/milvus/*
+**/docker/volumes/chroma/*
+**/docker/volumes/opensearch/data/*
+**/docker/volumes/myscale/data/*
+**/docker/volumes/myscale/log/*
+**/docker/volumes/unstructured/*
+**/docker/volumes/pgvector/data/*
+**/docker/volumes/pgvecto_rs/data/*
+**/docker/volumes/couchbase/*
+**/docker/volumes/oceanbase/*
+**/docker/volumes/plugin_daemon/*
+!**/docker/volumes/oceanbase/init.d
+
+**/docker/nginx/conf.d/default.conf
+**/docker/nginx/ssl/*
+!**/docker/nginx/ssl/.gitkeep
+**/docker/middleware.env
+**/docker/docker-compose.override.yaml
+
+**/sdks/python-client/build
+**/sdks/python-client/dist
+**/sdks/python-client/dify_client.egg-info
+
+**/.vscode/*
+!**/.vscode/launch.json
+**/pyrightconfig.json
+**/api/.vscode
+
+**/.idea
+**/.vscode
+
+# pnpm
+.pnpm-store
+
+# plugin migrate
+**/plugins.jsonl
+
+# mise
+**/mise.toml
+
+# flyctl launch added from .ruff_cache/.gitignore
+# Automatically created by ruff.
+.ruff_cache/**/*
+
+# flyctl launch added from api/.ruff_cache/.gitignore
+# Automatically created by ruff.
+api/.ruff_cache/**/*
+
+# flyctl launch added from api/.venv/.gitignore
+api/.venv/**/*
+
+# flyctl launch added from api/.venv/lib/python3.12/site-packages/aiomysql/.gitignore
+api/.venv/lib/python3.12/site-packages/aiomysql/_scm_version.py
+
+# flyctl launch added from api/.venv/lib/python3.12/site-packages/litellm/proxy/.gitignore
+api/.venv/lib/python3.12/site-packages/litellm/proxy/**/.env
+api/.venv/lib/python3.12/site-packages/litellm/proxy/**/secrets.toml
+
+# flyctl launch added from api/.venv/lib/python3.12/site-packages/weave/.gitignore
+api/.venv/lib/python3.12/site-packages/weave/**/local-artifacts
+api/.venv/lib/python3.12/site-packages/weave/**/prof
+api/.venv/lib/python3.12/site-packages/weave/**/groupby-dsviz-simple-tables.pstat
+api/.venv/lib/python3.12/site-packages/weave/**/.hypothesis
+api/.venv/lib/python3.12/site-packages/weave/wandb
+
+# flyctl launch added from api/.venv/lib/python3.12/site-packages/weaviate/.gitignore
+api/.venv/lib/python3.12/site-packages/weaviate/**/_version.py
+
+# flyctl launch added from api/tests/integration_tests/.gitignore
+api/tests/integration_tests/**/.env.test
+
+# flyctl launch added from api/tests/unit_tests/.gitignore
+api/tests/unit_tests/**/.env.test
+
+# flyctl launch added from docker/volumes/plugin_daemon/cwd/langgenius/anthropic-0.0.14@6a3e63f686a51d4392bfd5aec85c1f961e08c0ad76d9a85a584a306ede6300a2/.venv/.gitignore
+docker/volumes/plugin_daemon/cwd/langgenius/anthropic-0.0.14@6a3e63f686a51d4392bfd5aec85c1f961e08c0ad76d9a85a584a306ede6300a2/.venv/**/*
+
+# flyctl launch added from docker/volumes/plugin_daemon/cwd/langgenius/deepseek-0.0.5@fd6efd37c2a931911de8ab9ca3ba2da303bef146d45ee87ad896b04b36d09403/.venv/.gitignore
+docker/volumes/plugin_daemon/cwd/langgenius/deepseek-0.0.5@fd6efd37c2a931911de8ab9ca3ba2da303bef146d45ee87ad896b04b36d09403/.venv/**/*
+
+# flyctl launch added from docker/volumes/plugin_daemon/cwd/langgenius/gemini-0.2.2@882b08273178e3bc7bdc368ee768287c521ad9b68e827c68797e30fa1bc8a0ca/.gitignore
+docker/volumes/plugin_daemon/cwd/langgenius/gemini-0.2.2@882b08273178e3bc7bdc368ee768287c521ad9b68e827c68797e30fa1bc8a0ca/**/file_cache.json
+
+# flyctl launch added from docker/volumes/plugin_daemon/cwd/langgenius/gemini-0.2.2@882b08273178e3bc7bdc368ee768287c521ad9b68e827c68797e30fa1bc8a0ca/.venv/.gitignore
+docker/volumes/plugin_daemon/cwd/langgenius/gemini-0.2.2@882b08273178e3bc7bdc368ee768287c521ad9b68e827c68797e30fa1bc8a0ca/.venv/**/*
+
+# flyctl launch added from docker/volumes/plugin_daemon/cwd/langgenius/google-0.0.9@078f20e08db9883c5deecde1c9665f00dbc45ae5b4aabcae4f091089e9f6eadf/.venv/.gitignore
+docker/volumes/plugin_daemon/cwd/langgenius/google-0.0.9@078f20e08db9883c5deecde1c9665f00dbc45ae5b4aabcae4f091089e9f6eadf/.venv/**/*
+
+# flyctl launch added from docker/volumes/plugin_daemon/cwd/langgenius/jina-0.0.6@3ac399c96509b3bfe3124f9cdfa13999cb2f7d7ff00a99cc8d3ac4f4d82ffe6c/.venv/.gitignore
+docker/volumes/plugin_daemon/cwd/langgenius/jina-0.0.6@3ac399c96509b3bfe3124f9cdfa13999cb2f7d7ff00a99cc8d3ac4f4d82ffe6c/.venv/**/*
+
+# flyctl launch added from docker/volumes/plugin_daemon/cwd/langgenius/openai-0.0.25@cb2db148209953cc5d96957eda18c57ef0aa95b8a369b5f9cfd2528597ee16de/.venv/.gitignore
+docker/volumes/plugin_daemon/cwd/langgenius/openai-0.0.25@cb2db148209953cc5d96957eda18c57ef0aa95b8a369b5f9cfd2528597ee16de/.venv/**/*
+
+# flyctl launch added from docker/volumes/plugin_daemon/cwd/langgenius/tavily-0.0.5@caf7214ca1a237845e991615fd12e04c8db8b703d59773538fe243f3de4044e9/.venv/.gitignore
+docker/volumes/plugin_daemon/cwd/langgenius/tavily-0.0.5@caf7214ca1a237845e991615fd12e04c8db8b703d59773538fe243f3de4044e9/.venv/**/*
+
+# flyctl launch added from sdks/nodejs-client/.gitignore
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+sdks/nodejs-client/node_modules
+sdks/nodejs-client/.pnp
+sdks/nodejs-client/**/.pnp.js
+
+# testing
+sdks/nodejs-client/coverage
+
+# next.js
+sdks/nodejs-client/.next
+sdks/nodejs-client/out
+
+# production
+sdks/nodejs-client/build
+
+# misc
+sdks/nodejs-client/**/.DS_Store
+sdks/nodejs-client/**/*.pem
+
+# debug
+sdks/nodejs-client/**/npm-debug.log*
+sdks/nodejs-client/**/yarn-debug.log*
+sdks/nodejs-client/**/yarn-error.log*
+sdks/nodejs-client/**/.pnpm-debug.log*
+
+# local env files
+sdks/nodejs-client/**/.env*.local
+
+# vercel
+sdks/nodejs-client/**/.vercel
+
+# typescript
+sdks/nodejs-client/**/*.tsbuildinfo
+sdks/nodejs-client/**/next-env.d.ts
+
+# npm
+sdks/nodejs-client/**/package-lock.json
+
+# yarn
+sdks/nodejs-client/**/.pnp.cjs
+sdks/nodejs-client/**/.pnp.loader.mjs
+sdks/nodejs-client/**/.yarn
+sdks/nodejs-client/**/.yarnrc.yml
+
+# pmpm
+sdks/nodejs-client/**/pnpm-lock.yaml
+
+# flyctl launch added from sdks/php-client/.gitignore
+sdks/php-client/vendor
+
+# flyctl launch added from web/.gitignore
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+web/node_modules
+web/.pnp
+web/**/.pnp.js
+
+# testing
+web/coverage
+
+# next.js
+web/.next
+web/out
+
+# production
+web/build
+
+web/.history
+
+# misc
+web/**/.DS_Store
+web/**/*.pem
+
+# debug
+web/**/npm-debug.log*
+web/**/yarn-debug.log*
+web/**/yarn-error.log*
+web/**/.pnpm-debug.log*
+
+# local env files
+web/**/.env*.local
+
+# vercel
+web/**/.vercel
+
+# typescript
+web/**/*.tsbuildinfo
+web/**/next-env.d.ts
+
+# npm
+web/**/package-lock.json
+
+# yarn
+web/**/.pnp.cjs
+web/**/.pnp.loader.mjs
+web/**/.yarn
+
+web/**/.favorites.json
+
+# storybook
+web/storybook-static
+web/**/*storybook.log
+
+# mise
+web/**/mise.toml
+
+
+# flyctl launch added from web/.husky/_/.gitignore
+web/.husky/_/**/*
+
+# flyctl launch added from web/node_modules/.pnpm/abcjs@6.4.4/node_modules/abcjs/dist/.gitignore
+!web/node_modules/.pnpm/abcjs@6.4.4/node_modules/abcjs/dist/**/.gitignore
+
+# flyctl launch added from web/node_modules/.pnpm/tailwindcss@3.4.17_ts-node@10.9.2_@types+node@18.15.0_typescript@4.9.5_/node_modules/tailwindcss/stubs/.gitignore
+!web/node_modules/.pnpm/tailwindcss@3.4.17_ts-node@10.9.2_@types+node@18.15.0_typescript@4.9.5_/node_modules/tailwindcss/stubs/**/*
+fly.toml
