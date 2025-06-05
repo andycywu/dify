@@ -1,0 +1,2 @@
+src/pages/api/user/index.ts
+src/pages/api/user/[id].ts

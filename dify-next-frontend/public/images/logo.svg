@@ -1,0 +1,9 @@
+/* SVG Logo for TPV OBM */
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="60" cy="60" r="60" fill="#3B82F6"/>
+  <path d="M30 45H90V75H30V45Z" fill="white"/>
+  <path d="M45 35V85" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <path d="M60 35V85" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <path d="M75 35V85" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <path d="M30 60H90" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+</svg>
