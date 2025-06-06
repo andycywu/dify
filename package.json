@@ -1,8 +1,10 @@
 {
   "dependencies": {
     "@prisma/client": "^6.9.0",
+    "@types/nodemailer": "^6.4.17",
     "bcryptjs": "^3.0.2",
     "i18next": "^25.2.1",
+    "nodemailer": "^7.0.3",
     "react-i18next": "^15.5.2"
   },
   "prisma": {
