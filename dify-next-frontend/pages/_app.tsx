@@ -17,7 +17,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       <AuthProvider>
         <div className="flex flex-col min-h-screen">
           <Header />
-          <main className="flex-1">
+          <main className="flex-1 bg-gray-100">
             {isPublicRoute ? (
               <Component {...pageProps} />
             ) : (

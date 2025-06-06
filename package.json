@@ -1,9 +1,11 @@
 {
   "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "bcryptjs": "^3.0.2",
     "i18next": "^25.2.1",
     "react-i18next": "^15.5.2"
   },
   "prisma": {
-  "seed": "ts-node --transpile-only prisma/seed.ts"
+    "seed": "ts-node --transpile-only prisma/seed.ts"
   }
 }

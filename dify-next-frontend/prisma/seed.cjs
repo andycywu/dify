@@ -36,7 +36,16 @@ async function main() {
       role: 'user',
     },
   });
-
+    await prisma.user.upsert({
+    where: { email: 'admin' },
+    update: {},
+    create: {
+      email: 'admin',
+      password: passwordHash,
+      name: 'Admin',
+      role: 'admin',
+    },
+  });
   // General 設定範例
   await prisma.general.upsert({
     where: { key: 'openai_rate' },

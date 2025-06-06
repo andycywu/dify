@@ -25,7 +25,7 @@ const Login: React.FC<LoginProps> = ({
     setLoading(true);
     try {
       const result = await signIn('credentials', {
-        email,
+        username: email, // 修正這裡，傳 username 給 NextAuth
         password,
         redirect: false,
       });
