@@ -1,0 +1,49 @@
+# Dify Next Frontend Dockerfile - Production Optimized
+FROM node:18-alpine AS deps
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Rebuild the source code
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build with proper environment variables
+ENV NODE_ENV=production
+RUN npx prisma generate
+RUN npm run build
+
+# Production image, copy all the files and run next
+FROM node:18-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Copy necessary files
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/next-i18next.config.js ./next-i18next.config.js
+COPY --from=builder /app/prisma ./prisma
+
+
+# Copy i18n files
+COPY --from=builder /app/locales ./locales
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+# Don't run production as root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+EXPOSE 3000
+
+ENTRYPOINT ["/bin/sh", "./docker-entrypoint.sh"]
