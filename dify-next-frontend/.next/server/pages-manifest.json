@@ -2,14 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/test-agentic": "pages/test-agentic.js",
   "/": "pages/index.js",
   "/api/auth/[...nextauth]": "pages/api/auth/[...nextauth].js",
-  "/login": "pages/login.js",
-  "/dashboard": "pages/dashboard.js",
-  "/admin": "pages/admin.js",
-  "/api/billing-rate": "pages/api/billing-rate.js",
-  "/api/user": "pages/api/user.js",
-  "/api/user-token-stats": "pages/api/user-token-stats.js",
-  "/usage": "pages/usage.js"
+  "/404": "pages/404.js",
+  "/test-agentic": "pages/test-agentic.js"
 }

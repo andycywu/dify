@@ -1,0 +1,33 @@
+# Dify Next Frontend Dockerfile
+FROM node:18-alpine AS base
+WORKDIR /app
+
+# Install dependencies with dev dependencies for build
+COPY package.json package-lock.json ./
+RUN npm install
+RUN npm install --save @emotion/react @emotion/styled
+
+# Copy app source
+COPY . .
+
+# Ensure emotion/Next.js works correctly
+RUN echo 'module.exports = { presets: ["next/babel"] }' > .babelrc.js
+
+# Build Next.js app (with all necessary dependencies for styling)
+RUN npm run build
+
+# Production image
+FROM node:18-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3100
+
+COPY --from=base /app/.next ./.next
+COPY --from=base /app/public ./public
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/package.json ./package.json
+COPY --from=base /app/.babelrc.js ./.babelrc.js
+COPY --from=base /app/src ./src
+
+EXPOSE 3100
+CMD ["npm","run","start"]
