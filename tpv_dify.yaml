@@ -1,4 +1,3 @@
-
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Dify on AWS without S3 Bucket
 
@@ -46,13 +45,13 @@ Resources:
     Metadata:
       aws:cdk:path: DifyOnAws/PublicSecurityGroup/from 0.0.0.0_0:80
 
-  CxcxcDemoS3Bucket:
+  TpvS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName:
         Fn::Join:
           - "-"
-          - - "cxcxc-aws-saa-aif-certificate"
+          - - "tpv-aws-saa-aif-certificate"
             - Fn::Select:
                 - 0
                 - Fn::Split:
@@ -64,7 +63,7 @@ Resources:
                             - Ref: AWS::StackId
     DeletionPolicy: Retain
     Metadata:
-      aws:cdk:path: DifyOnAws/CxcxcDemoS3Bucket
+      aws:cdk:path: DifyOnAws/TpvS3Bucket
 
   SageMakerNotebookIAMRole:
     Type: AWS::IAM::Role
@@ -173,7 +172,7 @@ Resources:
         Fn::Base64: |-
           #!/bin/bash
 
-          yum install git docker -y && systemctl start docker && systemctl enable docker && curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose && git clone -b 1.4.0 https://github.com/langgenius/dify.git && cd dify/docker && docker-compose up -d
+          yum install git docker -y && systemctl start docker && systemctl enable docker && curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose && git clone https://github.com/andycywu/dify.git && cd dify/docker && docker-compose up -d
       Tags:
         - Key: Name
           Value: dify-server
