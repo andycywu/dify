@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Dify EC2 部署腳本
+# Dify EC2 部署腳本 - 在 EC2 實例上執行
 
 set -e
 
@@ -8,35 +8,61 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${GREEN}=== Dify EC2 部署腳本 ===${NC}"
+echo ""
 
 # 檢查是否為 root 用戶
 if [ "$EUID" -eq 0 ]; then
     echo -e "${RED}請不要使用 root 用戶執行此腳本${NC}"
+    echo "請使用 ec2-user 或其他普通用戶"
     exit 1
+fi
+
+# 檢查 Docker 是否安裝
+if ! command -v docker &> /dev/null; then
+    echo -e "${YELLOW}Docker 未安裝，正在安裝...${NC}"
+    sudo yum update -y
+    sudo yum install -y docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -a -G docker $USER
+    echo -e "${GREEN}✓ Docker 安裝完成${NC}"
+    echo -e "${YELLOW}請登出並重新登入，或執行: newgrp docker${NC}"
+    exit 0
 fi
 
 # 檢查 Docker 權限
 echo -e "${YELLOW}檢查 Docker 權限...${NC}"
 if ! docker ps &> /dev/null; then
-    echo -e "${RED}Docker 權限問題！請執行以下命令：${NC}"
-    echo "sudo usermod -a -G docker \$USER"
-    echo "newgrp docker"
-    echo "或者登出重新登入"
-    exit 1
+    echo -e "${YELLOW}修復 Docker 權限...${NC}"
+    sudo usermod -a -G docker $USER
+    echo -e "${YELLOW}嘗試重新載入群組權限...${NC}"
+    if ! newgrp docker <<EOF
+docker ps
+EOF
+    then
+        echo -e "${RED}Docker 權限問題！請執行以下命令：${NC}"
+        echo "sudo usermod -a -G docker \$USER"
+        echo "然後登出重新登入或執行: newgrp docker"
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}✓ Docker 權限正常${NC}"
 
 # 檢查 Docker Compose
 if ! command -v docker-compose &> /dev/null; then
-    echo -e "${RED}Docker Compose 未安裝${NC}"
-    exit 1
+    echo -e "${YELLOW}安裝 Docker Compose...${NC}"
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+    sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+    echo -e "${GREEN}✓ Docker Compose 安裝完成${NC}"
 fi
 
-echo -e "${GREEN}✓ Docker Compose 已安裝${NC}"
+echo -e "${GREEN}✓ Docker Compose 已就緒${NC}"
 
 # 克隆或更新代碼
 REPO_URL=""

@@ -500,7 +500,7 @@ x-shared-env: &shared-api-worker-env
 services:
   # API service
   api:
-    image: your-registry/dify-api:latest
+    image: ${DIFY_API_IMAGE:-andywu719/dify-api:latest}
     # build: ../api
     restart: always
     environment:
@@ -530,7 +530,7 @@ services:
   # worker service
   # The Celery worker for processing the queue.
   worker:
-    image: your-registry/dify-api:latest
+    image: ${DIFY_API_IMAGE:-andywu719/dify-api:latest}
     # build: ../api
     restart: always
     environment:
@@ -1181,7 +1181,7 @@ services:
 
   # Dify Next.js frontend
   dify-next-frontend:
-    image: your-registry/dify-next-frontend:latest
+    image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
     # build: ../dify-next-frontend
     restart: always
     env_file: ../dify-next-frontend/.env.docker
@@ -1200,7 +1200,7 @@ services:
 
   # rest-to-soap-proxy service
   rest-to-soap-proxy:
-    image: your-registry/rest-to-soap-proxy:latest
+    image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
     # build: ../rest-to-soap-proxy
     restart: always
     env_file:
