@@ -500,8 +500,8 @@ x-shared-env: &shared-api-worker-env
 services:
   # API service
   api:
-     #image: langgenius/dify-api:1.4.0
-    build: ../api
+    image: your-registry/dify-api:latest
+    # build: ../api
     restart: always
     environment:
       # Use the shared environment variables.
@@ -530,7 +530,8 @@ services:
   # worker service
   # The Celery worker for processing the queue.
   worker:
-    build: ../api
+    image: your-registry/dify-api:latest
+    # build: ../api
     restart: always
     environment:
       # Use the shared environment variables.
@@ -1180,7 +1181,8 @@ services:
 
   # Dify Next.js frontend
   dify-next-frontend:
-    build: ../dify-next-frontend
+    image: your-registry/dify-next-frontend:latest
+    # build: ../dify-next-frontend
     restart: always
     env_file: ../dify-next-frontend/.env.docker
     environment:
@@ -1198,7 +1200,8 @@ services:
 
   # rest-to-soap-proxy service
   rest-to-soap-proxy:
-    build: ../rest-to-soap-proxy
+    image: your-registry/rest-to-soap-proxy:latest
+    # build: ../rest-to-soap-proxy
     restart: always
     env_file:
       - ../rest-to-soap-proxy/.env
