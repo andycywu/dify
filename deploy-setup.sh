@@ -42,13 +42,46 @@ else
 fi
 echo -e "${GREEN}✓ 環境配置已更新${NC}"
 
-# 步驟 2: 構建和推送 images
+# 步驟 2: 構建和推送 Docker images
 echo -e "\n${YELLOW}步驟 2: 構建和推送 Docker images${NC}"
-if ./build-push-images.sh "$REGISTRY"; then
-    echo -e "${GREEN}✓ Images 構建和推送成功${NC}"
+
+# 檢查是否支援多平台構建
+echo -e "${BLUE}檢查多平台構建支援...${NC}"
+if ! docker buildx version > /dev/null 2>&1; then
+    echo -e "${YELLOW}設置 Docker buildx 多平台構建...${NC}"
+    docker buildx create --use --name multiarch || true
+    docker buildx use multiarch
 else
-    echo -e "${RED}✗ Images 構建或推送失敗${NC}"
-    exit 1
+    echo -e "${GREEN}✓ Docker buildx 已準備就緒${NC}"
+fi
+
+# 詢問是否使用多平台構建
+echo -e "${BLUE}構建選項:${NC}"
+echo "1) 多平台構建 (linux/amd64,linux/arm64) - 推薦用於生產環境"
+echo "2) 單一平台構建 (當前平台) - 快速構建"
+read -p "請選擇構建方式 (1/2): " build_choice
+
+if [ "$build_choice" = "1" ]; then
+    echo -e "${YELLOW}使用多平台構建...${NC}"
+    if ./build-push-images.sh "$REGISTRY" --multiplatform; then
+        echo -e "${GREEN}✓ 多平台 Images 構建和推送成功${NC}"
+    else
+        echo -e "${RED}✗ 多平台構建失敗，嘗試單平台構建...${NC}"
+        if ./build-push-images.sh "$REGISTRY"; then
+            echo -e "${GREEN}✓ 單平台 Images 構建和推送成功${NC}"
+        else
+            echo -e "${RED}✗ Images 構建失敗${NC}"
+            exit 1
+        fi
+    fi
+else
+    echo -e "${YELLOW}使用單平台構建...${NC}"
+    if ./build-push-images.sh "$REGISTRY"; then
+        echo -e "${GREEN}✓ Images 構建和推送成功${NC}"
+    else
+        echo -e "${RED}✗ Images 構建或推送失敗${NC}"
+        exit 1
+    fi
 fi
 
 # 步驟 3: 更新 docker-compose.yaml
@@ -98,17 +131,23 @@ echo "   sudo yum update -y"
 echo "   sudo yum install -y docker"
 echo "   sudo systemctl start docker"
 echo "   sudo usermod -a -G docker ec2-user"
+echo "   # 重新登入或執行: newgrp docker"
 echo ""
-echo "2. 克隆或更新代碼:"
-echo "   git clone your-repository.git dify"
+echo "2. 登入 Docker Hub (重要):"
+echo "   docker login"
+echo "   # 輸入用戶名: ${REGISTRY}"
+echo "   # 輸入密碼或 access token"
+echo ""
+echo "3. 克隆或更新代碼:"
+echo "   git clone https://github.com/andycywu/dify.git"
 echo "   # 或者如果已存在: cd dify && git pull origin main"
 echo ""
-echo "3. 部署應用:"
+echo "4. 部署應用:"
 echo "   cd dify/docker"
-echo "   docker-compose pull"
+echo "   docker-compose pull  # 現在支援 AMD64 平台"
 echo "   docker-compose up -d"
 echo ""
-echo "4. 檢查服務狀態:"
+echo "5. 檢查服務狀態:"
 echo "   docker-compose ps"
 echo "   docker-compose logs -f"
 echo ""

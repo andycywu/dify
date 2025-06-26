@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Dify 自定義 Images 構建和推送腳本
-# 使用方法: ./build-push-images.sh [registry-name]
+# 使用方法: ./build-push-images.sh [registry-name] [--multiplatform]
 
 set -e
 
@@ -10,10 +10,35 @@ if [ -f ".env.docker" ]; then
     source .env.docker
 fi
 
+# 解析參數
+MULTIPLATFORM=false
+for arg in "$@"; do
+    case $arg in
+        --multiplatform)
+            MULTIPLATFORM=true
+            shift
+            ;;
+        *)
+            if [ -z "$REGISTRY" ]; then
+                REGISTRY="$arg"
+            fi
+            ;;
+    esac
+done
+
 # 設置預設的 registry 名稱
 DEFAULT_REGISTRY="${DOCKER_REGISTRY:-your-registry}"
-REGISTRY="${1:-$DEFAULT_REGISTRY}"
+REGISTRY="${REGISTRY:-$DEFAULT_REGISTRY}"
 TAG="${IMAGE_TAG:-latest}"
+
+# 設置構建平台
+if [ "$MULTIPLATFORM" = true ]; then
+    PLATFORMS="linux/amd64,linux/arm64"
+    BUILD_TYPE="多平台"
+else
+    PLATFORMS="linux/amd64"  # EC2 使用的平台
+    BUILD_TYPE="單平台"
+fi
 
 # 顏色設置
 RED='\033[0;31m'
@@ -25,12 +50,32 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}=== Dify 自定義 Images 構建和推送腳本 ===${NC}"
 echo -e "${YELLOW}Registry: ${REGISTRY}${NC}"
 echo -e "${YELLOW}Tag: ${TAG}${NC}"
+echo -e "${YELLOW}構建類型: ${BUILD_TYPE}${NC}"
+echo -e "${YELLOW}平台: ${PLATFORMS}${NC}"
 echo ""
 
 # 檢查 Docker 是否運行
 if ! docker info > /dev/null 2>&1; then
     echo -e "${RED}錯誤: Docker 沒有運行，請啟動 Docker${NC}"
     exit 1
+fi
+
+# 檢查多平台構建支援
+if [ "$MULTIPLATFORM" = true ]; then
+    echo -e "${BLUE}檢查多平台構建支援...${NC}"
+    if ! docker buildx version > /dev/null 2>&1; then
+        echo -e "${YELLOW}安裝並設置 Docker buildx...${NC}"
+        docker buildx create --use --name multiarch || true
+        docker buildx use multiarch
+    else
+        # 確保使用支援多平台的 builder
+        if ! docker buildx ls | grep -q "multiarch"; then
+            docker buildx create --use --name multiarch
+        else
+            docker buildx use multiarch
+        fi
+    fi
+    echo -e "${GREEN}✓ 多平台構建環境已準備就緒${NC}"
 fi
 
 # 檢查 Registry 名稱
@@ -67,34 +112,54 @@ build_and_push() {
         return 1
     fi
     
-    # 構建
-    echo -e "${YELLOW}構建 ${image_name}...${NC}"
-    local build_args=""
-    if [ "${BUILD_NO_CACHE}" = "true" ]; then
-        build_args="--no-cache"
-    fi
+    echo -e "${YELLOW}Image: ${image_name}${NC}"
+    echo -e "${YELLOW}平台: ${PLATFORMS}${NC}"
     
-    if docker build ${build_args} -t "${image_name}" "${context}"; then
-        echo -e "${GREEN}✓ ${service} 構建成功${NC}"
+    # 根據構建類型選擇方法
+    if [ "$MULTIPLATFORM" = true ]; then
+        # 多平台構建
+        echo -e "${YELLOW}使用 buildx 進行多平台構建...${NC}"
+        local build_args="--platform ${PLATFORMS}"
+        if [ "${BUILD_NO_CACHE}" = "true" ]; then
+            build_args="${build_args} --no-cache"
+        fi
+        
+        if docker buildx build ${build_args} -t "${image_name}" --push "${context}"; then
+            echo -e "${GREEN}✓ ${service} 多平台構建和推送成功${NC}"
+        else
+            echo -e "${RED}✗ ${service} 多平台構建失敗${NC}"
+            return 1
+        fi
     else
-        echo -e "${RED}✗ ${service} 構建失敗${NC}"
-        return 1
-    fi
-    
-    # 推送
-    echo -e "${YELLOW}推送 ${image_name}...${NC}"
-    if docker push "${image_name}"; then
-        echo -e "${GREEN}✓ ${service} 推送成功${NC}"
-    else
-        echo -e "${RED}✗ ${service} 推送失敗${NC}"
-        return 1
+        # 單平台構建
+        echo -e "${YELLOW}構建 ${image_name}...${NC}"
+        local build_args=""
+        if [ "${BUILD_NO_CACHE}" = "true" ]; then
+            build_args="--no-cache"
+        fi
+        
+        if docker build ${build_args} -t "${image_name}" "${context}"; then
+            echo -e "${GREEN}✓ ${service} 構建成功${NC}"
+        else
+            echo -e "${RED}✗ ${service} 構建失敗${NC}"
+            return 1
+        fi
+        
+        # 推送
+        echo -e "${YELLOW}推送 ${image_name}...${NC}"
+        if docker push "${image_name}"; then
+            echo -e "${GREEN}✓ ${service} 推送成功${NC}"
+        else
+            echo -e "${RED}✗ ${service} 推送失敗${NC}"
+            return 1
+        fi
     fi
     
     echo -e "${GREEN}✅ ${service} 完成 - ${image_name}${NC}"
 }
 
 # 構建所有 images
-echo -e "\n${YELLOW}步驟 1: 構建和推送所有自定義 images${NC}"
+echo -e "\n${YELLOW}步驟 1: 構建和推送所有自定義 images (${BUILD_TYPE})${NC}"
 
 # 檢查服務目錄是否存在
 services_to_build=()
@@ -133,6 +198,8 @@ done
 echo ""
 if [ ${#failed_services[@]} -eq 0 ]; then
     echo -e "${GREEN}🎉 所有 images 構建和推送完成！${NC}"
+    echo -e "${BLUE}構建類型: ${BUILD_TYPE}${NC}"
+    echo -e "${BLUE}支援平台: ${PLATFORMS}${NC}"
 else
     echo -e "${RED}❌ 以下服務失敗: ${failed_services[*]}${NC}"
     exit 1
