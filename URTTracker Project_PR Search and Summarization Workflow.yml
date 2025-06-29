@@ -1,0 +1,628 @@
+app:
+  description: URT的項目搜尋以及問題點狀態整理！
+  icon: 🔍
+  icon_background: '#EFF1F5'
+  mode: workflow
+  name: URTTracker Project/PR Search and Summarization Workflow
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai:0.0.25@cb2db148209953cc5d96957eda18c57ef0aa95b8a369b5f9cfd2528597ee16de
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/jina_tool:0.0.7@08d5935b56b9ddaa633204874c0fd796c14971489b6379fad1a430b5ec99b569
+kind: app
+version: 0.3.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: iteration
+      id: 1713262060182-source-1716911333343-target
+      selected: false
+      source: '1713262060182'
+      sourceHandle: source
+      target: '1716911333343'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        iteration_id: '1716911333343'
+        sourceType: tool
+        targetType: llm
+      id: 1720758285748-source-1716959261724-target
+      selected: false
+      source: '1720758285748'
+      sourceHandle: source
+      target: '1716959261724'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    - data:
+        isInIteration: true
+        iteration_id: '1716911333343'
+        sourceType: llm
+        targetType: template-transform
+      id: 1716959261724-source-1720758555344-target
+      selected: false
+      source: '1716959261724'
+      sourceHandle: source
+      target: '1720758555344'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    - data:
+        isInIteration: false
+        sourceType: iteration
+        targetType: code
+      id: 1716911333343-source-1720759755103-target
+      selected: false
+      source: '1716911333343'
+      sourceHandle: source
+      target: '1720759755103'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: code
+        targetType: template-transform
+      id: 1720759755103-source-1720761482451-target
+      selected: false
+      source: '1720759755103'
+      sourceHandle: source
+      target: '1720761482451'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: template-transform
+        targetType: end
+      id: 1720761482451-source-1713262577750-target
+      selected: false
+      source: '1720761482451'
+      sourceHandle: source
+      target: '1713262577750'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1716911333343'
+        sourceType: iteration-start
+        targetType: tool
+      id: 1716911333343start0-source-1720758285748-target
+      selected: false
+      source: 1716911333343start0
+      sourceHandle: source
+      target: '1720758285748'
+      targetHandle: target
+      type: custom
+      zIndex: 1002
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: http-request
+      id: 1713261835258-source-1750655247707-target
+      selected: false
+      source: '1713261835258'
+      sourceHandle: source
+      target: '1750655247707'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: http-request
+        targetType: end
+      id: 1750655247707-source-1750655254986-target
+      selected: false
+      source: '1750655247707'
+      sourceHandle: source
+      target: '1750655254986'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: http-request
+        targetType: code
+      id: 1750655247707-source-1713262060182-target
+      source: '1750655247707'
+      sourceHandle: source
+      target: '1713262060182'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - label: 質問
+          max_length: 148
+          options: []
+          required: true
+          type: text-input
+          variable: Question
+      height: 90
+      id: '1713261835258'
+      position:
+        x: 30
+        y: 396
+      positionAbsolute:
+        x: 30
+        y: 396
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "import re\nimport time\ndef main(arg1) -> dict:\n    time.sleep(13)\n\
+          \    urls = re.findall(r'http[s]?://[^\\s)]+', arg1)\n    return {\n   \
+          \     \"result\": urls,\n    }"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: array[string]
+        selected: false
+        title: Code
+        type: code
+        variables:
+        - value_selector:
+          - '1750655247707'
+          - body
+          variable: arg1
+      height: 54
+      id: '1713262060182'
+      position:
+        x: 638
+        y: 396
+      positionAbsolute:
+        x: 638
+        y: 396
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1720761482451'
+          - output
+          variable: text
+        selected: false
+        title: End
+        type: end
+      height: 90
+      id: '1713262577750'
+      position:
+        x: 2726
+        y: 396
+      positionAbsolute:
+        x: 2726
+        y: 396
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        error_handle_mode: terminated
+        height: 392
+        is_parallel: false
+        iterator_selector:
+        - '1713262060182'
+        - result
+        output_selector:
+        - '1720758555344'
+        - output
+        output_type: array[string]
+        parallel_nums: 10
+        selected: false
+        startNodeType: tool
+        start_node_id: 1716911333343start0
+        title: Iteration
+        type: iteration
+        width: 1116
+      height: 392
+      id: '1716911333343'
+      position:
+        x: 942
+        y: 396
+      positionAbsolute:
+        x: 942
+        y: 396
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 1116
+      zIndex: 1
+    - data:
+        desc: ''
+        isInIteration: true
+        isIterationStart: true
+        iteration_id: '1716911333343'
+        provider_id: jina
+        provider_name: jina
+        provider_type: builtin
+        selected: false
+        title: JinaReader
+        tool_configurations:
+          gather_all_images_at_the_end: 0
+          gather_all_links_at_the_end: 0
+          image_caption: 0
+          no_cache: 0
+          proxy_server: null
+          summary: 0
+          target_selector: null
+          wait_for_selector: null
+        tool_label: JinaReader
+        tool_name: jina_reader
+        tool_parameters:
+          url:
+            type: mixed
+            value: '{{#1716911333343.item#}}'
+        type: tool
+      extent: parent
+      height: 272
+      id: '1720758285748'
+      parentId: '1716911333343'
+      position:
+        x: 204
+        y: 60
+      positionAbsolute:
+        x: 1146
+        y: 456
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1001
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1713262060182'
+          - result
+        desc: ''
+        isInIteration: true
+        iteration_id: '1716911333343'
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: gpt-4o
+          provider: langgenius/openai/openai
+        prompt_template:
+        - edition_type: basic
+          id: 1c7eeb97-1ebc-4579-b1ec-d0d649d57d2d
+          role: system
+          text: "```xml\n<instruction>\nTo extract insights, identify risk and distill\
+            \ key information from long reports into a single memo, follow these steps:\n\
+            \n1. Begin by thoroughly reading the entire report to understand its overall\
+            \ content, context, and purpose. \n\n2. Identify the key points and insights\
+            \ in the report. These could be significant findings, conclusions, or\
+            \ recommendations. Make sure to note any data or evidence that supports\
+            \ these key points.\n\n3. Look for any potential risks mentioned in the\
+            \ report. These could be challenges, threats, or obstacles that could\
+            \ hinder the achievement of the objectives outlined in the report. \n\n\
+            4. Distill the identified key points and risks into a concise and clear\
+            \ memo. The memo should provide a summary of the report, highlighting\
+            \ the main insights and risks. \n\n5. Ensure that the memo is written\
+            \ in a professional and formal tone, and is easy to understand. Avoid\
+            \ using jargon or technical terms without providing an explanation.\n\n\
+            6. Finally, proofread the memo for any grammatical errors or inconsistencies.\
+            \ \n\nRemember, the output should not contain any XML tags.\n</instruction>\n\
+            \n<example>\nExample 1:\nInput: A 50-page report on the company's financial\
+            \ performance for the last fiscal year.\nOutput: A one-page memo summarizing\
+            \ the key findings of the report, including the company's revenue growth,\
+            \ profit margins, and any potential financial risks.\n\nExample 2:\nInput:\
+            \ A 100-page report on a new product development project.\nOutput: A one-page\
+            \ memo summarizing the key insights from the report, including the project's\
+            \ objectives, progress, challenges, and any potential risks.\n\nExample\
+            \ 3:\nInput: A 200-page report on the company's market research for a\
+            \ new product launch.\nOutput: A one-page memo summarizing the key findings\
+            \ of the report, including the target market, consumer behavior, competition,\
+            \ and any potential market risks.\n</example>\n```"
+        selected: false
+        title: LLM 2
+        type: llm
+        variables: []
+        vision:
+          configs:
+            detail: high
+          enabled: false
+      extent: parent
+      height: 90
+      id: '1716959261724'
+      parentId: '1716911333343'
+      position:
+        x: 508
+        y: 151
+      positionAbsolute:
+        x: 1450
+        y: 547
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        desc: ''
+        isInIteration: true
+        iteration_id: '1716911333343'
+        selected: false
+        template: '{{ arg1 }}\SP{{ text }}'
+        title: Combine URL and Summary
+        type: template-transform
+        variables:
+        - value_selector:
+          - '1716911333343'
+          - item
+          variable: arg1
+        - value_selector:
+          - '1716959261724'
+          - text
+          variable: text
+      extent: parent
+      height: 54
+      id: '1720758555344'
+      parentId: '1716911333343'
+      position:
+        x: 812
+        y: 169
+      positionAbsolute:
+        x: 1754
+        y: 565
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+      zIndex: 1002
+    - data:
+        code: "import time\ndef main(arg1) -> dict:\n    time.sleep(13)\n    result\
+          \ = []\n    for item in arg1:\n        url, text = item.split('\\\\SP')\n\
+          \        text = text.replace('\\n', ' ')\n        result.append({'url':url,\
+          \ 'text':text})\n    return {\n        \"result\": result,\n    }\n"
+        code_language: python3
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: array[object]
+        selected: false
+        title: Split URL and Text Summary
+        type: code
+        variables:
+        - value_selector:
+          - '1716911333343'
+          - output
+          variable: arg1
+      height: 54
+      id: '1720759755103'
+      position:
+        x: 2118
+        y: 396
+      positionAbsolute:
+        x: 2118
+        y: 396
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        selected: false
+        template: '|URL|Summary|
+
+          |---|---|
+
+          {% for data in arg1 -%}
+
+          |{{data.url}}|{{data.text}}|
+
+          {% endfor -%}'
+        title: Result in Table
+        type: template-transform
+        variables:
+        - value_selector:
+          - '1720759755103'
+          - result
+          variable: arg1
+      height: 54
+      id: '1720761482451'
+      position:
+        x: 2422
+        y: 396
+      positionAbsolute:
+        x: 2422
+        y: 396
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 1716911333343start0
+      parentId: '1716911333343'
+      position:
+        x: 60
+        y: 172
+      positionAbsolute:
+        x: 1002
+        y: 568
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1002
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-986
+            key: ''
+            type: text
+            value: "{\n  \"issueID\": 1483359,\n  \"includeFields\": true,\n  \"includeAttachments\"\
+              : false,\n  \"includeRecords\": false\n}"
+          type: raw-text
+        desc: ''
+        headers: Content-Type:application/json
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+        title: HTTP 請求
+        type: http-request
+        url: http://rest-to-soap-proxy:5001/GetIssueInfo
+        variables: []
+      height: 139
+      id: '1750655247707'
+      position:
+        x: 334
+        y: 396
+      positionAbsolute:
+        x: 334
+        y: 396
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1750655247707'
+          - body
+          variable: Json (Result)
+        selected: false
+        title: 結束 2
+        type: end
+      height: 90
+      id: '1750655254986'
+      position:
+        x: 638
+        y: 490
+      positionAbsolute:
+        x: 638
+        y: 490
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        author: andycy.wu
+        desc: ''
+        height: 229
+        selected: false
+        showAuthor: true
+        text: '{"root":{"children":[{"children":[{"detail":0,"format":0,"mode":"normal","style":"","text":"URT的抓取","type":"text","version":1}],"direction":"ltr","format":"","indent":0,"type":"paragraph","version":1,"textFormat":0,"textStyle":""}],"direction":"ltr","format":"","indent":0,"type":"root","version":1}}'
+        theme: blue
+        title: ''
+        type: ''
+        width: 313
+      height: 229
+      id: '1750828190732'
+      position:
+        x: -1.513178620985859
+        y: 127.05413002081113
+      positionAbsolute:
+        x: -1.513178620985859
+        y: 127.05413002081113
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom-note
+      width: 313
+    viewport:
+      x: 320.9657868356103
+      y: 144.90765275016133
+      zoom: 0.6382503838053588

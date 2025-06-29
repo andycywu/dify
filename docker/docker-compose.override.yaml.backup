@@ -1,0 +1,11 @@
+services:
+  dify-next-frontend:
+    volumes:
+      - ../dify-next-frontend/.babelrc.js:/.babelrc.js
+      - ../dify-next-frontend/src:/app/src
+      - ../dify-next-frontend/public:/app/public
+    environment:
+      - NODE_ENV=development
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=KSrmLtXxPgLedlTmgB8tHEHFxbZKcTQMAoM5cchx6X0=
+      - NEXT_PUBLIC_API_URL=http://api:5001

@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 RUN \
   if [ -f package-lock.json ]; then npm ci --only=production; \
   else echo "Lockfile not found." && exit 1; \
@@ -20,6 +21,9 @@ COPY . .
 # You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
 # https://nextjs.org/telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Generate Prisma client for the target platform
+RUN npx prisma generate
 
 # Build the application
 ENV NODE_ENV=production
@@ -39,6 +43,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.js ./next.config.js
 COPY --from=builder /app/next-i18next.config.js ./next-i18next.config.js
+COPY --from=builder /app/prisma ./prisma
 
 # Copy i18n files (fix path)
 COPY --from=builder /app/locales ./locales

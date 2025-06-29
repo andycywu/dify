@@ -1,0 +1,25 @@
+# Docker Compose 覆蓋文件，用於開發環境
+# 確保 Prisma 在開發中正常工作
+
+services:
+  dify-next-frontend:
+    build:
+      context: ./dify-next-frontend
+      dockerfile: Dockerfile
+      args:
+        # 確保建構時生成正確的 Prisma 客戶端
+        NODE_ENV: production
+    environment:
+      # 開發環境變數
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=file:./dev.db
+    volumes:
+      # 開發時掛載，避免重複建構
+      - ./dify-next-frontend/prisma:/app/prisma:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped

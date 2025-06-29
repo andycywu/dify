@@ -1,0 +1,1662 @@
+app:
+  description: Test Guru
+  icon: face_with_monocle
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 'Question Classifier + Knowledge + Chatbot '
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/jina:0.0.6@3ac399c96509b3bfe3124f9cdfa13999cb2f7d7ff00a99cc8d3ac4f4d82ffe6c
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai:0.0.25@cb2db148209953cc5d96957eda18c57ef0aa95b8a369b5f9cfd2528597ee16de
+kind: app
+version: 0.3.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: TPV OBM品牌測試標準機器人，我能夠協助你提供測試標準的Q&A以及測試SOP的Q&A, 未來可以協助你進行測試計劃安排！
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: true
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: question-classifier
+        targetType: knowledge-retrieval
+      id: 1711528709608-1711528768556
+      source: '1711528709608'
+      sourceHandle: '1711528736036'
+      target: '1711528768556'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: question-classifier
+        targetType: knowledge-retrieval
+      id: 1711528709608-1711528770201
+      source: '1711528709608'
+      sourceHandle: '1711528736549'
+      target: '1711528770201'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1711528768556-1711528802931
+      source: '1711528768556'
+      sourceHandle: source
+      target: '1711528802931'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1711528770201-1711528815414
+      source: '1711528770201'
+      sourceHandle: source
+      target: '1711528815414'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: 1711528802931-1711528833796
+      source: '1711528802931'
+      sourceHandle: source
+      target: '1711528833796'
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: 1711528815414-1711528835179
+      source: '1711528815414'
+      sourceHandle: source
+      target: '1711528835179'
+      targetHandle: target
+      type: custom
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 17490026160860-source-17490026677340-target
+      source: '17490026160860'
+      sourceHandle: source
+      target: '17490026677340'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 17490026677340-source-17490026790230-target
+      source: '17490026677340'
+      sourceHandle: source
+      target: '17490026790230'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: question-classifier
+      id: 1711528708197-source-17490284600480-target
+      source: '1711528708197'
+      sourceHandle: source
+      target: '17490284600480'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1711528736036-1711528709608-target
+      source: '17490284600480'
+      sourceHandle: '1711528736036'
+      target: '1711528709608'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: knowledge-retrieval
+      id: 17490284600480-1749028811699-17490026160860-target
+      selected: false
+      source: '17490284600480'
+      sourceHandle: '1749028811699'
+      target: '17490026160860'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1711528736549-17490288436150-target
+      source: '17490284600480'
+      sourceHandle: '1711528736549'
+      target: '17490288436150'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 17490288436150-1711528736549-17490288712130-target
+      source: '17490288436150'
+      sourceHandle: '1711528736549'
+      target: '17490288712130'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 17490288436150-1711528737066-17490288712130-target
+      source: '17490288436150'
+      sourceHandle: '1711528737066'
+      target: '17490288712130'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 17490289067090-source-17490289107210-target
+      selected: false
+      source: '17490289067090'
+      sourceHandle: source
+      target: '17490289107210'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: knowledge-retrieval
+      id: 17490288436150-1711528736036-17490289254750-target
+      source: '17490288436150'
+      sourceHandle: '1711528736036'
+      target: '17490289254750'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 17490289254750-source-17490289067090-target
+      selected: false
+      source: '17490289254750'
+      sourceHandle: source
+      target: '17490289067090'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 17490290125960-source-17490290167700-target
+      source: '17490290125960'
+      sourceHandle: source
+      target: '17490290167700'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: knowledge-retrieval
+      id: 17490289983490-1711528736036-17490290125960-target
+      source: '17490289983490'
+      sourceHandle: '1711528736036'
+      target: '17490290125960'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 17490289983490-1711528736549-17490288712130-target
+      source: '17490289983490'
+      sourceHandle: '1711528736549'
+      target: '17490288712130'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 17490289983490-1711528737066-17490288712130-target
+      source: '17490289983490'
+      sourceHandle: '1711528737066'
+      target: '17490288712130'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1711528737066-17490289983490-target
+      source: '17490284600480'
+      sourceHandle: '1711528737066'
+      target: '17490289983490'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1749028624230-17490290047070-target
+      source: '17490284600480'
+      sourceHandle: '1749028624230'
+      target: '17490290047070'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1749028642492-17490290047070-target
+      source: '17490284600480'
+      sourceHandle: '1749028642492'
+      target: '17490290047070'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1749028676592-17490290047070-target
+      source: '17490284600480'
+      sourceHandle: '1749028676592'
+      target: '17490290047070'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1749028711524-17490290047070-target
+      source: '17490284600480'
+      sourceHandle: '1749028711524'
+      target: '17490290047070'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1749028726822-17490290047070-target
+      source: '17490284600480'
+      sourceHandle: '1749028726822'
+      target: '17490290047070'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1749028520646-17490289983490-target
+      source: '17490284600480'
+      sourceHandle: '1749028520646'
+      target: '17490289983490'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1749028521447-17490289983490-target
+      source: '17490284600480'
+      sourceHandle: '1749028521447'
+      target: '17490289983490'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: question-classifier
+      id: 17490284600480-1749028522457-17490289983490-target
+      source: '17490284600480'
+      sourceHandle: '1749028522457'
+      target: '17490289983490'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: knowledge-retrieval
+      id: 17490290047070-1711528736036-17490290246250-target
+      source: '17490290047070'
+      sourceHandle: '1711528736036'
+      target: '17490290246250'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 17490290246250-source-17490290287200-target
+      source: '17490290246250'
+      sourceHandle: source
+      target: '17490290287200'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 17490290287200-source-17490290311840-target
+      source: '17490290287200'
+      sourceHandle: source
+      target: '17490290311840'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 17490290167700-source-17490290212180-target
+      source: '17490290167700'
+      sourceHandle: source
+      target: '17490290212180'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 17490290047070-1711528736549-17490288712130-target
+      source: '17490290047070'
+      sourceHandle: '1711528736549'
+      target: '17490288712130'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 17490290047070-1711528737066-17490288712130-target
+      source: '17490290047070'
+      sourceHandle: '1711528737066'
+      target: '17490288712130'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: knowledge-retrieval
+      id: 1711528709608-1711528737066-17490331743460-target
+      source: '1711528709608'
+      sourceHandle: '1711528737066'
+      target: '17490331743460'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 17490331743460-source-17490331793530-target
+      source: '17490331743460'
+      sourceHandle: source
+      target: '17490331793530'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 17490331793530-source-17490331831300-target
+      source: '17490331793530'
+      sourceHandle: source
+      target: '17490331831300'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: Define the initial parameters for launching a workflow
+        selected: false
+        title: Start
+        type: start
+        variables: []
+      height: 98
+      id: '1711528708197'
+      position:
+        x: 30
+        y: 594
+      positionAbsolute:
+        x: 30
+        y: 594
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        classes:
+        - id: '1711528736036'
+          name: Question related to Test Standard
+        - id: '1711528736549'
+          name: Qustions related to Test SOP
+        - id: '1711528737066'
+          name: Question related to Change Test
+        desc: 'Define the classification conditions of user questions, LLM can define
+          how the conversation progresses based on the classification description. '
+        instructions: ''
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        selected: false
+        title: Question Classifier TV
+        topics: []
+        type: question-classifier
+      height: 286
+      id: '1711528709608'
+      position:
+        x: 638
+        y: 594
+      positionAbsolute:
+        x: 638
+        y: 594
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - j+OHeFjfSYO0P5kZUUAygxyZ6EBqdDtz53GSKnrg+eZs09oIdQjc094jI/1deyC+
+        desc: Retrieve knowledge on TEST STD
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: jina-reranker-v2-base-multilingual
+            provider: langgenius/jina/jina
+          top_k: 4
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params: {}
+            mode: chat
+            name: gpt-3.5-turbo
+            provider: openai
+        title: 'Knowledge Retrieval '
+        type: knowledge-retrieval
+      dragging: false
+      height: 120
+      id: '1711528768556'
+      position:
+        x: 942
+        y: 594
+      positionAbsolute:
+        x: 942
+        y: 594
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - FnOndU0Qe/WhJEhffFRyqP2VlfqnW7lZsqEkOigoA2qFX/H1A94PcegWwhDTOxqp
+        - byVKqlcqreNJ34zgix6D0/lF1kEdJ1nzleKwCaXNR7tftik3cpSVbf9UvBodd+Pc
+        desc: Retrieval knowledge on TEST SOP
+        metadata_filtering_mode: disabled
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: jina-reranker-v2-base-multilingual
+            provider: langgenius/jina/jina
+          top_k: 4
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params: {}
+            mode: chat
+            name: gpt-3.5-turbo
+            provider: openai
+        title: 'Knowledge Retrieval '
+        type: knowledge-retrieval
+      dragging: false
+      height: 120
+      id: '1711528770201'
+      position:
+        x: 942
+        y: 754
+      positionAbsolute:
+        x: 942
+        y: 754
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1711528768556'
+          - result
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}/'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: f8719fa7-1123-4995-91c6-217d6dab2d81
+          role: system
+          text: 'Use the following context as your learned knowledge, inside <context></context>
+            XML tags.
+
+            <context>
+
+            {{#context#}}
+
+            </context>
+
+            When answer to user:
+
+            - If you don''t know, just say that you don''t know.
+
+            - If you don''t know when you are not sure, ask for clarification.
+
+            Avoid mentioning that you obtained the information from the context.
+
+            And answer according to the language of the user''s question.'
+        selected: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      dragging: false
+      height: 90
+      id: '1711528802931'
+      position:
+        x: 1246
+        y: 594
+      positionAbsolute:
+        x: 1246
+        y: 594
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1711528770201'
+          - result
+        desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: db3f11c7-5492-4807-b7da-e4f9d7e90b9f
+          role: system
+          text: 'Use the following context as your learned knowledge, inside <context></context>
+            XML tags.
+
+            <context>
+
+            {{#context#}}
+
+            </context>
+
+            When answer to user:
+
+            - If you don''t know, just say that you don''t know.
+
+            - If you don''t know when you are not sure, ask for clarification.
+
+            Avoid mentioning that you obtained the information from the context.
+
+            And answer according to the language of the user''s question.'
+        selected: false
+        title: 'LLM '
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      dragging: false
+      height: 90
+      id: '1711528815414'
+      position:
+        x: 1246
+        y: 754
+      positionAbsolute:
+        x: 1246
+        y: 754
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1711528802931.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 2
+        type: answer
+        variables:
+        - value_selector:
+          - '1711528802931'
+          - text
+          variable: text
+      dragging: false
+      height: 105
+      id: '1711528833796'
+      position:
+        x: 1550
+        y: 594
+      positionAbsolute:
+        x: 1550
+        y: 594
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1711528815414.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 3
+        type: answer
+        variables:
+        - value_selector:
+          - '1711528815414'
+          - text
+          variable: text
+      dragging: false
+      height: 105
+      id: '1711528835179'
+      position:
+        x: 1550
+        y: 754
+      positionAbsolute:
+        x: 1550
+        y: 754
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - pljMWD6rZRHCH1T2NIbbEvsCWvOZWBlngilmYEwFwxhy8Fhu9k6jyyjvYRYZeHML
+        - SswtBsrExBXSJM0yPxf5TOrMpURvLlY/CKfijTtH4OmOfCa7BrlEWHf/y+Td3pfm
+        desc: Retrieve knowledge on TPV-tech.com
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: reranking_model
+          reranking_model:
+            model: jina-reranker-v2-base-multilingual
+            provider: langgenius/jina/jina
+          score_threshold: null
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0
+            vector_setting:
+              embedding_model_name: text-embedding-3-large
+              embedding_provider_name: langgenius/openai/openai
+              vector_weight: 1
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params: {}
+            mode: chat
+            name: gpt-3.5-turbo
+            provider: openai
+        title: Knowledge Retrieval  (1)
+        type: knowledge-retrieval
+      height: 120
+      id: '17490026160860'
+      position:
+        x: 638
+        y: 1142
+      positionAbsolute:
+        x: 638
+        y: 1142
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '17490026160860'
+          - result
+        desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: db3f11c7-5492-4807-b7da-e4f9d7e90b9f
+          role: system
+          text: 'Use the following context as your learned knowledge, inside <context></context>
+            XML tags.
+
+            <context>
+
+            {{#context#}}
+
+            </context>
+
+            When answer to user:
+
+            - If you don''t know, just say that you don''t know.
+
+            - If you don''t know when you are not sure, ask for clarification.
+
+            Avoid mentioning that you obtained the information from the context.
+
+            And answer according to the language of the user''s question.'
+        selected: false
+        title: LLM  (1)
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '17490026677340'
+      position:
+        x: 942
+        y: 1074
+      positionAbsolute:
+        x: 942
+        y: 1074
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#17490026677340.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 3 (1)
+        type: answer
+        variables:
+        - value_selector:
+          - '1711528815414'
+          - text
+          variable: text
+      height: 105
+      id: '17490026790230'
+      position:
+        x: 1246
+        y: 1051.5
+      positionAbsolute:
+        x: 1246
+        y: 1051.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        classes:
+        - id: '1711528736036'
+          name: Question related to TV Test related
+        - id: '1711528736549'
+          name: Qustions related to MNT Test related
+        - id: '1711528737066'
+          name: Qustions related to Signate Test related
+        - id: '1749028520646'
+          name: Qustions related to IWB Test related
+        - id: '1749028521447'
+          name: Qustions related to RGB LED Test related
+        - id: '1749028522457'
+          name: Qustions related to EPD Test related
+        - id: '1749028624230'
+          name: Qustions related to Soundbar Test related
+        - id: '1749028642492'
+          name: Qustions related to CD & Micro System Test related
+        - id: '1749028676592'
+          name: Qustions related to Party & BT Speaker Test related
+        - id: '1749028711524'
+          name: Qustions related to Headband Test related
+        - id: '1749028726822'
+          name: Qustions related to TWS Test related
+        - id: '1749028811699'
+          name: Qustions related to TPV Test related or others
+        desc: 'Define the classification conditions of user questions, LLM can define
+          how the conversation progresses based on the classification description. '
+        instructions: ''
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        selected: false
+        title: Question Classifier (1)
+        topics: []
+        type: question-classifier
+        vision:
+          enabled: false
+      height: 788
+      id: '17490284600480'
+      position:
+        x: 334
+        y: 594
+      positionAbsolute:
+        x: 334
+        y: 594
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        classes:
+        - id: '1711528736036'
+          name: Question related to Test Standard
+        - id: '1711528736549'
+          name: Qustions related to Test SOP
+        - id: '1711528737066'
+          name: Question related to Test Plan
+        desc: 'Define the classification conditions of user questions, LLM can define
+          how the conversation progresses based on the classification description. '
+        instructions: ''
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        selected: false
+        title: Question Classifier MNT
+        topics: []
+        type: question-classifier
+        vision:
+          enabled: false
+      height: 286
+      id: '17490288436150'
+      position:
+        x: 638
+        y: 1302
+      positionAbsolute:
+        x: 638
+        y: 1302
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: Sorry, this is still under development
+        desc: ''
+        selected: false
+        title: Answer (1)
+        type: answer
+        variables: []
+      height: 118
+      id: '17490288712130'
+      position:
+        x: 942
+        y: 1816
+      positionAbsolute:
+        x: 942
+        y: 1816
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '17490289254750'
+          - result
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}/'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: f8719fa7-1123-4995-91c6-217d6dab2d81
+          role: system
+          text: 'Use the following context as your learned knowledge, inside <context></context>
+            XML tags.
+
+            <context>
+
+            {{#context#}}
+
+            </context>
+
+            When answer to user:
+
+            - If you don''t know, just say that you don''t know.
+
+            - If you don''t know when you are not sure, ask for clarification.
+
+            Avoid mentioning that you obtained the information from the context.
+
+            And answer according to the language of the user''s question.'
+        selected: false
+        title: LLM (1)
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '17490289067090'
+      position:
+        x: 1246
+        y: 1440
+      positionAbsolute:
+        x: 1246
+        y: 1440
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#17490289067090.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 2 (1)
+        type: answer
+        variables:
+        - value_selector:
+          - '1711528802931'
+          - text
+          variable: text
+      height: 105
+      id: '17490289107210'
+      position:
+        x: 1550
+        y: 1440
+      positionAbsolute:
+        x: 1550
+        y: 1440
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - 51asgDdonGW8mod6L8jdbB5e9k9HJhVajqvgvnDf3ObTixceSyCtO+Rc51hroBqB
+        desc: Retrieve knowledge on TEST STD
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: jina-reranker-v2-base-multilingual
+            provider: langgenius/jina/jina
+          top_k: 4
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params: {}
+            mode: chat
+            name: gpt-3.5-turbo
+            provider: openai
+        title: Knowledge Retrieval  (1)
+        type: knowledge-retrieval
+      height: 120
+      id: '17490289254750'
+      position:
+        x: 942
+        y: 1440
+      positionAbsolute:
+        x: 942
+        y: 1440
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        classes:
+        - id: '1711528736036'
+          name: Question related to Test Standard
+        - id: '1711528736549'
+          name: Qustions related to Test SOP
+        - id: '1711528737066'
+          name: Question related to Test Plan
+        desc: 'Define the classification conditions of user questions, LLM can define
+          how the conversation progresses based on the classification description. '
+        instructions: ''
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        selected: false
+        title: Question Classifier MNT (1)
+        topics: []
+        type: question-classifier
+        vision:
+          enabled: false
+      height: 286
+      id: '17490289983490'
+      position:
+        x: 638
+        y: 1628
+      positionAbsolute:
+        x: 638
+        y: 1628
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        classes:
+        - id: '1711528736036'
+          name: Question related to Test Standard
+        - id: '1711528736549'
+          name: Qustions related to Test SOP
+        - id: '1711528737066'
+          name: Question related to Test Plan
+        desc: 'Define the classification conditions of user questions, LLM can define
+          how the conversation progresses based on the classification description. '
+        instructions: ''
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        selected: false
+        title: Question Classifier MNT (2)
+        topics: []
+        type: question-classifier
+        vision:
+          enabled: false
+      height: 286
+      id: '17490290047070'
+      position:
+        x: 638
+        y: 2002
+      positionAbsolute:
+        x: 638
+        y: 2002
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - 5KHIaprqHyAQrBKnpzcxt8Qq6m4Ut6HxT8vhrq6aIJZIz0iInmm3moYAwi4lRv+o
+        - FwN9RHtp/TXIfyO9DSzuH6vl9aGigDd2Mi1Q9DybgIVOcnHs5iPZ0Pay1j7cJfyo
+        - FcXl8Hg4wN+9KVAlR44t/MhBrS1eQ/yk6V4fbYv8BUQM5usThS3Vj0x30W/q/jqq
+        desc: Retrieve knowledge on TEST STD
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: jina-reranker-v2-base-multilingual
+            provider: langgenius/jina/jina
+          top_k: 4
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params: {}
+            mode: chat
+            name: gpt-3.5-turbo
+            provider: openai
+        title: Knowledge Retrieval (2)
+        type: knowledge-retrieval
+      height: 176
+      id: '17490290125960'
+      position:
+        x: 942
+        y: 1600
+      positionAbsolute:
+        x: 942
+        y: 1600
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '17490289254750'
+          - result
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}/'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: f8719fa7-1123-4995-91c6-217d6dab2d81
+          role: system
+          text: 'Use the following context as your learned knowledge, inside <context></context>
+            XML tags.
+
+            <context>
+
+            {{#context#}}
+
+            </context>
+
+            When answer to user:
+
+            - If you don''t know, just say that you don''t know.
+
+            - If you don''t know when you are not sure, ask for clarification.
+
+            Avoid mentioning that you obtained the information from the context.
+
+            And answer according to the language of the user''s question.'
+        selected: false
+        title: LLM (2)
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '17490290167700'
+      position:
+        x: 1246
+        y: 1628
+      positionAbsolute:
+        x: 1246
+        y: 1628
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#17490289067090.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 2 (2)
+        type: answer
+        variables:
+        - value_selector:
+          - '1711528802931'
+          - text
+          variable: text
+      height: 105
+      id: '17490290212180'
+      position:
+        x: 1550
+        y: 1628
+      positionAbsolute:
+        x: 1550
+        y: 1628
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - WXXoOwOW/Eu3Ude8cbmn1+/0Ij/3KV5Hmzkw7Oo1n7LsLO+rK3ZHZYKThpvlSBYG
+        - Tdi5Lf7NgHne2/B9r5wPGtgtqNswI4wuJmVzCZge5B2984bcAd/z2l1WaevYHM0i
+        - Pf0HIhH4hQl7JtbWVdfV82sKgGjKuprHP8+2rPAVS//hzSk3TYU23V8Zrt78iKSE
+        desc: Retrieve knowledge on TEST STD
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: jina-reranker-v2-base-multilingual
+            provider: langgenius/jina/jina
+          top_k: 4
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params: {}
+            mode: chat
+            name: gpt-3.5-turbo
+            provider: openai
+        title: Knowledge Retrieval (3)
+        type: knowledge-retrieval
+      height: 176
+      id: '17490290246250'
+      position:
+        x: 942
+        y: 1974
+      positionAbsolute:
+        x: 942
+        y: 1974
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '17490289254750'
+          - result
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}/'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: f8719fa7-1123-4995-91c6-217d6dab2d81
+          role: system
+          text: 'Use the following context as your learned knowledge, inside <context></context>
+            XML tags.
+
+            <context>
+
+            {{#context#}}
+
+            </context>
+
+            When answer to user:
+
+            - If you don''t know, just say that you don''t know.
+
+            - If you don''t know when you are not sure, ask for clarification.
+
+            Avoid mentioning that you obtained the information from the context.
+
+            And answer according to the language of the user''s question.'
+        selected: false
+        title: LLM (3)
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '17490290287200'
+      position:
+        x: 1246
+        y: 2002
+      positionAbsolute:
+        x: 1246
+        y: 2002
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#17490289067090.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 2 (3)
+        type: answer
+        variables:
+        - value_selector:
+          - '1711528802931'
+          - text
+          variable: text
+      height: 105
+      id: '17490290311840'
+      position:
+        x: 1550
+        y: 2002
+      positionAbsolute:
+        x: 1550
+        y: 2002
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - EExRYdUwLxwT8vn+aLKRiY0a//XIvvobxN8G7uxwhuHM1oirNoMuo6BrC5HXB120
+        desc: Retrieval knowledge on TEST SOP
+        metadata_filtering_mode: disabled
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: jina-reranker-v2-base-multilingual
+            provider: langgenius/jina/jina
+          top_k: 4
+        query_variable_selector:
+        - '1711528708197'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params: {}
+            mode: chat
+            name: gpt-3.5-turbo
+            provider: openai
+        title: Knowledge Retrieval  (1)
+        type: knowledge-retrieval
+      height: 120
+      id: '17490331743460'
+      position:
+        x: 942
+        y: 914
+      positionAbsolute:
+        x: 942
+        y: 914
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '17490331743460'
+          - result
+        desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: gpt-3.5-turbo
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: db3f11c7-5492-4807-b7da-e4f9d7e90b9f
+          role: system
+          text: 'Use the following context as your learned knowledge, inside <context></context>
+            XML tags.
+
+            <context>
+
+            {{#context#}}
+
+            </context>
+
+            When answer to user:
+
+            - If you don''t know, just say that you don''t know.
+
+            - If you don''t know when you are not sure, ask for clarification.
+
+            Avoid mentioning that you obtained the information from the context.
+
+            And answer according to the language of the user''s question.'
+        selected: false
+        title: LLM  (1)
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '17490331793530'
+      position:
+        x: 1246
+        y: 914
+      positionAbsolute:
+        x: 1246
+        y: 914
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#17490331793530.text#}}'
+        desc: ''
+        selected: false
+        title: Answer 3 (1)
+        type: answer
+        variables:
+        - value_selector:
+          - '1711528815414'
+          - text
+          variable: text
+      height: 105
+      id: '17490331831300'
+      position:
+        x: 1550
+        y: 914
+      positionAbsolute:
+        x: 1550
+        y: 914
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 415.1174972464621
+      y: -441.79061723739096
+      zoom: 0.5375595131501141
