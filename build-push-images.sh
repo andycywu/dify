@@ -35,6 +35,8 @@ TAG="${IMAGE_TAG:-latest}"
 if [ "$MULTIPLATFORM" = true ]; then
     PLATFORMS="linux/amd64,linux/arm64"
     BUILD_TYPE="多平台"
+    echo -e "${YELLOW}⚠️  注意：多平台構建需要更長時間，特別是對於 Node.js 應用${NC}"
+    echo -e "${YELLOW}⚠️  如果只需要在 AWS EC2 (AMD64) 上部署，建議使用單平台構建${NC}"
 else
     PLATFORMS="linux/amd64"  # EC2 使用的平台
     BUILD_TYPE="單平台"
@@ -102,7 +104,18 @@ fi
 build_and_push() {
     local service=$1
     local context=$2
-    local image_name="${REGISTRY}/dify-${service}:${TAG}"
+    
+    # 設置 image 名稱（rest-to-soap-proxy 不加 dify- 前綴）
+    local image_name
+    echo -e "${BLUE}Debug: service = ${service}${NC}"  # 調試信息
+    
+    if [ "$service" = "rest-to-soap-proxy" ]; then
+        image_name="${REGISTRY}/${service}:${TAG}"
+        echo -e "${BLUE}使用原始名稱: ${image_name}${NC}"
+    else
+        image_name="${REGISTRY}/dify-${service}:${TAG}"
+        echo -e "${BLUE}使用 dify- 前綴: ${image_name}${NC}"
+    fi
     
     echo -e "\n${BLUE}=== 處理 ${service} ===${NC}"
     
@@ -110,6 +123,47 @@ build_and_push() {
     if [ ! -f "${context}/Dockerfile" ]; then
         echo -e "${RED}✗ 找不到 ${context}/Dockerfile${NC}"
         return 1
+    fi
+    
+    # 特殊檢查 next-frontend 的常見問題
+    if [ "$service" = "next-frontend" ]; then
+        echo -e "${YELLOW}檢查 Next.js 前端構建環境...${NC}"
+        
+        # 檢查是否有錯誤的 .babelrc.js 目錄
+        if [ -d "${context}/.babelrc.js" ]; then
+            echo -e "${YELLOW}發現錯誤的 .babelrc.js 目錄，正在刪除...${NC}"
+            rm -rf "${context}/.babelrc.js"
+        fi
+        
+        # 如果有 .babelrc.js 檔案，建議移除以使用 SWC
+        if [ -f "${context}/.babelrc.js" ]; then
+            echo -e "${YELLOW}建議移除 .babelrc.js 以使用 Next.js 15 的 SWC...${NC}"
+            mv "${context}/.babelrc.js" "${context}/.babelrc.js.backup"
+            echo -e "${GREEN}✓ .babelrc.js 已備份，使用 SWC 構建${NC}"
+        fi
+        
+        # 檢查和修復 Dockerfile 問題
+        if [ -f "${context}/Dockerfile" ]; then
+            # 修復 locales 路徑
+            if grep -q "/app/src/lib/locales" "${context}/Dockerfile"; then
+                echo -e "${YELLOW}修復 Dockerfile 中的 locales 路徑...${NC}"
+                sed -i.bak 's|/app/src/lib/locales|/app/locales|g' "${context}/Dockerfile"
+                echo -e "${GREEN}✓ 已修復 locales 路徑${NC}"
+            fi
+            
+            # 修復 ENV 格式
+            if grep -q "ENV NEXT_TELEMETRY_DISABLED 1" "${context}/Dockerfile"; then
+                echo -e "${YELLOW}修復 ENV 格式...${NC}"
+                sed -i.bak 's|ENV NEXT_TELEMETRY_DISABLED 1|ENV NEXT_TELEMETRY_DISABLED=1|g' "${context}/Dockerfile"
+                echo -e "${GREEN}✓ 已修復 ENV 格式${NC}"
+            fi
+        fi
+        
+        # 檢查 package.json 是否存在
+        if [ ! -f "${context}/package.json" ]; then
+            echo -e "${RED}✗ 找不到 package.json${NC}"
+            return 1
+        fi
     fi
     
     echo -e "${YELLOW}Image: ${image_name}${NC}"
@@ -128,6 +182,15 @@ build_and_push() {
             echo -e "${GREEN}✓ ${service} 多平台構建和推送成功${NC}"
         else
             echo -e "${RED}✗ ${service} 多平台構建失敗${NC}"
+            
+            # 提供建議
+            if [ "$service" = "next-frontend" ]; then
+                echo -e "${YELLOW}建議:${NC}"
+                echo "1. 檢查 .babelrc.js 檔案是否正確"
+                echo "2. 嘗試先在本地運行 'npm run build' 確認無誤"
+                echo "3. 考慮使用單平台構建 (不加 --multiplatform 參數)"
+                echo "4. 檢查 Node.js 版本兼容性"
+            fi
             return 1
         fi
     else
@@ -142,6 +205,15 @@ build_and_push() {
             echo -e "${GREEN}✓ ${service} 構建成功${NC}"
         else
             echo -e "${RED}✗ ${service} 構建失敗${NC}"
+            
+            # 提供建議
+            if [ "$service" = "next-frontend" ]; then
+                echo -e "${YELLOW}建議:${NC}"
+                echo "1. 檢查 .babelrc.js 檔案是否正確"
+                echo "2. 嘗試先在本地運行 'npm run build' 確認無誤"
+                echo "3. 檢查 package.json 和 package-lock.json"
+                echo "4. 檢查 Node.js 版本兼容性"
+            fi
             return 1
         fi
         
@@ -226,5 +298,9 @@ echo ""
 echo -e "${YELLOW}構建的 images:${NC}"
 for service_info in "${services_to_build[@]}"; do
     IFS=':' read -r service_name service_path <<< "$service_info"
-    echo "- ${REGISTRY}/dify-${service_name}:${TAG}"
+    if [ "$service_name" = "rest-to-soap-proxy" ]; then
+        echo "- ${REGISTRY}/${service_name}:${TAG}"
+    else
+        echo "- ${REGISTRY}/dify-${service_name}:${TAG}"
+    fi
 done

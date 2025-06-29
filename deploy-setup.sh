@@ -108,7 +108,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 Images:
 - ${REGISTRY}/dify-api:latest
 - ${REGISTRY}/dify-next-frontend:latest (if exists)
-- ${REGISTRY}/dify-rest-to-soap-proxy:latest (if exists)"
+- ${REGISTRY}/rest-to-soap-proxy:latest (if exists)"
     
     read -p "是否要推送到遠端倉庫? (y/n): " -n 1 -r
     echo

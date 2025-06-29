@@ -84,6 +84,90 @@ fi
 # 進入 docker 目錄
 cd docker
 
+# 檢查並設置 .env 檔案
+echo -e "${YELLOW}配置環境變數...${NC}"
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        echo -e "${YELLOW}創建 .env 檔案從 .env.example...${NC}"
+        cp .env.example .env
+        echo -e "${GREEN}✓ .env 檔案已創建${NC}"
+    else
+        echo -e "${RED}錯誤：找不到 .env.example 檔案${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✓ .env 檔案已存在${NC}"
+fi
+
+# 獲取 EC2 公共 IP
+echo -e "${YELLOW}獲取 EC2 公共 IP...${NC}"
+PUBLIC_IP=$(curl -s ifconfig.me)
+PRIVATE_IP=$(hostname -I | cut -d' ' -f1)
+
+echo "檢測到的 IP 地址："
+echo "公共 IP: $PUBLIC_IP"
+echo "私有 IP: $PRIVATE_IP"
+
+# 詢問用戶是否要配置域名或使用 IP
+echo ""
+echo -e "${YELLOW}請選擇訪問方式：${NC}"
+echo "1) 使用公共 IP 訪問 (http://$PUBLIC_IP)"
+echo "2) 使用自定義域名"
+echo "3) 跳過配置（使用現有設定）"
+read -p "請選擇 (1-3): " access_choice
+
+case $access_choice in
+    1)
+        echo -e "${YELLOW}配置使用公共 IP...${NC}"
+        # 更新 .env 檔案中的相關設定
+        sed -i.bak "s|CONSOLE_API_URL=.*|CONSOLE_API_URL=http://$PUBLIC_IP|g" .env
+        sed -i.bak "s|CONSOLE_WEB_URL=.*|CONSOLE_WEB_URL=http://$PUBLIC_IP|g" .env
+        sed -i.bak "s|SERVICE_API_URL=.*|SERVICE_API_URL=http://$PUBLIC_IP/api|g" .env
+        sed -i.bak "s|APP_API_URL=.*|APP_API_URL=http://$PUBLIC_IP/api|g" .env
+        sed -i.bak "s|APP_WEB_URL=.*|APP_WEB_URL=http://$PUBLIC_IP|g" .env
+        sed -i.bak "s|FILES_URL=.*|FILES_URL=http://$PUBLIC_IP|g" .env
+        sed -i.bak "s|NGINX_SERVER_NAME=.*|NGINX_SERVER_NAME=_|g" .env
+        ;;
+    2)
+        read -p "請輸入您的域名 (例如: yourdomain.com): " DOMAIN_NAME
+        if [ -n "$DOMAIN_NAME" ]; then
+            echo -e "${YELLOW}配置使用域名: $DOMAIN_NAME${NC}"
+            sed -i.bak "s|CONSOLE_API_URL=.*|CONSOLE_API_URL=https://$DOMAIN_NAME|g" .env
+            sed -i.bak "s|CONSOLE_WEB_URL=.*|CONSOLE_WEB_URL=https://$DOMAIN_NAME|g" .env
+            sed -i.bak "s|SERVICE_API_URL=.*|SERVICE_API_URL=https://$DOMAIN_NAME/api|g" .env
+            sed -i.bak "s|APP_API_URL=.*|APP_API_URL=https://$DOMAIN_NAME/api|g" .env
+            sed -i.bak "s|APP_WEB_URL=.*|APP_WEB_URL=https://$DOMAIN_NAME|g" .env
+            sed -i.bak "s|FILES_URL=.*|FILES_URL=https://$DOMAIN_NAME|g" .env
+            sed -i.bak "s|NGINX_SERVER_NAME=.*|NGINX_SERVER_NAME=$DOMAIN_NAME|g" .env
+            sed -i.bak "s|NGINX_HTTPS_ENABLED=.*|NGINX_HTTPS_ENABLED=true|g" .env
+            
+            # 詢問是否設置 SSL
+            read -p "是否要設置 Let's Encrypt SSL 證書? (y/n): " ssl_choice
+            if [[ $ssl_choice =~ ^[Yy]$ ]]; then
+                read -p "請輸入您的 email 地址: " EMAIL
+                sed -i.bak "s|CERTBOT_EMAIL=.*|CERTBOT_EMAIL=$EMAIL|g" .env
+                sed -i.bak "s|CERTBOT_DOMAIN=.*|CERTBOT_DOMAIN=$DOMAIN_NAME|g" .env
+                sed -i.bak "s|NGINX_ENABLE_CERTBOT_CHALLENGE=.*|NGINX_ENABLE_CERTBOT_CHALLENGE=true|g" .env
+                echo -e "${GREEN}✓ SSL 設定已配置${NC}"
+            fi
+        else
+            echo -e "${RED}域名不能為空，使用預設設定${NC}"
+        fi
+        ;;
+    3)
+        echo -e "${YELLOW}跳過網路配置，使用現有設定${NC}"
+        ;;
+esac
+
+# 生成安全密鑰
+echo -e "${YELLOW}檢查安全密鑰...${NC}"
+if grep -q "SECRET_KEY=sk-9f73s3ljTXVcMT3Blb3ljTqtsKiGHXVcMT3BlbkFJLK7U" .env; then
+    echo -e "${YELLOW}生成新的安全密鑰...${NC}"
+    NEW_SECRET=$(openssl rand -hex 32)
+    sed -i.bak "s|SECRET_KEY=.*|SECRET_KEY=sk-$NEW_SECRET|g" .env
+    echo -e "${GREEN}✓ 安全密鑰已更新${NC}"
+fi
+
 # 停止現有服務（如果有）
 echo -e "${YELLOW}停止現有服務...${NC}"
 docker-compose down || true
@@ -125,11 +209,25 @@ echo ""
 echo -e "${GREEN}=== 部署完成！ ===${NC}"
 echo ""
 echo -e "${YELLOW}訪問地址:${NC}"
-echo "HTTP: http://$(curl -s ifconfig.me)"
-echo "或: http://$(hostname -I | cut -d' ' -f1)"
+if [ -n "$DOMAIN_NAME" ]; then
+    if [[ $ssl_choice =~ ^[Yy]$ ]]; then
+        echo "HTTPS: https://$DOMAIN_NAME"
+    else
+        echo "HTTP: http://$DOMAIN_NAME"
+    fi
+else
+    echo "HTTP: http://$PUBLIC_IP"
+    echo "或: http://$PRIVATE_IP"
+fi
 echo ""
 echo -e "${YELLOW}常用命令:${NC}"
 echo "查看日誌: docker-compose logs -f"
 echo "重啟服務: docker-compose restart"
 echo "停止服務: docker-compose down"
 echo "更新部署: git pull && docker-compose pull && docker-compose up -d"
+echo ""
+echo -e "${YELLOW}重要提醒:${NC}"
+echo "• 確保 EC2 安全組開放了必要的端口（80, 443）"
+echo "• 如果使用域名，請確保 DNS 已正確指向此 EC2 實例"
+echo "• 首次訪問時，請等待所有服務完全啟動（可能需要 2-3 分鐘）"
+echo "• 預設管理員密碼請查看 .env 檔案中的 INIT_PASSWORD 設定"
