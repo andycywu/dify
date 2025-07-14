@@ -5,8 +5,9 @@ WORKDIR /app
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
+COPY prisma/dev.db ./prisma/dev.db
 RUN \
-  if [ -f package-lock.json ]; then npm ci --only=production; \
+  if [ -f package-lock.json ]; then npm ci; \
   else echo "Lockfile not found." && exit 1; \
   fi
 
@@ -25,6 +26,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Generate Prisma client for the target platform
 RUN npx prisma generate
 
+# Ensure dev.db exists (create if missing)
+RUN if [ ! -f prisma/dev.db ]; then \
+      echo "dev.db not found, creating initial database..."; \
+      npx prisma db push; \
+    fi
+
 # Build the application
 ENV NODE_ENV=production
 RUN npm run build
@@ -36,11 +43,15 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3100
 
+# Copy package.json for reference only
+COPY package.json package-lock.json* ./
+
+# Copy node_modules from builder (to include @prisma/client)
+COPY --from=builder /app/node_modules ./node_modules
+
 # Copy necessary files
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.js ./next.config.js
 COPY --from=builder /app/next-i18next.config.js ./next-i18next.config.js
 COPY --from=builder /app/prisma ./prisma
@@ -51,7 +62,12 @@ COPY --from=builder /app/locales ./locales
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+
+# Ensure prisma directory and dev.db have correct permissions
 RUN chown -R nextjs:nodejs /app
+RUN chmod 755 /app/prisma
+RUN if [ -f /app/prisma/dev.db ]; then chmod 644 /app/prisma/dev.db; fi
+
 USER nextjs
 
 EXPOSE 3100
