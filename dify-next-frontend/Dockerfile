@@ -37,11 +37,16 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # Production image, copy all the files and run next
+
 FROM node:18-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3100
+
+# 支援 build-arg 指定要複製哪個 .env 檔案，預設為 .env.aws
+ARG ENV_FILE=.env.aws
+COPY ${ENV_FILE} .env
 
 # Copy package.json for reference only
 COPY package.json package-lock.json* ./

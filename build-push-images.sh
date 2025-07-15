@@ -181,19 +181,27 @@ build_and_push() {
     echo -e "${YELLOW}平台: ${PLATFORMS}${NC}"
     
     # 根據構建類型選擇方法
+    # next-frontend 根據環境自動帶 build-arg ENV_FILE
+    local env_file_arg=""
+    if [ "$service" = "next-frontend" ]; then
+        if [ "$AWS_MODE" = true ]; then
+            env_file_arg="--build-arg ENV_FILE=.env.aws"
+        else
+            env_file_arg="--build-arg ENV_FILE=.env.docker"
+        fi
+    fi
+
     if [ "$MULTIPLATFORM" = true ]; then
         # 多平台構建
         echo -e "${YELLOW}使用 buildx 進行多平台構建...${NC}"
-        local build_args="--platform ${PLATFORMS}"
+        local build_args="--platform ${PLATFORMS} ${env_file_arg}"
         if [ "${BUILD_NO_CACHE}" = "true" ]; then
             build_args="${build_args} --no-cache"
         fi
-        
         if docker buildx build ${build_args} -t "${image_name}" --push "${context}"; then
             echo -e "${GREEN}✓ ${service} 多平台構建和推送成功${NC}"
         else
             echo -e "${RED}✗ ${service} 多平台構建失敗${NC}"
-            
             # 提供建議
             if [ "$service" = "next-frontend" ]; then
                 echo -e "${YELLOW}建議:${NC}"
@@ -207,11 +215,10 @@ build_and_push() {
     else
         # 單平台構建
         echo -e "${YELLOW}構建 ${image_name}...${NC}"
-        local build_args=""
+        local build_args="${env_file_arg}"
         if [ "${BUILD_NO_CACHE}" = "true" ]; then
-            build_args="--no-cache"
+            build_args="${build_args} --no-cache"
         fi
-        
         # 單平台構建時自動加大 UV_HTTP_TIMEOUT，解決 uv sync 下載超時問題
         if grep -q 'uv sync' "${context}/Dockerfile"; then
             echo -e "${YELLOW}自動加大 UV_HTTP_TIMEOUT=120 以避免 uv sync 超時...${NC}"
@@ -240,7 +247,6 @@ build_and_push() {
         if [ -f "${context}/Dockerfile.bak.timeout" ]; then
             mv "${context}/Dockerfile.bak.timeout" "${context}/Dockerfile"
         fi
-        
         # 推送
         echo -e "${YELLOW}推送 ${image_name}...${NC}"
         if docker push "${image_name}"; then
@@ -286,6 +292,34 @@ fi
 
 echo ""
 echo -e "${YELLOW}將構建以下服務:${NC}"
+for idx in "${!services_to_build[@]}"; do
+    IFS=':' read -r service_name service_path <<< "${services_to_build[$idx]}"
+    echo "$((idx+1)). $service_name ($service_path)"
+done
+
+echo ""
+echo -e "${YELLOW}請輸入要構建的服務編號（用逗號分隔，直接 Enter 則全部）：${NC}"
+read -p "> " selected
+
+if [ -n "$selected" ]; then
+    IFS=',' read -ra selected_arr <<< "$selected"
+    selected_services=()
+    for sel in "${selected_arr[@]}"; do
+        sel_idx=$((sel-1))
+        if [ $sel_idx -ge 0 ] && [ $sel_idx -lt ${#services_to_build[@]} ]; then
+            selected_services+=("${services_to_build[$sel_idx]}")
+        fi
+    done
+    services_to_build=("${selected_services[@]}")
+fi
+
+echo ""
+if [ ${#services_to_build[@]} -eq 0 ]; then
+    echo -e "${RED}未選擇任何服務，已取消${NC}"
+    exit 0
+fi
+
+echo -e "${YELLOW}最終將構建:${NC}"
 for service_info in "${services_to_build[@]}"; do
     IFS=':' read -r service_name service_path <<< "$service_info"
     echo "- $service_name ($service_path)"

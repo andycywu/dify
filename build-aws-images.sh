@@ -84,8 +84,13 @@ build_single_platform() {
             docker buildx use multiarch
         fi
     fi
+    # dify-next-frontend 構建時自動帶 build-arg ENV_FILE=.env.aws
+    local env_file_arg=""
+    if [ "$service" = "next-frontend" ]; then
+        env_file_arg="--build-arg ENV_FILE=.env.aws"
+    fi
     # buildx 構建並推送
-    if docker buildx build --platform linux/amd64 -t "${image_name}" --push "${context}"; then
+    if docker buildx build --platform linux/amd64 ${env_file_arg} -t "${image_name}" --push "${context}"; then
         echo -e "${GREEN}✓ ${service} 構建並推送成功${NC}"
     else
         echo -e "${RED}✗ ${service} 構建或推送失敗${NC}"
@@ -141,6 +146,34 @@ fi
 
 echo ""
 echo -e "${YELLOW}將構建以下服務:${NC}"
+for idx in "${!services_to_build[@]}"; do
+    IFS=':' read -r service_name service_path <<< "${services_to_build[$idx]}"
+    echo "$((idx+1)). $service_name ($service_path)"
+done
+
+echo ""
+echo -e "${YELLOW}請輸入要構建的服務編號（用逗號分隔，直接 Enter 則全部）：${NC}"
+read -p "> " selected
+
+if [ -n "$selected" ]; then
+    IFS=',' read -ra selected_arr <<< "$selected"
+    selected_services=()
+    for sel in "${selected_arr[@]}"; do
+        sel_idx=$((sel-1))
+        if [ $sel_idx -ge 0 ] && [ $sel_idx -lt ${#services_to_build[@]} ]; then
+            selected_services+=("${services_to_build[$sel_idx]}")
+        fi
+    done
+    services_to_build=("${selected_services[@]}")
+fi
+
+echo ""
+if [ ${#services_to_build[@]} -eq 0 ]; then
+    echo -e "${RED}未選擇任何服務，已取消${NC}"
+    exit 0
+fi
+
+echo -e "${YELLOW}最終將構建:${NC}"
 for service_info in "${services_to_build[@]}"; do
     IFS=':' read -r service_name service_path <<< "$service_info"
     echo "- $service_name ($service_path)"
