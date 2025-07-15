@@ -10,13 +10,17 @@ if [ -f ".env.docker" ]; then
     source .env.docker
 fi
 
+
 # 解析參數
 MULTIPLATFORM=false
+AWS_MODE=false
 for arg in "$@"; do
     case $arg in
         --multiplatform)
             MULTIPLATFORM=true
-            shift
+            ;;
+        --aws)
+            AWS_MODE=true
             ;;
         *)
             if [ -z "$REGISTRY" ]; then
@@ -31,8 +35,15 @@ DEFAULT_REGISTRY="${DOCKER_REGISTRY:-your-registry}"
 REGISTRY="${REGISTRY:-$DEFAULT_REGISTRY}"
 TAG="${IMAGE_TAG:-latest}"
 
+
 # 設置構建平台
-if [ "$MULTIPLATFORM" = true ]; then
+if [ "$AWS_MODE" = true ]; then
+    PLATFORMS="linux/amd64"
+    BUILD_TYPE="AWS EC2 專用單平台"
+    echo -e "${YELLOW}⚠️  AWS EC2 模式：僅構建 linux/amd64 單平台映像，適用於 EC2 部署。${NC}"
+    echo -e "${YELLOW}⚠️  若需多平台請勿加 --aws 參數。${NC}"
+    MULTIPLATFORM=false
+elif [ "$MULTIPLATFORM" = true ]; then
     PLATFORMS="linux/amd64,linux/arm64"
     BUILD_TYPE="多平台"
     echo -e "${YELLOW}⚠️  注意：多平台構建需要更長時間，特別是對於 Node.js 應用${NC}"
@@ -201,11 +212,20 @@ build_and_push() {
             build_args="--no-cache"
         fi
         
+        # 單平台構建時自動加大 UV_HTTP_TIMEOUT，解決 uv sync 下載超時問題
+        if grep -q 'uv sync' "${context}/Dockerfile"; then
+            echo -e "${YELLOW}自動加大 UV_HTTP_TIMEOUT=120 以避免 uv sync 超時...${NC}"
+            cp "${context}/Dockerfile" "${context}/Dockerfile.bak.timeout"
+            sed -i.bak 's|RUN uv sync|RUN UV_HTTP_TIMEOUT=120 uv sync|g' "${context}/Dockerfile"
+        fi
         if docker build ${build_args} -t "${image_name}" "${context}"; then
             echo -e "${GREEN}✓ ${service} 構建成功${NC}"
         else
             echo -e "${RED}✗ ${service} 構建失敗${NC}"
-            
+            # 還原 Dockerfile
+            if [ -f "${context}/Dockerfile.bak.timeout" ]; then
+                mv "${context}/Dockerfile.bak.timeout" "${context}/Dockerfile"
+            fi
             # 提供建議
             if [ "$service" = "next-frontend" ]; then
                 echo -e "${YELLOW}建議:${NC}"
@@ -215,6 +235,10 @@ build_and_push() {
                 echo "4. 檢查 Node.js 版本兼容性"
             fi
             return 1
+        fi
+        # 還原 Dockerfile
+        if [ -f "${context}/Dockerfile.bak.timeout" ]; then
+            mv "${context}/Dockerfile.bak.timeout" "${context}/Dockerfile"
         fi
         
         # 推送
@@ -230,77 +254,107 @@ build_and_push() {
     echo -e "${GREEN}✅ ${service} 完成 - ${image_name}${NC}"
 }
 
-# 構建所有 images
-echo -e "\n${YELLOW}步驟 1: 構建和推送所有自定義 images (${BUILD_TYPE})${NC}"
-
-# 檢查服務目錄是否存在
+# 合併 AWS 服務選擇與 next-frontend 快速檢查
+echo -e "\n${YELLOW}步驟 1: 檢查可構建的服務...${NC}"
 services_to_build=()
 if [ -d "./api" ]; then
     services_to_build+=("api:./api")
+    echo -e "${GREEN}✓ 找到 API 服務${NC}"
 else
-    echo -e "${RED}警告: ./api 目錄不存在${NC}"
+    echo -e "${YELLOW}⚠ 跳過 API 服務 (目錄不存在)${NC}"
 fi
-
 if [ -d "./dify-next-frontend" ]; then
     services_to_build+=("next-frontend:./dify-next-frontend")
+    echo -e "${GREEN}✓ 找到 Next Frontend 服務${NC}"
+    # 快速檢查 next-frontend 問題
+    if [ -d "./dify-next-frontend/.babelrc.js" ]; then
+        echo -e "${YELLOW}⚠ 檢測到 .babelrc.js 問題，建議先運行 ./fix-next-frontend.sh${NC}"
+    fi
 else
-    echo -e "${YELLOW}注意: ./dify-next-frontend 目錄不存在，跳過${NC}"
+    echo -e "${YELLOW}⚠ 跳過 Next Frontend 服務 (目錄不存在)${NC}"
 fi
-
 if [ -d "./rest-to-soap-proxy" ]; then
     services_to_build+=("rest-to-soap-proxy:./rest-to-soap-proxy")
+    echo -e "${GREEN}✓ 找到 REST to SOAP Proxy 服務${NC}"
 else
-    echo -e "${YELLOW}注意: ./rest-to-soap-proxy 目錄不存在，跳過${NC}"
+    echo -e "${YELLOW}⚠ 跳過 REST to SOAP Proxy 服務 (目錄不存在)${NC}"
 fi
-
 if [ ${#services_to_build[@]} -eq 0 ]; then
     echo -e "${RED}錯誤: 沒有找到任何可構建的服務${NC}"
     exit 1
 fi
 
-# 構建和推送所有服務
-failed_services=()
+echo ""
+echo -e "${YELLOW}將構建以下服務:${NC}"
 for service_info in "${services_to_build[@]}"; do
     IFS=':' read -r service_name service_path <<< "$service_info"
-    if ! build_and_push "$service_name" "$service_path"; then
-        failed_services+=("$service_name")
-    fi
+    echo "- $service_name ($service_path)"
 done
 
 echo ""
-if [ ${#failed_services[@]} -eq 0 ]; then
-    echo -e "${GREEN}🎉 所有 images 構建和推送完成！${NC}"
-    echo -e "${BLUE}構建類型: ${BUILD_TYPE}${NC}"
-    echo -e "${BLUE}支援平台: ${PLATFORMS}${NC}"
-else
-    echo -e "${RED}❌ 以下服務失敗: ${failed_services[*]}${NC}"
-    exit 1
+read -p "繼續構建？(y/n): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "已取消"
+    exit 0
 fi
+
+# 構建和推送所有服務
+failed_services=()
+successful_services=()
+
+echo ""
+echo -e "${YELLOW}開始構建...${NC}"
+for service_info in "${services_to_build[@]}"; do
+    IFS=':' read -r service_name service_path <<< "$service_info"
+    if build_and_push "$service_name" "$service_path"; then
+        successful_services+=("$service_name")
+    else
+        failed_services+=("$service_name")
+        # AWS 模式下詢問是否繼續
+        if [ "$AWS_MODE" = true ]; then
+            echo ""
+            read -p "${service_name} 構建失敗，是否繼續構建其他服務？(y/n): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                break
+            fi
+        fi
+    fi
+done
 
 echo ""
 echo -e "${GREEN}=== 構建和推送完成！ ===${NC}"
 echo ""
-echo -e "${YELLOW}下一步:${NC}"
-echo "1. 更新 docker-compose.yaml 中的 registry 名稱："
-echo "   ./update-registry.sh ${REGISTRY}"
-echo ""
-echo "2. 提交變更到 Git："
-echo "   git add ."
-echo "   git commit -m 'Update to use custom Docker images'"
-echo "   git push origin main"
-echo ""
-echo "3. 在 AWS EC2 上部署："
-echo "   git pull origin main"
-echo "   cd docker"
-echo "   docker-compose pull"
-echo "   docker-compose up -d"
-echo ""
-echo -e "${YELLOW}構建的 images:${NC}"
-for service_info in "${services_to_build[@]}"; do
-    IFS=':' read -r service_name service_path <<< "$service_info"
-    if [ "$service_name" = "rest-to-soap-proxy" ]; then
-        echo "- ${REGISTRY}/${service_name}:${TAG}"
-    else
-        echo "- ${REGISTRY}/dify-${service_name}:${TAG}"
-    fi
-done
+if [ ${#successful_services[@]} -gt 0 ]; then
+    echo -e "${GREEN}✅ 成功構建的服務:${NC}"
+    for service in "${successful_services[@]}"; do
+        if [ "$service" = "rest-to-soap-proxy" ]; then
+            echo "- ${REGISTRY}/${service}:${TAG}"
+        else
+            echo "- ${REGISTRY}/dify-${service}:${TAG}"
+        fi
+    done
+    echo ""
+fi
+if [ ${#failed_services[@]} -gt 0 ]; then
+    echo -e "${RED}❌ 失敗的服務: ${failed_services[*]}${NC}"
+    echo ""
+    echo -e "${YELLOW}建議:${NC}"
+    for service in "${failed_services[@]}"; do
+        if [ "$service" = "next-frontend" ]; then
+            echo "- 對於 next-frontend，先運行: ./fix-next-frontend.sh"
+        fi
+    done
+    echo ""
+fi
+if [ ${#successful_services[@]} -gt 0 ]; then
+    echo -e "${YELLOW}下一步 (在 AWS EC2 上):${NC}"
+    echo "1. 更新 docker-compose.yaml:"
+    echo "   ./update-registry.sh ${REGISTRY}"
+    echo ""
+    echo "2. 部署到 EC2:"
+    echo "   git add . && git commit -m 'Update Docker images' && git push"
+    echo "   # 在 EC2 上："
+    echo "   git pull && cd docker && docker-compose pull && docker-compose up -d"
+fi

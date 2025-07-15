@@ -65,13 +65,26 @@ build_single_platform() {
         return 1
     fi
     
-    # 構建
+    # 構建前自動加大 UV_HTTP_TIMEOUT，解決 uv sync 超時問題
+    if grep -q 'uv sync' "${context}/Dockerfile"; then
+        echo -e "${YELLOW}自動加大 UV_HTTP_TIMEOUT=120 以避免 uv sync 超時...${NC}"
+        cp "${context}/Dockerfile" "${context}/Dockerfile.bak.timeout"
+        sed -i.bak 's|RUN uv sync|RUN UV_HTTP_TIMEOUT=120 uv sync|g' "${context}/Dockerfile"
+    fi
     echo -e "${YELLOW}構建中...${NC}"
     if docker build -t "${image_name}" "${context}"; then
         echo -e "${GREEN}✓ ${service} 構建成功${NC}"
     else
         echo -e "${RED}✗ ${service} 構建失敗${NC}"
+        # 還原 Dockerfile
+        if [ -f "${context}/Dockerfile.bak.timeout" ]; then
+            mv "${context}/Dockerfile.bak.timeout" "${context}/Dockerfile"
+        fi
         return 1
+    fi
+    # 還原 Dockerfile
+    if [ -f "${context}/Dockerfile.bak.timeout" ]; then
+        mv "${context}/Dockerfile.bak.timeout" "${context}/Dockerfile"
     fi
     
     # 推送
