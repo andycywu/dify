@@ -1,0 +1,6 @@
+Host dify-ec2
+    HostName ec2-54-169-166-197.ap-southeast-1.compute.amazonaws.com
+    User ec2-user
+    IdentityFile /Users/andycyw/dify/tpv-dify-key.pem
+    IdentitiesOnly yes
+    StrictHostKeyChecking no
