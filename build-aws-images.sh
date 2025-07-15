@@ -71,11 +71,24 @@ build_single_platform() {
         cp "${context}/Dockerfile" "${context}/Dockerfile.bak.timeout"
         sed -i.bak 's|RUN uv sync|RUN UV_HTTP_TIMEOUT=120 uv sync|g' "${context}/Dockerfile"
     fi
-    echo -e "${YELLOW}構建中...${NC}"
-    if docker build -t "${image_name}" "${context}"; then
-        echo -e "${GREEN}✓ ${service} 構建成功${NC}"
+    echo -e "${YELLOW}構建並推送 (buildx, amd64 manifest)...${NC}"
+    # 檢查 buildx
+    if ! docker buildx version > /dev/null 2>&1; then
+        echo -e "${YELLOW}安裝並設置 Docker buildx...${NC}"
+        docker buildx create --use --name multiarch || true
+        docker buildx use multiarch
     else
-        echo -e "${RED}✗ ${service} 構建失敗${NC}"
+        if ! docker buildx ls | grep -q "multiarch"; then
+            docker buildx create --use --name multiarch
+        else
+            docker buildx use multiarch
+        fi
+    fi
+    # buildx 構建並推送
+    if docker buildx build --platform linux/amd64 -t "${image_name}" --push "${context}"; then
+        echo -e "${GREEN}✓ ${service} 構建並推送成功${NC}"
+    else
+        echo -e "${RED}✗ ${service} 構建或推送失敗${NC}"
         # 還原 Dockerfile
         if [ -f "${context}/Dockerfile.bak.timeout" ]; then
             mv "${context}/Dockerfile.bak.timeout" "${context}/Dockerfile"
@@ -85,15 +98,6 @@ build_single_platform() {
     # 還原 Dockerfile
     if [ -f "${context}/Dockerfile.bak.timeout" ]; then
         mv "${context}/Dockerfile.bak.timeout" "${context}/Dockerfile"
-    fi
-    
-    # 推送
-    echo -e "${YELLOW}推送到 Registry...${NC}"
-    if docker push "${image_name}"; then
-        echo -e "${GREEN}✓ ${service} 推送成功${NC}"
-    else
-        echo -e "${RED}✗ ${service} 推送失敗${NC}"
-        return 1
     fi
     
     echo -e "${GREEN}✅ ${service} 完成 - ${image_name}${NC}"
