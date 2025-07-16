@@ -17,9 +17,6 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# 確保 prisma 檔案被正確複製
-COPY prisma ./prisma
-
 # Next.js collects completely anonymous telemetry regarding usage.
 # This information is used to shape Next.js' roadmap and prioritize features.
 # You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
@@ -62,32 +59,29 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/next.config.js ./next.config.js
 COPY --from=builder /app/next-i18next.config.js ./next-i18next.config.js
-
-# 確保 prisma 目錄和檔案被正確複製
 COPY --from=builder /app/prisma ./prisma
 
 # Copy i18n files (fix path)
 COPY --from=builder /app/locales ./locales
 
+# Copy database file to working directory
+COPY --from=builder /app/prisma/dev.db ./dev.db
+
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy database file to working directory and set permissions
-COPY --from=builder /app/prisma/dev.db ./dev.db
-
-# Ensure correct permissions
-RUN chown -R nextjs:nodejs /app
-RUN chmod 755 /app/prisma
-RUN chmod 666 /app/dev.db
-
-USER nextjs
-
-# Create a writable directory for the SQLite database if needed
+# 在切換用戶之前完成所有需要 root 權限的操作
 RUN mkdir -p /app/data && \
+    chown -R nextjs:nodejs /app && \
+    chmod 755 /app/prisma && \
+    chmod 666 /app/dev.db && \
     if [ ! -f /app/dev.db ]; then \
-      touch /app/dev.db; \
+      touch /app/dev.db && chown nextjs:nodejs /app/dev.db; \
     fi
+
+# 現在才切換到非 root 用戶
+USER nextjs
 
 EXPOSE 3100
 
