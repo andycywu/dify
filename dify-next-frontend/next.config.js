@@ -4,7 +4,7 @@ const { i18n } = require('./next-i18next.config');
 const nextConfig = {
   reactStrictMode: true,
   env: {
-    API_URL: process.env.API_URL || 'http://localhost:5000/api',
+    API_URL: process.env.API_URL ,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:5000/api',
   },
   i18n,
