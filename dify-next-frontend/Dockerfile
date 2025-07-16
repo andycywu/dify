@@ -74,11 +74,16 @@ RUN adduser --system --uid 1001 nextjs
 # 在切換用戶之前完成所有需要 root 權限的操作
 RUN mkdir -p /app/data && \
     chown -R nextjs:nodejs /app && \
+    chmod 755 /app && \
     chmod 755 /app/prisma && \
     chmod 666 /app/dev.db && \
     if [ ! -f /app/dev.db ]; then \
-      touch /app/dev.db && chown nextjs:nodejs /app/dev.db; \
+      touch /app/dev.db && chown nextjs:nodejs /app/dev.db && chmod 666 /app/dev.db; \
     fi
+
+# 重新生成 Prisma Client 以確保在正確的 runtime 環境下生成
+RUN npx prisma generate && \
+    chown -R nextjs:nodejs /app/node_modules/.prisma
 
 # 現在才切換到非 root 用戶
 USER nextjs
