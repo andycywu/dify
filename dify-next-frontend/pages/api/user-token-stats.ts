@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     // 自動計算 billing，若有異動則同步回存
     const updates: any[] = [];
-    const dailyUsage = usages.map(u => {
+    const dailyUsage = usages.map((u: any) => {
       const calcBilling = Number((u.tokenUsage / 1000 * rate).toFixed(6));
       if (u.billing !== calcBilling) {
         updates.push(prisma.userUsage.update({ where: { id: u.id }, data: { billing: calcBilling } }));
