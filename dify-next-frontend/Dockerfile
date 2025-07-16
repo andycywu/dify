@@ -17,6 +17,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# 確保 prisma 檔案被正確複製
+COPY prisma ./prisma
+
 # Next.js collects completely anonymous telemetry regarding usage.
 # This information is used to shape Next.js' roadmap and prioritize features.
 # You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
@@ -59,6 +62,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/next.config.js ./next.config.js
 COPY --from=builder /app/next-i18next.config.js ./next-i18next.config.js
+
+# 確保 prisma 目錄和檔案被正確複製
 COPY --from=builder /app/prisma ./prisma
 
 # Copy i18n files (fix path)
@@ -74,9 +79,15 @@ COPY --from=builder /app/prisma/dev.db ./dev.db
 # Ensure correct permissions
 RUN chown -R nextjs:nodejs /app
 RUN chmod 755 /app/prisma
-RUN chmod 644 /app/dev.db
+RUN chmod 666 /app/dev.db
 
 USER nextjs
+
+# Create a writable directory for the SQLite database if needed
+RUN mkdir -p /app/data && \
+    if [ ! -f /app/dev.db ]; then \
+      touch /app/dev.db; \
+    fi
 
 EXPOSE 3100
 
