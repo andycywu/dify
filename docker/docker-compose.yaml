@@ -1184,7 +1184,7 @@ services:
     #image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
     build: ../dify-next-frontend
     restart: always
-    env_file: ../dify-next-frontend/.env.docker
+    env_file: ../dify-next-frontend/.env.aws
     environment:
       API_URL: ${API_URL:-http://api:5001}
       NEXT_PUBLIC_API_URL: ${API_URL:-http://api:5001}
