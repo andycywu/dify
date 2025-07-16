@@ -1181,8 +1181,8 @@ services:
 
   # Dify Next.js frontend
   dify-next-frontend:
-    image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
-    # build: ../dify-next-frontend
+    #image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
+    build: ../dify-next-frontend
     restart: always
     env_file: ../dify-next-frontend/.env.docker
     environment:
