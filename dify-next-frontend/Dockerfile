@@ -48,6 +48,9 @@ ENV PORT=3100
 ARG ENV_FILE=.env.aws
 COPY ${ENV_FILE} .env
 
+# 確保 DATABASE_URL 指向正確的路徑
+ENV DATABASE_URL="file:./prisma/dev.db"
+
 # Copy package.json for reference only
 COPY package.json package-lock.json* ./
 
