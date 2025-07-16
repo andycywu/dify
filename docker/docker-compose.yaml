@@ -1191,8 +1191,11 @@ services:
       NEXTAUTH_URL: ${APP_WEB_URL:-http://localhost:3000}
       NODE_ENV: production
       PORT: 3000
+      DATABASE_URL: "file:/app/data/dev.db"
     ports:
       - "3000:3000"
+    volumes:
+      - ./volumes/dify-next-frontend:/app/data
     depends_on:
       - api
     networks:

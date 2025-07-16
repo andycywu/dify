@@ -1,0 +1,45 @@
+# EC2 Production Override - 專為 EC2 生產環境優化
+# 修復 Prisma 數據庫連接問題
+
+services:
+  dify-next-frontend:
+    image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=file:/app/data/dev.db
+    volumes:
+      # 掛載數據庫持久化目錄
+      - ./volumes/dify-next-frontend:/app/data
+    # 使用與 Dockerfile 中相同的用戶
+    user: "1001:1001" 
+    # 自定義啟動命令，確保數據庫正確初始化
+    command: >
+      sh -c "
+        echo 'Creating data directory...' &&
+        mkdir -p /app/data &&
+        chmod 755 /app/data &&
+        echo 'Checking database file...' &&
+        if [ ! -f /app/data/dev.db ]; then
+          echo 'Database not found, initializing...';
+          touch /app/data/dev.db &&
+          chmod 644 /app/data/dev.db &&
+          npx prisma db push --accept-data-loss;
+        else
+          echo 'Database file exists, checking permissions...';
+          chmod 644 /app/data/dev.db;
+        fi &&
+        echo 'Generating Prisma client...' &&
+        npx prisma generate &&
+        echo 'Starting Next.js application...' &&
+        npm run start
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+    depends_on:
+      - api
