@@ -58,12 +58,17 @@ export default async function handler(req, res) {
     await testPrisma.$disconnect();
     console.log('Health check: Connection closed');
     
+    // 將 BigInt 轉換為 Number 以避免 JSON 序列化問題
+    const sanitizedResult = JSON.parse(JSON.stringify(result, (key, value) =>
+      typeof value === 'bigint' ? Number(value) : value
+    ));
+    
     res.status(200).json({ 
       status: 'healthy', 
       timestamp: new Date().toISOString(),
       prisma: 'connected',
       service: 'dify-next-frontend',
-      queryResult: result
+      queryResult: sanitizedResult
     });
   } catch (error) {
     console.error('Health check failed:', error);
