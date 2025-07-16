@@ -63,6 +63,7 @@ COPY --from=builder /app/prisma ./prisma
 
 # Copy i18n files (fix path)
 COPY --from=builder /app/locales ./locales
+COPY --from=builder /app/lib ./lib
 
 # Copy database file to working directory
 COPY --from=builder /app/prisma/dev.db ./dev.db
