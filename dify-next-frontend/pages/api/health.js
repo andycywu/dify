@@ -1,19 +1,29 @@
 // Health check API for Docker container
 // pages/api/health.js
 
+import { PrismaClient } from '@prisma/client';
+
+// 創建單例 Prisma Client
+let prisma;
+
+if (process.env.NODE_ENV === 'production') {
+  prisma = new PrismaClient();
+} else {
+  // 開發環境中防止多次實例化
+  if (!global.prisma) {
+    global.prisma = new PrismaClient();
+  }
+  prisma = global.prisma;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // 簡單檢查 Prisma 是否可用
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    
-    // 嘗試連接數據庫
-    await prisma.$connect();
-    await prisma.$disconnect();
+    // 使用單例 Prisma Client，進行簡單的查詢測試
+    await prisma.$queryRaw`SELECT 1 as health_check`;
     
     res.status(200).json({ 
       status: 'healthy', 
