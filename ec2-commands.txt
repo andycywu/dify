@@ -1,0 +1,28 @@
+# 在 EC2 的 docker 目錄中執行以下命令來修復 Prisma 數據庫問題
+
+# 1. 創建數據庫目錄
+mkdir -p ./volumes/dify-next-frontend
+
+# 2. 設置權限
+sudo chown -R 1001:1001 ./volumes/dify-next-frontend || chmod 777 ./volumes/dify-next-frontend
+
+# 3. 停止現有容器
+docker-compose stop dify-next-frontend
+
+# 4. 刪除現有容器
+docker-compose rm -f dify-next-frontend
+
+# 5. 重新啟動容器
+docker-compose up -d dify-next-frontend
+
+# 6. 等待容器啟動
+sleep 60
+
+# 7. 檢查容器狀態
+docker-compose ps dify-next-frontend
+
+# 8. 查看日誌
+docker-compose logs --tail=20 dify-next-frontend
+
+# 9. 測試健康檢查
+curl -f http://localhost:3000/api/health
