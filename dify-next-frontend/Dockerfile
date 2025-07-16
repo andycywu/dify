@@ -48,9 +48,6 @@ ENV PORT=3100
 ARG ENV_FILE=.env.aws
 COPY ${ENV_FILE} .env
 
-# 確保 DATABASE_URL 指向正確的路徑
-ENV DATABASE_URL="file:./prisma/dev.db"
-
 # Copy package.json for reference only
 COPY package.json package-lock.json* ./
 
@@ -71,10 +68,13 @@ COPY --from=builder /app/locales ./locales
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Ensure prisma directory and dev.db have correct permissions
+# Copy database file to working directory and set permissions
+COPY --from=builder /app/prisma/dev.db ./dev.db
+
+# Ensure correct permissions
 RUN chown -R nextjs:nodejs /app
 RUN chmod 755 /app/prisma
-RUN if [ -f /app/prisma/dev.db ]; then chmod 644 /app/prisma/dev.db; fi
+RUN chmod 644 /app/dev.db
 
 USER nextjs
 
