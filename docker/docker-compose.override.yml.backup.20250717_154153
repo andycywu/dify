@@ -17,6 +17,8 @@ services:
     volumes:
       # 掛載數據庫持久化目錄
       - ./volumes/dify-next-frontend:/app/data
+      # 確保 Prisma schema 文件可用（移除 ro 只讀限制）
+      - ./dify-next-frontend/prisma:/app/prisma
     user: "1001:1001"
     command: >
       sh -c "
@@ -24,17 +26,12 @@ services:
         chmod 755 /app/data &&
         echo 'Checking Prisma schema...' &&
         ls -la /app/prisma/ &&
-        echo 'Checking if database exists...' &&
-        if [ ! -f /app/data/dev.db ] && [ -f /app/dev.db ]; then
-          echo 'Copying initial database to data directory...';
-          cp /app/dev.db /app/data/dev.db;
-        fi &&
         if [ ! -f /app/data/dev.db ]; then
           echo 'Initializing database...';
-          npx prisma db push --accept-data-loss;
+          npx prisma db push --schema=/app/prisma/schema.prisma --accept-data-loss;
         fi &&
         echo 'Generating Prisma client...' &&
-        npx prisma generate &&
+        npx prisma generate --schema=/app/prisma/schema.prisma &&
         echo 'Starting application...' &&
         npm run start
       "
