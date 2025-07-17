@@ -35,8 +35,9 @@ server {
       include proxy.conf;
     }
 
+    # Route main domain to Next.js frontend
     location / {
-      proxy_pass http://web:3000;
+      proxy_pass http://dify-next-frontend:3000;
       include proxy.conf;
     }
 
