@@ -29,10 +29,6 @@ docker-compose pull
 echo "🚀 啟動服務..."
 docker-compose up -d
 
-# 6. 重新載入nginx配置
-echo "🔄 重新載入nginx配置..."
-docker-compose exec nginx nginx -s reload
-
 # 6. 檢查服務狀態
 echo "🔍 檢查服務狀態..."
 sleep 10
