@@ -9,6 +9,8 @@ services:
       args:
         # 確保建構時生成正確的 Prisma 客戶端
         NODE_ENV: production
+        # 指定使用 .env.aws 文件進行建構
+        ENV_FILE: .env.aws
     environment:
       # 開發環境變數
       - NODE_ENV=production
