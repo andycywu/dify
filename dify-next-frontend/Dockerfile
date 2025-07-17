@@ -17,6 +17,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# 支援 build-arg 指定要複製哪個 .env 檔案，預設為 .env.aws
+ARG ENV_FILE=.env.aws
+COPY ${ENV_FILE} .env
+
 # Next.js collects completely anonymous telemetry regarding usage.
 # This information is used to shape Next.js' roadmap and prioritize features.
 # You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:

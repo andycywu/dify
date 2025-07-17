@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://localhost/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || '';
 const API_KEY = process.env.NEXT_PUBLIC_DIFY_API_KEY || '';
 
 interface Message {
