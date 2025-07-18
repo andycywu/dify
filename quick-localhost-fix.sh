@@ -50,7 +50,7 @@ if [ "$NEEDS_REBUILD" = true ]; then
     
     # 重新構建
     echo "構建前端映像（包含localhost修復）..."
-    docker-compose build --no-cache dify-next-frontend
+    DOCKER_BUILDKIT=1 docker-compose build --no-cache --pull --force-rm dify-next-frontend
     
     # 啟動
     echo "啟動前端容器..."
