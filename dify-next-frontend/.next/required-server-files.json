@@ -3,7 +3,7 @@
   "config": {
     "env": {
       "API_URL": "http://frontend.localhost:5001",
-      "NEXT_PUBLIC_API_URL": "http://api:5001"
+      "NEXT_PUBLIC_API_URL": "http://frontend.localhost:5001"
     },
     "eslint": {
       "ignoreDuringBuilds": false
