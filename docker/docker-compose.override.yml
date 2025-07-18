@@ -11,11 +11,23 @@ services:
         NODE_ENV: production
         # 指定使用 .env.aws 文件進行建構
         ENV_FILE: .env.aws
+        # 傳遞主機 IP 給構建過程
+        HOST_IP: ${HOST_IP:-54.169.166.197}
     environment:
       # 開發環境變數
       - NODE_ENV=production
       - PORT=3000
       - DATABASE_URL=file:/app/data/dev.db
+      # 動態設置 API URLs（這些會覆蓋 .env 文件中的預設值）
+      - NEXT_PUBLIC_API_URL=http://${HOST_IP:-54.169.166.197}:8080/api
+      - NEXT_PUBLIC_AUTH_URL=http://${HOST_IP:-54.169.166.197}:8080/api/auth
+      - NEXT_PUBLIC_DIFY_API_BASE_URL=http://${HOST_IP:-54.169.166.197}/v1
+      - NEXT_PUBLIC_USAGE_URL=http://${HOST_IP:-54.169.166.197}:8080/usage
+      - NEXTAUTH_URL=http://${HOST_IP:-54.169.166.197}:8080
+      - APP_API_URL=http://${HOST_IP:-54.169.166.197}:8080/api
+      - APP_WEB_URL=http://${HOST_IP:-54.169.166.197}:8080
+      - FILES_URL=http://${HOST_IP:-54.169.166.197}:8080/api/files
+      - API_URL=http://${HOST_IP:-54.169.166.197}:8080/api
     ports:
       # 直接暴露8080端口給Next.js前端
       - "8080:3000"
