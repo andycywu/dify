@@ -26,6 +26,7 @@ docker system prune -f
 
 # 步驟4: 檢查關鍵修復文件
 echo "🔍 驗證關鍵修復文件..."
+cd /home/ec2-user/dify
 echo "檢查 useChatSettings.ts 修復："
 grep -n "apiBaseUrl.*localhost" ./dify-next-frontend/hooks/useChatSettings.ts && echo "❌ 仍然包含hardcoded localhost" || echo "✅ hardcoded localhost已移除"
 
