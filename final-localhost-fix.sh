@@ -35,6 +35,7 @@ grep "NEXT_PUBLIC_DIFY_API_BASE_URL" ./dify-next-frontend/.env.aws
 
 # 步驟5: 強制重新構建
 echo "🔨 強制重新構建前端映像（確保修復生效）..."
+cd docker
 DOCKER_BUILDKIT=1 docker-compose build --no-cache --pull --force-rm dify-next-frontend
 
 # 步驟6: 啟動前端
