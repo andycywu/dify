@@ -17,7 +17,7 @@ const defaultSettings: ChatSettings = {
   primaryColor: '#3B82F6',
   customLogo: '/images/TPV-icon.png',
   avatarSrc: '/images/assistant-avatar.png',
-  apiKey: process.env.NEXT_PUBLIC_DIFY_API_KEY || 'app-PxzkiLjnjcU2w2ARj5qeflQq',
+  apiKey: process.env.NEXT_PUBLIC_DIFY_API_KEY || 'app-ldXAyD3A91tXzB6Kkd8hlyP2',
   apiBaseUrl: process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://54.169.166.197/v1',
 };
 
