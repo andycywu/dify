@@ -19,16 +19,7 @@ COPY . .
 
 # 支援 build-arg 指定要複製哪個 .env 檔案，預設為 .env.aws
 ARG ENV_FILE=.env.aws
-ARG HOST_IP=localhost
 COPY ${ENV_FILE} .env
-
-# 設置構建時環境變數，讓 Next.js 在構建時可以讀取
-ARG NODE_ENV=production
-ENV NODE_ENV=$NODE_ENV
-ENV NEXT_PUBLIC_HOST_IP=$HOST_IP
-
-# 動態生成包含正確 HOST_IP 的 .env 文件
-RUN sed -i "s/localhost/${HOST_IP}/g" .env
 
 # Next.js collects completely anonymous telemetry regarding usage.
 # This information is used to shape Next.js' roadmap and prioritize features.
