@@ -18,7 +18,7 @@ const defaultSettings: ChatSettings = {
   customLogo: '/images/TPV-icon.png',
   avatarSrc: '/images/assistant-avatar.png',
   apiKey: process.env.NEXT_PUBLIC_DIFY_API_KEY || '',
-  apiBaseUrl: process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://localhost/v1',
+  apiBaseUrl: process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || '',
 };
 
 export const useChatSettings = () => {

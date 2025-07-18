@@ -183,7 +183,7 @@ const Settings: React.FC<SettingsProps> = ({
                 type="text"
                 value={apiBaseUrl}
                 onChange={(e) => setApiBaseUrl(e.target.value)}
-                placeholder="http://localhost/v1"
+                placeholder={process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || "請輸入API Base URL"}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
