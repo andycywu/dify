@@ -56,6 +56,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
   const [conversations, setConversations] = useState<any[]>([]);
   const [showSuggestedQuestions, setShowSuggestedQuestions] = useState(true); // 新增：建議問題開關
   const [latestSuggestedQuestions, setLatestSuggestedQuestions] = useState<string[] | undefined>(undefined); // 新增：動態建議問題
+  const [openingSuggestedQuestions, setOpeningSuggestedQuestions] = useState<string[] | undefined>(undefined); // 新增：開場建議問題
   const [isHistoryLoading, setIsHistoryLoading] = useState(false); // 新增：歷史紀錄載入中
   const [difyWelcomeMessage, setDifyWelcomeMessage] = useState<string | null>(null); // 新增：Dify 開場白
 
@@ -73,6 +74,10 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
       try {
         const difyConfig = await difyAPI.getParameters(user?.id);
         const difyOpeningStatement = difyConfig.opening_statement;
+        const difyOpeningQuestions = difyConfig.suggested_questions; // 新增：取得開場建議問題
+        
+        console.log('Dify config:', difyConfig); // 調試用
+        console.log('Opening questions:', difyOpeningQuestions); // 調試用
         
         if (difyOpeningStatement && difyOpeningStatement.trim()) {
           setDifyWelcomeMessage(difyOpeningStatement);
@@ -101,6 +106,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
             },
           ]);
         }
+
+        // 設定開場建議問題
+        if (difyOpeningQuestions && Array.isArray(difyOpeningQuestions) && difyOpeningQuestions.length > 0) {
+          setOpeningSuggestedQuestions(difyOpeningQuestions);
+          console.log('Set opening suggested questions:', difyOpeningQuestions); // 調試用
+        } else {
+          setOpeningSuggestedQuestions(undefined);
+        }
       } catch (error) {
         console.warn('Failed to fetch Dify opening statement, using fallback:', error);
         // Fallback 到傳入的 welcomeMessage
@@ -115,6 +128,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
             metadata: undefined,
           },
         ]);
+        setOpeningSuggestedQuestions(undefined);
       }
     };
 
@@ -154,9 +168,12 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
       return;
     }
     try {
+      console.log('Calling getSuggestedQuestions with messageId:', messageId, 'userId:', user.id); // 調試用
       const questions = await difyAPI.getSuggestedQuestions(messageId, user.id);
+      console.log('Got suggested questions:', questions); // 調試用
       setLatestSuggestedQuestions(questions);
     } catch (e) {
+      console.error('Failed to fetch suggested questions:', e); // 調試用
       setLatestSuggestedQuestions(undefined);
     }
   };
@@ -170,12 +187,22 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
     // 僅在 loading=false 且 isHistoryLoading=false 且 messages 最後一則 assistant 是 isLatestAssistant，且 loading 狀態剛由 true 變為 false（即用戶主動發送訊息後）才 fetch suggestion
     if (!isHistoryLoading && !loading && messages.length > 1) {
       const lastMsg = messages[messages.length - 1];
+      console.log('Checking last message for suggested questions:', {
+        role: lastMsg.role,
+        isLatestAssistant: lastMsg.isLatestAssistant,
+        fromHistory: lastMsg.fromHistory,
+        id: lastMsg.id,
+        rawId: lastMsg.rawId
+      }); // 調試用
+      
       if (
         lastMsg.role === 'assistant' &&
         lastMsg.isLatestAssistant &&
-        !lastMsg.fromHistory // 新增：僅非歷史訊息才觸發
+        !lastMsg.fromHistory && // 新增：僅非歷史訊息才觸發
+        lastMsg.id !== 'welcome' // 新增：排除歡迎訊息
       ) {
-        fetchSuggestedQuestions(lastMsg.id);
+        console.log('Fetching suggested questions for message:', lastMsg.rawId || lastMsg.id); // 調試用
+        fetchSuggestedQuestions(lastMsg.rawId || lastMsg.id);
       } else {
         setLatestSuggestedQuestions(undefined);
       }
@@ -453,6 +480,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
         metadata: undefined,
       },
     ]);
+    // 重新設定開場建議問題（如果有的話）
+    // 注意：這裡不需要重新調用 API，因為開場建議問題已經存在 openingSuggestedQuestions 狀態中
   };
 
   // extract citation and suggested questions from metadata
@@ -631,8 +660,12 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
                             />
                           </div>
                         )}
+                        {/* 開場建議問題顯示（僅在歡迎訊息且開關開啟時） */}
+                        {showSuggestedQuestions && openingSuggestedQuestions && message.id === 'welcome' && (
+                          <AssistantSuggestedQuestions questions={openingSuggestedQuestions} onSelect={setInput} />
+                        )}
                         {/* 建議問題顯示（新版，僅顯示於最後一則 assistant 且開關開啟時） */}
-                        {showSuggestedQuestions && latestSuggestedQuestions && message.isLatestAssistant && (
+                        {showSuggestedQuestions && latestSuggestedQuestions && message.isLatestAssistant && message.id !== 'welcome' && (
                           <AssistantSuggestedQuestions questions={latestSuggestedQuestions} onSelect={setInput} />
                         )}
                       </>
