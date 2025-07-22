@@ -40,7 +40,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
   apiKey,
   apiBaseUrl,
   avatarSrc = '/images/assistant-avatar.png',
-  welcomeMessage = 'Hello! How can I assist you today?',
+  welcomeMessage = 'Hello! How can I assist you today?', // 保留作為 fallback
   enableVoice = false,
   enableHistory = false,
   primaryColor = '#3B82F6',
@@ -57,6 +57,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
   const [showSuggestedQuestions, setShowSuggestedQuestions] = useState(true); // 新增：建議問題開關
   const [latestSuggestedQuestions, setLatestSuggestedQuestions] = useState<string[] | undefined>(undefined); // 新增：動態建議問題
   const [isHistoryLoading, setIsHistoryLoading] = useState(false); // 新增：歷史紀錄載入中
+  const [difyWelcomeMessage, setDifyWelcomeMessage] = useState<string | null>(null); // 新增：Dify 開場白
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -65,27 +66,68 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
   // Feature flag
   const ENABLE_CITATION_AND_SUGGESTED = process.env.NEXT_PUBLIC_ENABLE_CHAT_CITATION_AND_SUGGESTED_QUESTIONS === 'true';
 
-  // Initialize with welcome message
+  // Initialize with welcome message from Dify
   useEffect(() => {
-    if (welcomeMessage) {
-      setMessages([
-        {
-          id: 'welcome',
-          content: welcomeMessage,
-          role: 'assistant',
-          timestamp: new Date(),
-          isLatestAssistant: false,
-          fromHistory: false,
-          metadata: undefined,
-        },
-      ]);
+    const initializeWithDifyConfig = async () => {
+      // 獲取 Dify 應用程式配置
+      try {
+        const difyConfig = await difyAPI.getParameters(user?.id);
+        const difyOpeningStatement = difyConfig.opening_statement;
+        
+        if (difyOpeningStatement && difyOpeningStatement.trim()) {
+          setDifyWelcomeMessage(difyOpeningStatement);
+          setMessages([
+            {
+              id: 'welcome',
+              content: difyOpeningStatement,
+              role: 'assistant',
+              timestamp: new Date(),
+              isLatestAssistant: false,
+              fromHistory: false,
+              metadata: undefined,
+            },
+          ]);
+        } else {
+          // Fallback 到傳入的 welcomeMessage
+          setMessages([
+            {
+              id: 'welcome',
+              content: welcomeMessage,
+              role: 'assistant',
+              timestamp: new Date(),
+              isLatestAssistant: false,
+              fromHistory: false,
+              metadata: undefined,
+            },
+          ]);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch Dify opening statement, using fallback:', error);
+        // Fallback 到傳入的 welcomeMessage
+        setMessages([
+          {
+            id: 'welcome',
+            content: welcomeMessage,
+            role: 'assistant',
+            timestamp: new Date(),
+            isLatestAssistant: false,
+            fromHistory: false,
+            metadata: undefined,
+          },
+        ]);
+      }
+    };
+
+    // 只有在認證完成後才初始化
+    if (!authLoading) {
+      initializeWithDifyConfig();
     }
 
     // Load conversation history if logged in and history enabled
     if (isAuthenticated && enableHistory) {
       loadConversations();
     }
-  }, [isAuthenticated, enableHistory, welcomeMessage]);
+  }, [isAuthenticated, enableHistory, welcomeMessage, user?.id, authLoading]);
 
   // 修正：如果有 conversationId，且 messages 為 welcome，則自動載入歷史紀錄
   useEffect(() => {
@@ -398,10 +440,12 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
 
   const createNewConversation = async () => {
     setConversationId(null);
+    // 使用 Dify 開場白或 fallback 到傳入的 welcomeMessage
+    const messageContent = difyWelcomeMessage || welcomeMessage;
     setMessages([
       {
         id: 'welcome',
-        content: welcomeMessage,
+        content: messageContent,
         role: 'assistant',
         timestamp: new Date(),
         isLatestAssistant: false,

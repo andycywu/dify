@@ -188,6 +188,35 @@ export class DifyAPI {
     }
     return [];
   }
+
+  /**
+   * 取得應用程式參數配置 (包含開場白、建議問題等)
+   * GET /parameters?user={user_id}
+   * 回傳應用程式配置信息包括 opening_statement
+   */
+  async getParameters(userId?: string): Promise<{
+    opening_statement?: string;
+    suggested_questions?: string[];
+    suggested_questions_after_answer?: { enabled: boolean };
+    speech_to_text?: { enabled: boolean };
+    text_to_speech?: { enabled: boolean; voice?: string; language?: string; autoPlay?: string };
+    retriever_resource?: { enabled: boolean };
+    annotation_reply?: { enabled: boolean };
+    user_input_form?: any[];
+    file_upload?: { image?: any; document?: any; audio?: any; video?: any };
+    system_parameters?: Record<string, any>;
+  }> {
+    const response = await axios.get(
+      `${this.apiBaseUrl}/parameters`,
+      {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        params: userId ? { user: userId } : undefined
+      }
+    );
+    return response.data;
+  }
 }
 
 export default DifyAPI;
