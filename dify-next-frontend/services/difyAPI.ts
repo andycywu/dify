@@ -30,6 +30,9 @@ interface ChatResponse {
       prompt_tokens?: number;
       completion_tokens?: number;
     };
+    suggested_questions?: string[]; // 新增：建議問題可能在 metadata 中
+    retriever_resources?: any[]; // 新增：引用資源
+    [key: string]: any; // 允許其他 metadata 屬性
   };
 }
 
@@ -174,19 +177,47 @@ export class DifyAPI {
    * 回傳 { result: 'success', data: string[] }
    */
   async getSuggestedQuestions(messageId: string, userId: string): Promise<string[]> {
-    const response = await axios.get(
-      `${this.apiBaseUrl}/messages/${messageId}/suggested`,
-      {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        params: { user: userId }
+    try {
+      console.log('Making request to:', `${this.apiBaseUrl}/messages/${messageId}/suggested`); // 調試用
+      const response = await axios.get(
+        `${this.apiBaseUrl}/messages/${messageId}/suggested`,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`
+          },
+          params: { user: userId }
+        }
+      );
+      
+      console.log('Suggested questions API response status:', response.status); // 調試用
+      console.log('Suggested questions API response data:', JSON.stringify(response.data, null, 2)); // 調試用
+      
+      if (response.data && response.data.result === 'success' && Array.isArray(response.data.data)) {
+        console.log('Using response.data.data format:', response.data.data); // 調試用
+        return response.data.data;
       }
-    );
-    if (response.data && response.data.result === 'success' && Array.isArray(response.data.data)) {
-      return response.data.data;
+      
+      // 嘗試其他可能的回應格式
+      if (Array.isArray(response.data)) {
+        console.log('Using direct array format:', response.data); // 調試用
+        return response.data;
+      }
+      
+      if (response.data && Array.isArray(response.data.suggested_questions)) {
+        console.log('Using response.data.suggested_questions format:', response.data.suggested_questions); // 調試用
+        return response.data.suggested_questions;
+      }
+      
+      console.warn('Unexpected suggested questions response format:', response.data);
+      return [];
+    } catch (error: any) {
+      console.error('Error fetching suggested questions:', error);
+      if (error.response) {
+        console.error('API Error Response status:', error.response.status);
+        console.error('API Error Response data:', error.response.data);
+      }
+      return [];
     }
-    return [];
   }
 
   /**
@@ -206,16 +237,26 @@ export class DifyAPI {
     file_upload?: { image?: any; document?: any; audio?: any; video?: any };
     system_parameters?: Record<string, any>;
   }> {
-    const response = await axios.get(
-      `${this.apiBaseUrl}/parameters`,
-      {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        params: userId ? { user: userId } : undefined
+    try {
+      console.log('Making request to:', `${this.apiBaseUrl}/parameters`); // 調試用
+      const response = await axios.get(
+        `${this.apiBaseUrl}/parameters`,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`
+          },
+          params: userId ? { user: userId } : undefined
+        }
+      );
+      console.log('Parameters API response:', response.data); // 調試用
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching parameters:', error);
+      if (error.response) {
+        console.error('Parameters API Error Response:', error.response.status, error.response.data);
       }
-    );
-    return response.data;
+      throw error;
+    }
   }
 }
 

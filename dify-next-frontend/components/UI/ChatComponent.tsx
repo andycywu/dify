@@ -78,6 +78,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
         
         console.log('Dify config:', difyConfig); // 調試用
         console.log('Opening questions:', difyOpeningQuestions); // 調試用
+        console.log('Suggested questions after answer enabled:', difyConfig.suggested_questions_after_answer?.enabled); // 調試用
         
         if (difyOpeningStatement && difyOpeningStatement.trim()) {
           setDifyWelcomeMessage(difyOpeningStatement);
@@ -192,7 +193,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
         isLatestAssistant: lastMsg.isLatestAssistant,
         fromHistory: lastMsg.fromHistory,
         id: lastMsg.id,
-        rawId: lastMsg.rawId
+        rawId: lastMsg.rawId,
+        hasMetadata: !!lastMsg.metadata,
+        metadataSuggestedQuestions: lastMsg.metadata?.suggested_questions
       }); // 調試用
       
       if (
@@ -201,8 +204,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
         !lastMsg.fromHistory && // 新增：僅非歷史訊息才觸發
         lastMsg.id !== 'welcome' // 新增：排除歡迎訊息
       ) {
-        console.log('Fetching suggested questions for message:', lastMsg.rawId || lastMsg.id); // 調試用
-        fetchSuggestedQuestions(lastMsg.rawId || lastMsg.id);
+        // 優先檢查 metadata 中是否有建議問題
+        if (lastMsg.metadata && lastMsg.metadata.suggested_questions && Array.isArray(lastMsg.metadata.suggested_questions)) {
+          console.log('Using suggested questions from metadata:', lastMsg.metadata.suggested_questions); // 調試用
+          setLatestSuggestedQuestions(lastMsg.metadata.suggested_questions);
+        } else {
+          console.log('No suggested questions in metadata, fetching via API for message:', lastMsg.rawId || lastMsg.id); // 調試用
+          fetchSuggestedQuestions(lastMsg.rawId || lastMsg.id);
+        }
       } else {
         setLatestSuggestedQuestions(undefined);
       }
@@ -371,6 +380,16 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
         isLatestAssistant: true, // 新增：標記為最新 assistant
         fromHistory: false, // 新增，確保型別一致
       };
+      
+      // 檢查是否有建議問題在 metadata 中
+      console.log('Assistant response metadata:', response.metadata); // 調試用
+      if (response.metadata && response.metadata.suggested_questions) {
+        console.log('Found suggested questions in metadata:', response.metadata.suggested_questions); // 調試用
+        setLatestSuggestedQuestions(response.metadata.suggested_questions);
+      } else {
+        // 如果 metadata 中沒有建議問題，稍後通過 API 獲取
+        console.log('No suggested questions in metadata, will fetch via API later'); // 調試用
+      }
       
       setMessages(prev => {
         // 新增：移除所有 isLatestAssistant 標記，並補齊 fromHistory 與 metadata
