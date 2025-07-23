@@ -1,0 +1,34 @@
+# 修復網絡問題的 Dockerfile 補丁
+# 
+# 使用方法:
+# 1. 備份原始 Dockerfile: cp api/Dockerfile api/Dockerfile.backup
+# 2. 應用此補丁: cp api/Dockerfile.fixed api/Dockerfile
+# 3. 重新構建
+
+# 在原始 Dockerfile 的 RUN 指令中添加網絡修復
+# 替換第 42-55 行的內容為以下內容:
+
+RUN \
+    # 設置更寬鬆的網絡超時
+    echo 'Acquire::http::Timeout "120";' > /etc/apt/apt.conf.d/99timeout && \
+    echo 'Acquire::https::Timeout "120";' >> /etc/apt/apt.conf.d/99timeout && \
+    echo 'Acquire::ftp::Timeout "120";' >> /etc/apt/apt.conf.d/99timeout && \
+    # 更新套件列表，重試機制
+    (apt-get update || apt-get update || apt-get update) \
+    # 安裝依賴，使用 --fix-missing 處理網絡問題
+    && apt-get install -y --no-install-recommends --fix-missing \
+        # basic environment
+        curl nodejs libgmp-dev libmpfr-dev libmpc-dev \
+        # For Security  
+        expat libldap-2.5-0 perl libsqlite3-0 zlib1g \
+        # install a package to improve the accuracy of guessing mime type and file extension
+        media-types \
+        # install libmagic to support the use of python-magic guess MIMETYPE
+        libmagic1 \
+    # 如果上述失敗，嘗試逐個安裝關鍵套件
+    || (apt-get install -y --no-install-recommends curl && \
+        apt-get install -y --no-install-recommends nodejs && \
+        apt-get install -y --no-install-recommends libmagic1) \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /etc/apt/apt.conf.d/99timeout

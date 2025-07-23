@@ -1,4 +1,115 @@
-# Docker 構建問題解決方案和使用指南
+# Docker 構建網絡問題快速解決指南
+
+## 問題描述
+在構建 `andywu719/dify-api:latest` 時遇到網絡連接錯誤：
+```
+Could not connect to debian.map.fastlydns.net:80
+Unable to connect to deb.debian.org:http
+```
+
+## 快速解決方案
+
+### 方案 1: 立即嘗試（最簡單）
+```bash
+# 重啟 Docker 並清理緩存
+docker system prune -f
+docker builder prune -f
+
+# 使用網絡主機模式構建
+docker build --network=host -t andywu719/dify-api:latest api/
+```
+
+### 方案 2: 修復 Dockerfile（推薦）
+```bash
+# 運行修復腳本
+chmod +x fix-dockerfile-network.sh
+./fix-dockerfile-network.sh
+
+# 按照提示應用修復，然後重新構建
+```
+
+### 方案 3: 跳過構建，使用現有映像
+如果構建持續失敗，您可以：
+```bash
+# 拉取官方映像（如果存在）
+docker pull langgenius/dify-api:latest
+docker tag langgenius/dify-api:latest andywu719/dify-api:latest
+
+# 或者暫時使用不同的映像
+```
+
+### 方案 4: 系統級修復
+```bash
+# 運行診斷腳本
+chmod +x diagnose-docker-build.sh
+./diagnose-docker-build.sh
+
+# 根據診斷結果應用相應修復
+```
+
+## macOS 特殊解決方案
+
+如果您使用 macOS Docker Desktop：
+
+1. **重啟 Docker Desktop**
+2. **設置 DNS**：
+   - 打開 Docker Desktop
+   - 前往 Settings → Resources → Network
+   - 設置 DNS 為：`8.8.8.8`, `8.8.4.4`
+3. **增加資源分配**：
+   - Settings → Resources
+   - 增加 Memory 到至少 4GB
+   - 增加 CPU 到至少 2 核心
+
+## EC2 特殊解決方案
+
+如果您在 EC2 上構建：
+
+```bash
+# 運行 EC2 專用修復
+chmod +x ec2-fix-docker-build.sh
+./ec2-fix-docker-build.sh
+```
+
+## 臨時繞過方案
+
+如果所有方案都失敗，可以暫時跳過 API 構建：
+
+1. **使用預構建映像**：修改 `docker-compose.yaml` 中的映像名稱
+2. **本地開發模式**：直接運行 Python API 而不使用 Docker
+3. **分步構建**：先構建基礎映像，再構建應用映像
+
+## 檢查清單
+
+構建前請確認：
+- [ ] Docker 服務正在運行
+- [ ] 網絡連接正常（可以訪問 google.com）
+- [ ] 沒有代理或防火牆阻止
+- [ ] Docker 有足夠的磁盤空間
+- [ ] 系統時間正確（影響 SSL 證書驗證）
+
+## 成功構建後
+
+一旦 API 映像構建成功，您就可以：
+```bash
+# 返回到 docker 目錄
+cd docker
+
+# 重新啟動所有服務
+docker compose down
+docker compose up -d
+
+# 檢查服務狀態
+docker compose ps
+```
+
+## 獲取幫助
+
+如果問題持續存在：
+1. 運行完整診斷：`./diagnose-docker-build.sh`
+2. 檢查 Docker 日誌：`docker logs <container-id>`
+3. 嘗試在不同網絡環境下構建
+4. 考慮使用雲端構建服務
 
 ## 問題總結
 

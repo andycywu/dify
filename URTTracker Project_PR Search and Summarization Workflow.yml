@@ -57,7 +57,7 @@ workflow:
       enabled: false
     suggested_questions: []
     suggested_questions_after_answer:
-      enabled: false
+      enabled: true
     text_to_speech:
       enabled: false
       language: ''
