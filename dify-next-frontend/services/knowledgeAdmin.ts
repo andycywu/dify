@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const ADMIN_API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'dataset-mdyWjrfYflfsJkYMjPLnG7IY';
-const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL || 'http://54.169.166.197/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL || 'http://54.169.166.197/api/v1';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -211,39 +211,42 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
   try {
     const formData = new FormData();
     
-    // Use 'data' as the field name for file upload based on Dify API
-    formData.append('data', data.file, data.name);
-    formData.append('indexing_technique', data.indexing_technique || 'high_quality');
+    // Add the file using 'file' field name
+    formData.append('file', data.file);
     
-    // Match the same process rule structure as text creation
-    const processRule = {
-      mode: 'automatic',
-      rules: {
-        pre_processing_rules: [
-          {
-            id: 'remove_extra_spaces',
-            enabled: true
-          },
-          {
-            id: 'remove_urls_emails', 
-            enabled: true
+    // Add the data configuration as JSON string in 'data' field
+    const configData = {
+      indexing_technique: data.indexing_technique || 'high_quality',
+      process_rule: {
+        rules: {
+          pre_processing_rules: [
+            {
+              id: 'remove_extra_spaces',
+              enabled: true
+            },
+            {
+              id: 'remove_urls_emails', 
+              enabled: true
+            }
+          ],
+          segmentation: {
+            separator: '###',
+            max_tokens: 500
           }
-        ],
-        segmentation: {
-          separator: '###',
-          max_tokens: 500
-        }
+        },
+        mode: 'custom'
       }
     };
     
-    formData.append('process_rule', JSON.stringify(processRule));
+    formData.append('data', JSON.stringify(configData));
 
-    console.log('Attempting file upload to:', `/datasets/${datasetId}/document/create_by_file`);
+    console.log('Attempting file upload to:', `/datasets/${datasetId}/document/create-by-file`);
     console.log('File name:', data.file.name);
     console.log('File size:', data.file.size);
     console.log('File type:', data.file.type);
+    console.log('Config data:', JSON.stringify(configData));
 
-    const response = await axiosInstance.post(`/datasets/${datasetId}/document/create_by_file`, formData, {
+    const response = await axiosInstance.post(`/datasets/${datasetId}/document/create-by-file`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
