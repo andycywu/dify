@@ -70,6 +70,12 @@
       "namedRegex": "^/debug\\-auth(?:/)?$"
     },
     {
+      "page": "/knowledge-management",
+      "regex": "^/knowledge\\-management(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/knowledge\\-management(?:/)?$"
+    },
+    {
       "page": "/login",
       "regex": "^/login(?:/)?$",
       "routeKeys": {},
@@ -104,6 +110,12 @@
       "regex": "^/test\\-agentic(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/test\\-agentic(?:/)?$"
+    },
+    {
+      "page": "/test-knowledge-api",
+      "regex": "^/test\\-knowledge\\-api(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/test\\-knowledge\\-api(?:/)?$"
     },
     {
       "page": "/usage",

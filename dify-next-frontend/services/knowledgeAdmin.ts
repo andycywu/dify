@@ -1,0 +1,214 @@
+// Knowledge Base Admin API Service
+import axios from 'axios';
+
+const ADMIN_API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY || 'dataset-mdyWjrfYflfsJkYMjPLnG7IY';
+const API_BASE_URL = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL || 'http://54.169.166.197/v1';
+
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Authorization': `Bearer ${ADMIN_API_KEY}`,
+    'Content-Type': 'application/json'
+  }
+});
+
+export interface KnowledgeBase {
+  id: string;
+  name: string;
+  description: string;
+  permission: string;
+  data_source_type: string;
+  indexing_technique: string;
+  app_count: number;
+  document_count: number;
+  word_count: number;
+  created_by: string;
+  created_at: string;
+  updated_by: string;
+  updated_at: string;
+}
+
+export interface Document {
+  id: string;
+  position: number;
+  data_source_type: string;
+  data_source_info: any;
+  dataset_process_rule_id: string;
+  name: string;
+  created_from: string;
+  created_by: string;
+  created_at: string;
+  tokens: number;
+  indexing_status: string;
+  error: string;
+  enabled: boolean;
+  disabled_at: string;
+  disabled_by: string;
+  archived: boolean;
+  display_status: string;
+  word_count: number;
+  hit_count: number;
+}
+
+export interface CreateKnowledgeBaseData {
+  name: string;
+  description?: string;
+  permission?: string;
+  indexing_technique?: string;
+  external_knowledge_api_id?: string;
+  external_knowledge_id?: string;
+}
+
+export interface UpdateKnowledgeBaseData {
+  name?: string;
+  description?: string;
+  permission?: string;
+  indexing_technique?: string;
+  external_knowledge_api_id?: string;
+  external_knowledge_id?: string;
+}
+
+export interface CreateDocumentData {
+  name: string;
+  text: string;
+  indexing_technique?: string;
+  process_rule?: any;
+}
+
+// Knowledge Base APIs
+export const getKnowledgeBases = async () => {
+  try {
+    const response = await axiosInstance.get('/datasets');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching knowledge bases:', error);
+    throw error;
+  }
+};
+
+export const createKnowledgeBase = async (data: CreateKnowledgeBaseData) => {
+  try {
+    const response = await axiosInstance.post('/datasets', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating knowledge base:', error);
+    throw error;
+  }
+};
+
+export const getKnowledgeBaseById = async (datasetId: string) => {
+  try {
+    const response = await axiosInstance.get(`/datasets/${datasetId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching knowledge base:', error);
+    throw error;
+  }
+};
+
+export const updateKnowledgeBase = async (datasetId: string, data: UpdateKnowledgeBaseData) => {
+  try {
+    const response = await axiosInstance.patch(`/datasets/${datasetId}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating knowledge base:', error);
+    throw error;
+  }
+};
+
+export const deleteKnowledgeBase = async (datasetId: string) => {
+  try {
+    const response = await axiosInstance.delete(`/datasets/${datasetId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting knowledge base:', error);
+    throw error;
+  }
+};
+
+// Document APIs
+export const getDocuments = async (datasetId: string, params?: {
+  keyword?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  try {
+    const response = await axiosInstance.get(`/datasets/${datasetId}/documents`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching documents:', error);
+    throw error;
+  }
+};
+
+export const createDocumentFromText = async (datasetId: string, data: CreateDocumentData) => {
+  try {
+    const response = await axiosInstance.post(`/datasets/${datasetId}/document/create_by_text`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating document:', error);
+    throw error;
+  }
+};
+
+export const deleteDocument = async (datasetId: string, documentId: string) => {
+  try {
+    const response = await axiosInstance.delete(`/datasets/${datasetId}/documents/${documentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    throw error;
+  }
+};
+
+// Get chunks from a document
+export const getDocumentChunks = async (datasetId: string, documentId: string) => {
+  try {
+    const response = await axiosInstance.get(`/datasets/${datasetId}/documents/${documentId}/segments`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching document chunks:', error);
+    throw error;
+  }
+};
+
+// Retrieve chunks from knowledge base (for search)
+export const retrieveChunks = async (datasetId: string, query: string, limit = 10) => {
+  try {
+    const response = await axiosInstance.post(`/datasets/${datasetId}/retrieve`, {
+      query,
+      retrieval_model: {
+        search_method: 'semantic_search',
+        reranking_enable: false,
+        reranking_model: {
+          reranking_provider_name: '',
+          reranking_model_name: ''
+        },
+        top_k: limit,
+        score_threshold_enabled: false
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error retrieving chunks:', error);
+    throw error;
+  }
+};
+
+// Get available embedding models
+export const getEmbeddingModels = async () => {
+  try {
+    const response = await axiosInstance.get('/datasets/embedding-models');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching embedding models:', error);
+    throw error;
+  }
+};
+
+// Mock function for getting apps using knowledge base
+export const getAppsUsingKnowledgeBase = async (datasetId: string) => {
+  // This would need to be implemented based on your app-dataset relationship API
+  // For now, returning mock data
+  return Promise.resolve({ data: [] });
+};
