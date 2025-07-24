@@ -72,7 +72,38 @@ export interface CreateDocumentData {
   name: string;
   text: string;
   indexing_technique?: string;
-  process_rule?: any;
+  process_rule?: {
+    rules: {
+      pre_processing_rules: Array<{
+        id: string;
+        enabled: boolean;
+      }>;
+      segmentation: {
+        separator: string;
+        max_tokens: number;
+      };
+    };
+    mode: string;
+  };
+}
+
+export interface CreateDocumentFromFileData {
+  name: string;
+  file: File;
+  indexing_technique?: string;
+  process_rule?: {
+    rules: {
+      pre_processing_rules: Array<{
+        id: string;
+        enabled: boolean;
+      }>;
+      segmentation: {
+        separator: string;
+        max_tokens: number;
+      };
+    };
+    mode: string;
+  };
 }
 
 // Knowledge Base APIs
@@ -143,10 +174,76 @@ export const getDocuments = async (datasetId: string, params?: {
 
 export const createDocumentFromText = async (datasetId: string, data: CreateDocumentData) => {
   try {
-    const response = await axiosInstance.post(`/datasets/${datasetId}/document/create_by_text`, data);
+    const requestData = {
+      name: data.name,
+      text: data.text,
+      indexing_technique: data.indexing_technique || 'high_quality',
+      process_rule: data.process_rule || {
+        rules: {
+          pre_processing_rules: [
+            {
+              id: 'remove_extra_spaces',
+              enabled: true
+            },
+            {
+              id: 'remove_urls_emails',
+              enabled: true
+            }
+          ],
+          segmentation: {
+            separator: '###',
+            max_tokens: 500
+          }
+        },
+        mode: 'automatic'
+      }
+    };
+
+    const response = await axiosInstance.post(`/datasets/${datasetId}/document/create_by_text`, requestData);
     return response.data;
   } catch (error) {
     console.error('Error creating document:', error);
+    throw error;
+  }
+};
+
+export const createDocumentFromFile = async (datasetId: string, data: CreateDocumentFromFileData) => {
+  try {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('file', data.file);
+    formData.append('indexing_technique', data.indexing_technique || 'high_quality');
+    
+    const processRule = data.process_rule || {
+      rules: {
+        pre_processing_rules: [
+          {
+            id: 'remove_extra_spaces',
+            enabled: true
+          },
+          {
+            id: 'remove_urls_emails',
+            enabled: true
+          }
+        ],
+        segmentation: {
+          separator: '###',
+          max_tokens: 500
+        }
+      },
+      mode: 'automatic'
+    };
+    
+    formData.append('process_rule', JSON.stringify(processRule));
+
+    const response = await axiosInstance.post(`/datasets/${datasetId}/document/create_by_file`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating document from file:', error);
     throw error;
   }
 };

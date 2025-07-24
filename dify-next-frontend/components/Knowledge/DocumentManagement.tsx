@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { KnowledgeBase, Document, getDocuments, createDocumentFromText, deleteDocument } from '../../services/knowledgeAdmin';
+import { KnowledgeBase, Document, getDocuments, createDocumentFromText, createDocumentFromFile, deleteDocument } from '../../services/knowledgeAdmin';
 
 interface DocumentManagementProps {
   knowledgeBase: KnowledgeBase;
@@ -227,21 +227,64 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   onClose, 
   onSuccess 
 }) => {
+  const [activeTab, setActiveTab] = useState<'text' | 'file'>('text');
   const [formData, setFormData] = useState({
     name: '',
     text: ''
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const supportedFileTypes = [
+    'txt', 'markdown', 'mdx', 'pdf', 'html', 'xlsx', 'xls', 
+    'docx', 'csv', 'vtt', 'properties', 'md', 'htm'
+  ];
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (15MB limit)
+      if (file.size > 15 * 1024 * 1024) {
+        setError('File size must be less than 15MB');
+        return;
+      }
+
+      // Check file type
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      if (fileExtension && !supportedFileTypes.includes(fileExtension)) {
+        setError(`Unsupported file type. Supported types: ${supportedFileTypes.join(', ')}`);
+        return;
+      }
+
+      setSelectedFile(file);
+      setFormData({ ...formData, name: file.name });
+      setError(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.text.trim()) return;
+    
+    if (activeTab === 'text') {
+      if (!formData.name.trim() || !formData.text.trim()) return;
+    } else {
+      if (!selectedFile || !formData.name.trim()) return;
+    }
 
     try {
       setLoading(true);
       setError(null);
-      await createDocumentFromText(knowledgeBaseId, formData);
+      
+      if (activeTab === 'text') {
+        await createDocumentFromText(knowledgeBaseId, formData);
+      } else {
+        await createDocumentFromFile(knowledgeBaseId, {
+          name: formData.name,
+          file: selectedFile!
+        });
+      }
+      
       onSuccess();
     } catch (error) {
       console.error('Failed to create document:', error);
@@ -269,6 +312,30 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             </button>
           </div>
 
+          {/* Tabs */}
+          <div className="flex mb-6 border-b">
+            <button
+              onClick={() => setActiveTab('text')}
+              className={`px-4 py-2 font-medium text-sm border-b-2 ${
+                activeTab === 'text'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              From Text
+            </button>
+            <button
+              onClick={() => setActiveTab('file')}
+              className={`px-4 py-2 font-medium text-sm border-b-2 ${
+                activeTab === 'file'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              From File
+            </button>
+          </div>
+
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {error}
@@ -290,19 +357,61 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Content *
-              </label>
-              <textarea
-                value={formData.text}
-                onChange={(e) => setFormData({ ...formData, text: e.target.value })}
-                rows={12}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter document content"
-                required
-              />
-            </div>
+            {activeTab === 'text' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Content *
+                </label>
+                <textarea
+                  value={formData.text}
+                  onChange={(e) => setFormData({ ...formData, text: e.target.value })}
+                  rows={12}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter document content"
+                  required
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload File *
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="file-upload"
+                    accept=".txt,.md,.markdown,.mdx,.pdf,.html,.htm,.xlsx,.xls,.docx,.csv,.vtt,.properties"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    {selectedFile ? (
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Click to upload file</p>
+                        <p className="text-xs text-gray-500">Maximum file size: 15MB</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  <p className="font-medium">Supported formats:</p>
+                  <p>TXT, MARKDOWN, MDX, PDF, HTML, XLSX, XLS, DOCX, CSV, VTT, PROPERTIES, MD, HTM</p>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end space-x-3 pt-4">
               <button
@@ -315,7 +424,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={loading || !formData.name.trim() || !formData.text.trim()}
+                disabled={loading || (activeTab === 'text' ? (!formData.name.trim() || !formData.text.trim()) : (!selectedFile || !formData.name.trim()))}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
               >
                 {loading ? 'Creating...' : 'Create Document'}
