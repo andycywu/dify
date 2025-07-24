@@ -5,8 +5,8 @@
   "devFiles": [],
   "ampDevFiles": [],
   "lowPriorityFiles": [
-    "static/1xvbO8CGsQNJM9eLhXNmN/_buildManifest.js",
-    "static/1xvbO8CGsQNJM9eLhXNmN/_ssgManifest.js"
+    "static/ul5J8NUIfckZSNJ6pGH48/_buildManifest.js",
+    "static/ul5J8NUIfckZSNJ6pGH48/_ssgManifest.js"
   ],
   "rootMainFiles": [],
   "rootMainFilesTree": {},
@@ -66,7 +66,7 @@
       "static/chunks/framework-f75312fc4004b783.js",
       "static/chunks/main-647cb0782ac86235.js",
       "static/chunks/149-41335a68e0e134e7.js",
-      "static/chunks/pages/knowledge-management-1fed12de56172880.js"
+      "static/chunks/pages/knowledge-management-d2203e21bd5e5e3b.js"
     ],
     "/login": [
       "static/chunks/webpack-8cac0b4b405cede1.js",
@@ -111,7 +111,7 @@
       "static/chunks/webpack-8cac0b4b405cede1.js",
       "static/chunks/framework-f75312fc4004b783.js",
       "static/chunks/main-647cb0782ac86235.js",
-      "static/chunks/pages/test-knowledge-api-b3dba96a45e8de27.js"
+      "static/chunks/pages/test-knowledge-api-3f4f3cde7a6dc26a.js"
     ],
     "/usage": [
       "static/chunks/webpack-8cac0b4b405cede1.js",
