@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/Layout/MainLayout';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDate } from '../utils/dateUtils';
 import {
   getKnowledgeBases,
   createKnowledgeBase,
@@ -228,7 +229,7 @@ const KnowledgeManagement: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(kb.created_at).toLocaleDateString()}
+                        {formatDate(kb.created_at)}
                         <div className="text-xs text-gray-400">
                           by {kb.created_by}
                         </div>

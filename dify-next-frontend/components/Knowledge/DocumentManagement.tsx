@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatDate } from '../../utils/dateUtils';
 import { KnowledgeBase, Document, getDocuments, createDocumentFromText, createDocumentFromFile, deleteDocument } from '../../services/knowledgeAdmin';
 
 interface DocumentManagementProps {
@@ -168,7 +169,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ knowledgeBase, 
                       {doc.hit_count}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(doc.created_at).toLocaleDateString()}
+                      {formatDate(doc.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button

@@ -23,9 +23,9 @@ export interface KnowledgeBase {
   document_count: number;
   word_count: number;
   created_by: string;
-  created_at: string;
+  created_at: number;
   updated_by: string;
-  updated_at: string;
+  updated_at: number;
 }
 
 export interface Document {
@@ -37,7 +37,7 @@ export interface Document {
   name: string;
   created_from: string;
   created_by: string;
-  created_at: string;
+  created_at: number;
   tokens: number;
   indexing_status: string;
   error: string;
