@@ -5,8 +5,8 @@
   "devFiles": [],
   "ampDevFiles": [],
   "lowPriorityFiles": [
-    "static/bs7BNXueazYLMyXk3Upq1/_buildManifest.js",
-    "static/bs7BNXueazYLMyXk3Upq1/_ssgManifest.js"
+    "static/psD612oLF6kTHwjgAMv9f/_buildManifest.js",
+    "static/psD612oLF6kTHwjgAMv9f/_ssgManifest.js"
   ],
   "rootMainFiles": [],
   "rootMainFilesTree": {},
@@ -66,7 +66,7 @@
       "static/chunks/framework-f75312fc4004b783.js",
       "static/chunks/main-647cb0782ac86235.js",
       "static/chunks/149-41335a68e0e134e7.js",
-      "static/chunks/pages/knowledge-management-b7ae32846e36acac.js"
+      "static/chunks/pages/knowledge-management-30fb6d182da39c63.js"
     ],
     "/login": [
       "static/chunks/webpack-8cac0b4b405cede1.js",

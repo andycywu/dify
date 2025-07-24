@@ -210,11 +210,14 @@ export const createDocumentFromText = async (datasetId: string, data: CreateDocu
 export const createDocumentFromFile = async (datasetId: string, data: CreateDocumentFromFileData) => {
   try {
     const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('file', data.file);
+    
+    // Use 'data' as the field name for file upload based on Dify API
+    formData.append('data', data.file, data.name);
     formData.append('indexing_technique', data.indexing_technique || 'high_quality');
     
-    const processRule = data.process_rule || {
+    // Match the same process rule structure as text creation
+    const processRule = {
+      mode: 'automatic',
       rules: {
         pre_processing_rules: [
           {
@@ -222,7 +225,7 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
             enabled: true
           },
           {
-            id: 'remove_urls_emails',
+            id: 'remove_urls_emails', 
             enabled: true
           }
         ],
@@ -230,11 +233,15 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
           separator: '###',
           max_tokens: 500
         }
-      },
-      mode: 'automatic'
+      }
     };
     
     formData.append('process_rule', JSON.stringify(processRule));
+
+    console.log('Attempting file upload to:', `/datasets/${datasetId}/document/create_by_file`);
+    console.log('File name:', data.file.name);
+    console.log('File size:', data.file.size);
+    console.log('File type:', data.file.type);
 
     const response = await axiosInstance.post(`/datasets/${datasetId}/document/create_by_file`, formData, {
       headers: {
@@ -244,6 +251,12 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
     return response.data;
   } catch (error) {
     console.error('Error creating document from file:', error);
+    if (error instanceof Error && 'response' in error) {
+      const axiosError = error as any;
+      console.error('Response status:', axiosError.response?.status);
+      console.error('Response data:', axiosError.response?.data);
+      console.error('Response headers:', axiosError.response?.headers);
+    }
     throw error;
   }
 };
