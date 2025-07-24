@@ -142,6 +142,11 @@ dify-next-frontend/
 - 确保所有依赖已正确安装
 - 检查环境变量配置是否正确
 
+### Header重复显示问题
+- 如果看到Header显示两遍，这是因为布局组件重复引用
+- `_app.tsx` 已经全局包含Header，不需要在其他布局中重复
+- `MainLayout` 组件已修复，仅负责设置页面title和包装内容
+
 ## 技術棧 / Tech Stack
 
 - **Frontend**: Next.js, React, TypeScript, Tailwind CSS
