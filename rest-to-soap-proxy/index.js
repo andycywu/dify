@@ -568,8 +568,14 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
       console.log('DEBUG - prList is object, checking for single issue or nested list');
       console.log('DEBUG - prList keys:', Object.keys(prList));
       
+      // 特殊處理 GetProjectPRList 返回的結構：{IssueID: {int: [array of IDs]}}
+      if (prList.IssueID && prList.IssueID.int && Array.isArray(prList.IssueID.int)) {
+        console.log('DEBUG - Found GetProjectPRList standard structure: IssueID.int array');
+        issueIds = prList.IssueID.int;
+        console.log(`DEBUG - Extracted ${issueIds.length} issue IDs from IssueID.int array`);
+      }
       // 如果返回單一問題或包含問題列表的對象
-      if (prList.issueID || prList.IssueID || prList.id) {
+      else if (prList.issueID || prList.IssueID || prList.id) {
         console.log('DEBUG - Found single issue ID in prList object');
         issueIds = [prList.issueID || prList.IssueID || prList.id];
       } else {
