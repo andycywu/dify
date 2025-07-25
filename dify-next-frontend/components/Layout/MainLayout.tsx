@@ -8,7 +8,9 @@ const MainLayout: React.FC<{ title?: string; children: React.ReactNode }> = ({ t
       <meta name="description" content="TPV OBM測試助理" />
       <link rel="icon" href="/favicon.ico" />
     </Head>
-    {children}
+    <div className="container mx-auto px-4 py-8 flex justify-center">
+      {children}
+    </div>
   </>
 );
 
