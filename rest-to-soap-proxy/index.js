@@ -13,6 +13,8 @@ const wsdlUrl = 'https://fwtrack.tpv-tech.com/api/issue.asmx';
 // 清理SOAP響應，提取業務數據
 function cleanSoapResponse(soapResult, method) {
   try {
+    console.log(`DEBUG - cleanSoapResponse for method ${method}:`, JSON.stringify(soapResult, null, 2));
+    
     // 從SOAP響應中提取實際數據
     const envelope = soapResult['soap:Envelope'] || soapResult['soap12:Envelope'];
     if (!envelope) {
@@ -26,6 +28,8 @@ function cleanSoapResponse(soapResult, method) {
       return envelope;
     }
 
+    console.log(`DEBUG - SOAP Body keys:`, Object.keys(body));
+
     // 查找方法響應 (methodNameResponse)
     const responseKey = `${method}Response`;
     const methodResponse = body[responseKey];
@@ -34,6 +38,8 @@ function cleanSoapResponse(soapResult, method) {
       
       // 嘗試查找其他可能的響應格式
       const bodyKeys = Object.keys(body);
+      console.log(`DEBUG - Available body keys:`, bodyKeys);
+      
       const possibleResponse = bodyKeys.find(key => 
         key.toLowerCase().includes(method.toLowerCase()) && 
         key.toLowerCase().includes('response')
@@ -42,6 +48,7 @@ function cleanSoapResponse(soapResult, method) {
       if (possibleResponse) {
         console.log(`Found alternative response key: ${possibleResponse}`);
         const altMethodResponse = body[possibleResponse];
+        console.log(`DEBUG - Alternative method response:`, JSON.stringify(altMethodResponse, null, 2));
         
         // 查找結果數據
         const altResultKey = Object.keys(altMethodResponse || {}).find(key => 
@@ -53,19 +60,39 @@ function cleanSoapResponse(soapResult, method) {
           return altMethodResponse[altResultKey];
         }
         
+        // 如果找不到result鍵，但響應對象有實際內容，則返回響應對象
+        const responseKeys = Object.keys(altMethodResponse || {});
+        const dataKeys = responseKeys.filter(key => !key.startsWith('$') && !key.includes('xmlns'));
+        
+        if (dataKeys.length > 0) {
+          console.log(`Found data keys in alternative response:`, dataKeys);
+          return altMethodResponse;
+        }
+        
         return altMethodResponse;
       }
       
       // 如果沒有找到特定的響應，檢查 body 是否只包含業務數據
       const bodyKeys2 = Object.keys(body);
+      console.log(`DEBUG - Body keys for fallback check:`, bodyKeys2);
+      
       if (bodyKeys2.length === 1 && !bodyKeys2[0].includes('soap')) {
         console.log('Found single non-SOAP key in body, returning its value');
         return body[bodyKeys2[0]];
       }
       
+      // 檢查是否有 Fault 或錯誤信息
+      if (body['soap:Fault'] || body['soap12:Fault']) {
+        const fault = body['soap:Fault'] || body['soap12:Fault'];
+        console.log('SOAP Fault detected:', JSON.stringify(fault, null, 2));
+        return { error: 'SOAP Fault', fault: fault };
+      }
+      
       console.log('Returning body as fallback');
       return body;
     }
+
+    console.log(`DEBUG - Method response for ${responseKey}:`, JSON.stringify(methodResponse, null, 2));
 
     // 查找結果數據 (methodNameResult)
     const resultKey = `${method}Result`;
@@ -77,10 +104,12 @@ function cleanSoapResponse(soapResult, method) {
 
     // 嘗試查找其他可能的結果格式
     const responseKeys = Object.keys(methodResponse);
+    console.log(`DEBUG - Method response keys:`, responseKeys);
+    
     const possibleResult = responseKeys.find(key => 
       key.toLowerCase().includes('result') || 
       key.toLowerCase().includes('return') ||
-      (!key.includes('xmlns') && !key.includes('soap'))
+      (!key.includes('xmlns') && !key.includes('soap') && !key.startsWith('$'))
     );
     
     if (possibleResult && methodResponse[possibleResult] !== undefined) {
@@ -93,9 +122,18 @@ function cleanSoapResponse(soapResult, method) {
       !key.startsWith('$') && !key.includes('xmlns') && !key.includes('soap')
     );
     
+    console.log(`DEBUG - Data keys in method response:`, dataKeys);
+    
     if (dataKeys.length === 1) {
       console.log(`Found single data key: ${dataKeys[0]}`, methodResponse[dataKeys[0]]);
       return methodResponse[dataKeys[0]];
+    } else if (dataKeys.length > 1) {
+      console.log(`Found multiple data keys, returning filtered response`);
+      const filteredResponse = {};
+      dataKeys.forEach(key => {
+        filteredResponse[key] = methodResponse[key];
+      });
+      return filteredResponse;
     }
 
     console.log('No specific result found, returning method response');
@@ -108,6 +146,8 @@ function cleanSoapResponse(soapResult, method) {
 
 // 進一步清理結果，確保沒有SOAP包裝
 function deepCleanResult(result) {
+  console.log(`DEBUG - deepCleanResult input:`, JSON.stringify(result, null, 2));
+  
   if (typeof result !== 'object' || result === null) {
     return result;
   }
@@ -115,6 +155,7 @@ function deepCleanResult(result) {
   // 如果結果是對象，檢查是否還有SOAP相關的鍵
   if (typeof result === 'object' && !Array.isArray(result)) {
     const keys = Object.keys(result);
+    console.log(`DEBUG - deepCleanResult keys:`, keys);
     
     // 移除所有SOAP相關的屬性
     const cleanedResult = {};
@@ -124,8 +165,23 @@ function deepCleanResult(result) {
       }
     }
     
-    // 如果清理後只剩一個鍵，且該鍵看起來像是包裝，則進一步提取
+    console.log(`DEBUG - cleanedResult after filtering:`, JSON.stringify(cleanedResult, null, 2));
+    
+    // 如果清理後沒有任何鍵，檢查原始結果是否為空響應
     const cleanedKeys = Object.keys(cleanedResult);
+    if (cleanedKeys.length === 0) {
+      console.log('No data keys found after cleaning, this might be empty response or error');
+      
+      // 檢查是否有錯誤信息
+      if (result.error || result.fault) {
+        return result;
+      }
+      
+      // 如果只是空響應，返回空對象或 null
+      return null;
+    }
+    
+    // 如果清理後只剩一個鍵，且該鍵看起來像是包裝，則進一步提取
     if (cleanedKeys.length === 1) {
       const singleKey = cleanedKeys[0];
       const singleValue = cleanedResult[singleKey];
@@ -393,8 +449,67 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     delete prListParams.appID;
     delete prListParams.apiPwd;
     
+    // 先嘗試獲取原始響應來調試
+    let rawResponse;
+    try {
+      let paramXML = '';
+      for (const [k, v] of Object.entries(prListParams)) {
+        paramXML += `<${k}>${v}</${k}>`;
+      }
+      
+      const soapBody =
+        `<GetProjectPRList xmlns=\"http://tempuri.org/\">` +
+        `<appID>${appID}</appID>` +
+        `<apiPwd>${apiPwd}</apiPwd>` +
+        paramXML +
+        `</GetProjectPRList>`;
+      
+      const xml =
+        `<?xml version=\"1.0\" encoding=\"utf-8\"?>` +
+        `<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">` +
+        `<soap12:Body>${soapBody}</soap12:Body></soap12:Envelope>`;
+
+      console.log('DEBUG - Sending SOAP XML:', xml);
+
+      const headers = {
+        'Content-Type': 'application/soap+xml; charset=utf-8',
+        'User-Agent': 'PostmanRuntime/7.36.3',
+        'Accept': '*/*',
+        'Connection': 'keep-alive'
+      };
+
+      const response = await axios.post(
+        wsdlUrl,
+        Buffer.from(xml, 'utf8'),
+        {
+          headers,
+          timeout: 15000,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity
+        }
+      );
+
+      console.log('DEBUG - Raw SOAP Response Status:', response.status);
+      console.log('DEBUG - Raw SOAP Response Data:', response.data);
+
+      rawResponse = await new Promise((resolve, reject) => {
+        xml2js.parseString(response.data, { explicitArray: false }, (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            console.log('DEBUG - Parsed XML Result:', JSON.stringify(result, null, 2));
+            resolve(result);
+          }
+        });
+      });
+    } catch (debugError) {
+      console.error('DEBUG - Error getting raw response:', debugError);
+      throw debugError;
+    }
+    
     const prList = await callSoapMethod('GetProjectPRList', prListParams);
-    console.log('PR List Result:', JSON.stringify(prList, null, 2));
+    console.log('PR List Result (After Cleaning):', JSON.stringify(prList, null, 2));
+    console.log('Raw Response for Comparison:', JSON.stringify(rawResponse, null, 2));
 
     // 檢查是否獲取到問題列表
     if (!prList || (Array.isArray(prList) && prList.length === 0)) {
