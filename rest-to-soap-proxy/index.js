@@ -399,19 +399,7 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
   console.log(`---Getting all issues details for project: ${projectCode}---`);
   console.log(`Using appID: ${appID ? '[SET]' : '[EMPTY]'}, apiPwd: ${apiPwd ? '[SET]' : '[EMPTY]'}`);
   
-  // 檢查認證參數
-  if (!appID) {
-    return res.status(400).json({ 
-      error: 'Missing APP_ID', 
-      detail: 'APP_ID is required for authentication. Please set APP_ID environment variable or provide appID in request body.',
-      troubleshooting: [
-        'Set APP_ID environment variable in your .env file',
-        'Or provide appID in the request: {"projectCode": "2897", "appID": "your_app_id"}',
-        'Check your Docker environment configuration'
-      ]
-    });
-  }
-  
+  // 檢查認證參數00
   if (!apiPwd) {
     return res.status(400).json({ 
       error: 'Missing API_PWD', 
