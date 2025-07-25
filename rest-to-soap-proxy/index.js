@@ -411,6 +411,8 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     // 組合多個 SOAP 調用的輔助函數 - 使用內部 API 調用而不是重新實現 SOAP
     const callInternalAPI = async (endpoint, params) => {
       try {
+        console.log(`DEBUG - callInternalAPI: Calling ${endpoint} with params:`, JSON.stringify(params, null, 2));
+        
         const response = await axios.post(
           `http://localhost:${PORT}/${endpoint}`,
           params,
@@ -421,9 +423,19 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
             timeout: 15000,
           }
         );
+        
+        console.log(`DEBUG - callInternalAPI: ${endpoint} response status:`, response.status);
+        console.log(`DEBUG - callInternalAPI: ${endpoint} response headers:`, JSON.stringify(response.headers, null, 2));
+        console.log(`DEBUG - callInternalAPI: ${endpoint} response data type:`, typeof response.data);
+        console.log(`DEBUG - callInternalAPI: ${endpoint} response data:`, JSON.stringify(response.data, null, 2));
+        
         return response.data;
       } catch (error) {
-        console.error(`Internal API call failed for ${endpoint}:`, error.message);
+        console.error(`DEBUG - callInternalAPI: ${endpoint} failed with error:`, error.message);
+        if (error.response) {
+          console.error(`DEBUG - callInternalAPI: ${endpoint} error response status:`, error.response.status);
+          console.error(`DEBUG - callInternalAPI: ${endpoint} error response data:`, JSON.stringify(error.response.data, null, 2));
+        }
         throw error;
       }
     };
@@ -437,11 +449,18 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
       ...otherParams 
     };
     
+    console.log('DEBUG - Calling GetProjectPRList with params:', JSON.stringify(prListParams, null, 2));
+    console.log('DEBUG - Internal API URL:', `http://localhost:${PORT}/GetProjectPRList`);
+    
     const prList = await callInternalAPI('GetProjectPRList', prListParams);
-    console.log('PR List Result from internal API:', JSON.stringify(prList, null, 2));
+    console.log('DEBUG - PR List Result from internal API (type):', typeof prList);
+    console.log('DEBUG - PR List Result from internal API (isArray):', Array.isArray(prList));
+    console.log('DEBUG - PR List Result from internal API (length if array):', Array.isArray(prList) ? prList.length : 'N/A');
+    console.log('DEBUG - PR List Result from internal API (full data):', JSON.stringify(prList, null, 2));
 
     // 檢查是否獲取到問題列表
     if (!prList || prList === null) {
+      console.log('DEBUG - prList is null or undefined, returning empty response');
       return res.json({
         projectCode,
         totalIssues: 0,
@@ -449,7 +468,10 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
         debugInfo: {
           cleanedResponse: prList,
           appID: appID,
-          apiPwd: apiPwd ? '[MASKED]' : '[EMPTY]'
+          apiPwd: apiPwd ? '[MASKED]' : '[EMPTY]',
+          prListType: typeof prList,
+          prListIsNull: prList === null,
+          prListIsUndefined: prList === undefined
         },
         summary: 'Empty response from GetProjectPRList - possible authentication issue or no data for this project',
         troubleshooting: [
@@ -462,6 +484,7 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     }
     
     if (Array.isArray(prList) && prList.length === 0) {
+      console.log('DEBUG - prList is empty array, returning no issues found');
       return res.json({
         projectCode,
         totalIssues: 0,
@@ -471,14 +494,29 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     }
 
     // 步驟2：解析問題列表，提取問題ID
+    console.log('DEBUG - Starting to parse issue IDs from prList');
+    console.log('DEBUG - prList type:', typeof prList);
+    console.log('DEBUG - prList isArray:', Array.isArray(prList));
+    
     let issueIds = [];
     if (Array.isArray(prList)) {
-      issueIds = prList.map(item => item.issueID || item.IssueID || item.id).filter(Boolean);
+      console.log('DEBUG - prList is array, extracting issue IDs from array items');
+      console.log('DEBUG - First few items in prList:', JSON.stringify(prList.slice(0, 3), null, 2));
+      issueIds = prList.map(item => {
+        const id = item.issueID || item.IssueID || item.id;
+        console.log(`DEBUG - Extracting from item:`, JSON.stringify(item, null, 2), `-> ID: ${id}`);
+        return id;
+      }).filter(Boolean);
     } else if (prList && typeof prList === 'object') {
+      console.log('DEBUG - prList is object, checking for single issue or nested list');
+      console.log('DEBUG - prList keys:', Object.keys(prList));
+      
       // 如果返回單一問題或包含問題列表的對象
       if (prList.issueID || prList.IssueID || prList.id) {
+        console.log('DEBUG - Found single issue ID in prList object');
         issueIds = [prList.issueID || prList.IssueID || prList.id];
       } else {
+        console.log('DEBUG - Looking for nested issue list in prList object');
         // 嘗試找到包含問題列表的屬性
         const possibleListKeys = Object.keys(prList).filter(key => 
           key.toLowerCase().includes('issue') || 
@@ -486,23 +524,37 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
           Array.isArray(prList[key])
         );
         
+        console.log('DEBUG - Possible list keys found:', possibleListKeys);
+        
         for (const key of possibleListKeys) {
           if (Array.isArray(prList[key])) {
-            issueIds = prList[key].map(item => item.issueID || item.IssueID || item.id).filter(Boolean);
+            console.log(`DEBUG - Found array in key "${key}":`, JSON.stringify(prList[key], null, 2));
+            issueIds = prList[key].map(item => {
+              const id = item.issueID || item.IssueID || item.id;
+              console.log(`DEBUG - Extracting from nested item:`, JSON.stringify(item, null, 2), `-> ID: ${id}`);
+              return id;
+            }).filter(Boolean);
             break;
           }
         }
       }
     }
 
-    console.log(`Found ${issueIds.length} issue IDs:`, issueIds);
+    console.log(`DEBUG - Found ${issueIds.length} issue IDs:`, issueIds);
 
     if (issueIds.length === 0) {
+      console.log('DEBUG - No valid issue IDs found, returning empty result with debug info');
       return res.json({
         projectCode,
         totalIssues: 0,
         issues: [],
         prListRaw: prList,
+        debugInfo: {
+          prListType: typeof prList,
+          prListKeys: prList && typeof prList === 'object' ? Object.keys(prList) : 'N/A',
+          prListIsArray: Array.isArray(prList),
+          prListLength: Array.isArray(prList) ? prList.length : 'N/A'
+        },
         summary: 'No valid issue IDs found in project PR list'
       });
     }
