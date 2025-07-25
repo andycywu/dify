@@ -388,131 +388,63 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
   }
 
   console.log(`---Getting all issues details for project: ${projectCode}---`);
+  console.log(`Using appID: ${appID ? '[SET]' : '[EMPTY]'}, apiPwd: ${apiPwd ? '[SET]' : '[EMPTY]'}`);
 
   try {
-    // 組合多個 SOAP 調用的輔助函數
-    const callSoapMethod = async (method, params) => {
-      let paramXML = '';
-      for (const [k, v] of Object.entries(params)) {
-        paramXML += `<${k}>${v}</${k}>`;
-      }
-      
-      const soapBody =
-        `<${method} xmlns=\"http://tempuri.org/\">` +
-        `<appID>${appID}</appID>` +
-        `<apiPwd>${apiPwd}</apiPwd>` +
-        paramXML +
-        `</${method}>`;
-      
-      const xml =
-        `<?xml version=\"1.0\" encoding=\"utf-8\"?>` +
-        `<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">` +
-        `<soap12:Body>${soapBody}</soap12:Body></soap12:Envelope>`;
-
-      const headers = {
-        'Content-Type': 'application/soap+xml; charset=utf-8',
-        'User-Agent': 'PostmanRuntime/7.36.3',
-        'Accept': '*/*',
-        'Connection': 'keep-alive'
-      };
-
-      const response = await axios.post(
-        wsdlUrl,
-        Buffer.from(xml, 'utf8'),
-        {
-          headers,
-          timeout: 15000,
-          maxBodyLength: Infinity,
-          maxContentLength: Infinity
-        }
-      );
-
-      return new Promise((resolve, reject) => {
-        xml2js.parseString(response.data, { explicitArray: false }, (err, result) => {
-          if (err) {
-            reject(err);
-          } else {
-            const cleanResult = cleanSoapResponse(result, method);
-            const finalResult = deepCleanResult(cleanResult);
-            resolve(finalResult);
+    // 組合多個 SOAP 調用的輔助函數 - 使用內部 API 調用而不是重新實現 SOAP
+    const callInternalAPI = async (endpoint, params) => {
+      try {
+        const response = await axios.post(
+          `http://localhost:${PORT}/${endpoint}`,
+          params,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            timeout: 15000,
           }
-        });
-      });
+        );
+        return response.data;
+      } catch (error) {
+        console.error(`Internal API call failed for ${endpoint}:`, error.message);
+        throw error;
+      }
     };
 
-    // 步驟1：獲取項目問題列表
-    console.log('Step 1: Getting project PR list...');
+    // 步驟1：使用現有的 GetProjectPRList 端點
+    console.log('Step 1: Getting project PR list via internal API...');
     const prListParams = { 
-      projectCode, 
+      projectCode,
+      appID,
+      apiPwd,
       ...otherParams 
     };
-    delete prListParams.appID;
-    delete prListParams.apiPwd;
     
-    // 先嘗試獲取原始響應來調試
-    let rawResponse;
-    try {
-      let paramXML = '';
-      for (const [k, v] of Object.entries(prListParams)) {
-        paramXML += `<${k}>${v}</${k}>`;
-      }
-      
-      const soapBody =
-        `<GetProjectPRList xmlns=\"http://tempuri.org/\">` +
-        `<appID>${appID}</appID>` +
-        `<apiPwd>${apiPwd}</apiPwd>` +
-        paramXML +
-        `</GetProjectPRList>`;
-      
-      const xml =
-        `<?xml version=\"1.0\" encoding=\"utf-8\"?>` +
-        `<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">` +
-        `<soap12:Body>${soapBody}</soap12:Body></soap12:Envelope>`;
-
-      console.log('DEBUG - Sending SOAP XML:', xml);
-
-      const headers = {
-        'Content-Type': 'application/soap+xml; charset=utf-8',
-        'User-Agent': 'PostmanRuntime/7.36.3',
-        'Accept': '*/*',
-        'Connection': 'keep-alive'
-      };
-
-      const response = await axios.post(
-        wsdlUrl,
-        Buffer.from(xml, 'utf8'),
-        {
-          headers,
-          timeout: 15000,
-          maxBodyLength: Infinity,
-          maxContentLength: Infinity
-        }
-      );
-
-      console.log('DEBUG - Raw SOAP Response Status:', response.status);
-      console.log('DEBUG - Raw SOAP Response Data:', response.data);
-
-      rawResponse = await new Promise((resolve, reject) => {
-        xml2js.parseString(response.data, { explicitArray: false }, (err, result) => {
-          if (err) {
-            reject(err);
-          } else {
-            console.log('DEBUG - Parsed XML Result:', JSON.stringify(result, null, 2));
-            resolve(result);
-          }
-        });
-      });
-    } catch (debugError) {
-      console.error('DEBUG - Error getting raw response:', debugError);
-      throw debugError;
-    }
-    
-    const prList = await callSoapMethod('GetProjectPRList', prListParams);
-    console.log('PR List Result (After Cleaning):', JSON.stringify(prList, null, 2));
-    console.log('Raw Response for Comparison:', JSON.stringify(rawResponse, null, 2));
+    const prList = await callInternalAPI('GetProjectPRList', prListParams);
+    console.log('PR List Result from internal API:', JSON.stringify(prList, null, 2));
 
     // 檢查是否獲取到問題列表
-    if (!prList || (Array.isArray(prList) && prList.length === 0)) {
+    if (!prList || prList === null) {
+      return res.json({
+        projectCode,
+        totalIssues: 0,
+        issues: [],
+        debugInfo: {
+          cleanedResponse: prList,
+          appID: appID,
+          apiPwd: apiPwd ? '[MASKED]' : '[EMPTY]'
+        },
+        summary: 'Empty response from GetProjectPRList - possible authentication issue or no data for this project',
+        troubleshooting: [
+          'Check if APP_ID environment variable is set correctly',
+          'Verify API_PWD is correct',
+          'Confirm projectCode exists and has issues',
+          'Check if user has permission to access this project'
+        ]
+      });
+    }
+    
+    if (Array.isArray(prList) && prList.length === 0) {
       return res.json({
         projectCode,
         totalIssues: 0,
@@ -558,8 +490,8 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
       });
     }
 
-    // 步驟3：批量獲取每個問題的詳細資訊
-    console.log('Step 2: Getting detailed info for each issue...');
+    // 步驟3：批量獲取每個問題的詳細資訊（使用內部 API）
+    console.log('Step 2: Getting detailed info for each issue via internal API...');
     const issuesDetails = [];
     const failedIssues = [];
 
@@ -572,17 +504,23 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
           console.log(`Getting details for issue ID: ${issueID}`);
           
           // 獲取基本問題資訊
-          const issueInfo = await callSoapMethod('GetIssueInfo', { 
+          const issueInfo = await callInternalAPI('GetIssueInfo', { 
             issueID, 
             includeFields: true, 
             includeAttachments: true, 
-            includeRecords: true 
+            includeRecords: true,
+            appID,
+            apiPwd 
           });
           
           // 嘗試獲取擴展資訊
           let extInfo = null;
           try {
-            extInfo = await callSoapMethod('GetIssueExtInfo', { issueID });
+            extInfo = await callInternalAPI('GetIssueExtInfo', { 
+              issueID,
+              appID,
+              apiPwd 
+            });
           } catch (extErr) {
             console.warn(`Failed to get ext info for issue ${issueID}:`, extErr.message);
           }
@@ -634,6 +572,100 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
       error: 'Failed to get project issues details', 
       detail: error.message,
       projectCode 
+    });
+  }
+});
+
+// 調試端點：檢查環境變數和測試 GetProjectPRList
+app.post('/debug/testProjectPRList', async (req, res) => {
+  const appID = req.body.appID !== undefined ? req.body.appID : process.env.APP_ID || '';
+  const apiPwd = req.body.apiPwd !== undefined ? req.body.apiPwd : process.env.API_PWD || '';
+  const { projectCode } = req.body;
+  
+  const debugInfo = {
+    environment: {
+      APP_ID: process.env.APP_ID ? '[SET]' : '[NOT SET]',
+      API_PWD: process.env.API_PWD ? '[SET]' : '[NOT SET]'
+    },
+    parameters: {
+      appID: appID ? '[PROVIDED]' : '[EMPTY]',
+      apiPwd: apiPwd ? '[PROVIDED]' : '[EMPTY]',
+      projectCode: projectCode || '[NOT PROVIDED]'
+    }
+  };
+  
+  if (!projectCode) {
+    return res.json({
+      error: 'projectCode is required for testing',
+      debugInfo
+    });
+  }
+  
+  try {
+    // 組建 SOAP 請求
+    const soapBody =
+      `<GetProjectPRList xmlns=\"http://tempuri.org/\">` +
+      `<appID>${appID}</appID>` +
+      `<apiPwd>${apiPwd}</apiPwd>` +
+      `<projectCode>${projectCode}</projectCode>` +
+      `</GetProjectPRList>`;
+    
+    const xml =
+      `<?xml version=\"1.0\" encoding=\"utf-8\"?>` +
+      `<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">` +
+      `<soap12:Body>${soapBody}</soap12:Body></soap12:Envelope>`;
+
+    const headers = {
+      'Content-Type': 'application/soap+xml; charset=utf-8',
+      'User-Agent': 'PostmanRuntime/7.36.3',
+      'Accept': '*/*',
+      'Connection': 'keep-alive'
+    };
+
+    const response = await axios.post(
+      wsdlUrl,
+      Buffer.from(xml, 'utf8'),
+      {
+        headers,
+        timeout: 15000,
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity
+      }
+    );
+
+    const result = await new Promise((resolve, reject) => {
+      xml2js.parseString(response.data, { explicitArray: false }, (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+
+    res.json({
+      debugInfo,
+      request: {
+        url: wsdlUrl,
+        headers,
+        xmlBody: xml
+      },
+      response: {
+        status: response.status,
+        statusText: response.statusText,
+        rawXML: response.data,
+        parsedJSON: result
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      debugInfo,
+      error: error.message,
+      detail: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      } : null
     });
   }
 });
@@ -703,6 +735,22 @@ app.get('/', (req, res) => {
 curl -X POST http://localhost:5001/getProjectIssuesDetails \\
   -H "Content-Type: application/json" \\
   -d '{"projectCode": "PROJECT_CODE_HERE"}'</pre>
+    </div>
+
+    <h2>🔧 Debug API</h2>
+    <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+      <h3>POST /debug/testProjectPRList</h3>
+      <p><strong>Description:</strong> Test GetProjectPRList SOAP method with detailed debugging info</p>
+      <p><strong>Parameters:</strong></p>
+      <ul>
+        <li><code>projectCode</code> (required) - The project code to test</li>
+        <li><code>appID</code> (optional) - Override default APP_ID</li>
+        <li><code>apiPwd</code> (optional) - Override default API_PWD</li>
+      </ul>
+      <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
+curl -X POST http://localhost:5001/debug/testProjectPRList \\
+  -H "Content-Type: application/json" \\
+  -d '{"projectCode": "2897"}'</pre>
     </div>
 
     <h2>Standard SOAP Method Endpoints</h2>
