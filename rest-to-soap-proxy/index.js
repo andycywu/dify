@@ -413,35 +413,88 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
       try {
         console.log(`DEBUG - callInternalAPI: Calling ${endpoint} with params:`, JSON.stringify(params, null, 2));
         
+        // 在 Docker 容器中不能使用 localhost，需要直接調用同一個服務器的方法
+        // 所以我們改為直接調用對應的 SOAP 方法而不是通過 HTTP
+        console.log(`DEBUG - callInternalAPI: Using direct SOAP call instead of localhost HTTP request`);
+        
+        // 直接構建 SOAP 請求
+        const appID = params.appID !== undefined ? params.appID : process.env.APP_ID || '';
+        const apiPwd = params.apiPwd !== undefined ? params.apiPwd : process.env.API_PWD || '';
+        const otherParams = { ...params };
+        delete otherParams.appID;
+        delete otherParams.apiPwd;
+        
+        // 組 SOAP 1.2 XML
+        let paramXML = '';
+        for (const [k, v] of Object.entries(otherParams)) {
+          paramXML += `<${k}>${v}</${k}>`;
+        }
+        const soapBody =
+          `<${endpoint} xmlns=\"http://tempuri.org/\">` +
+          `<appID>${appID}</appID>` +
+          `<apiPwd>${apiPwd}</apiPwd>` +
+          paramXML +
+          `</${endpoint}>`;
+        const xml =
+          `<?xml version=\"1.0\" encoding=\"utf-8\"?>` +
+          `<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">` +
+          `<soap12:Body>${soapBody}</soap12:Body></soap12:Envelope>`;
+        
+        console.log(`DEBUG - callInternalAPI: Direct SOAP XML for ${endpoint}:`, xml);
+        
+        const headers = {
+          'Content-Type': 'application/soap+xml; charset=utf-8',
+          'User-Agent': 'PostmanRuntime/7.36.3',
+          'Accept': '*/*',
+          'Connection': 'keep-alive'
+        };
+        
         const response = await axios.post(
-          `http://localhost:${PORT}/${endpoint}`,
-          params,
+          wsdlUrl,
+          Buffer.from(xml, 'utf8'),
           {
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers,
             timeout: 15000,
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
           }
         );
         
-        console.log(`DEBUG - callInternalAPI: ${endpoint} response status:`, response.status);
-        console.log(`DEBUG - callInternalAPI: ${endpoint} response headers:`, JSON.stringify(response.headers, null, 2));
-        console.log(`DEBUG - callInternalAPI: ${endpoint} response data type:`, typeof response.data);
-        console.log(`DEBUG - callInternalAPI: ${endpoint} response data:`, JSON.stringify(response.data, null, 2));
+        console.log(`DEBUG - callInternalAPI: ${endpoint} SOAP response status:`, response.status);
+        console.log(`DEBUG - callInternalAPI: ${endpoint} SOAP response data:`, response.data);
         
-        return response.data;
+        // 解析 SOAP XML 響應
+        const result = await new Promise((resolve, reject) => {
+          xml2js.parseString(response.data, { explicitArray: false }, (err, result) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(result);
+            }
+          });
+        });
+        
+        console.log(`DEBUG - callInternalAPI: ${endpoint} parsed JSON:`, JSON.stringify(result, null, 2));
+        
+        // 清理 SOAP 響應
+        const cleanResult = cleanSoapResponse(result, endpoint);
+        const finalResult = deepCleanResult(cleanResult);
+        
+        console.log(`DEBUG - callInternalAPI: ${endpoint} final cleaned result:`, JSON.stringify(finalResult, null, 2));
+        
+        return finalResult;
       } catch (error) {
         console.error(`DEBUG - callInternalAPI: ${endpoint} failed with error:`, error.message);
         if (error.response) {
           console.error(`DEBUG - callInternalAPI: ${endpoint} error response status:`, error.response.status);
-          console.error(`DEBUG - callInternalAPI: ${endpoint} error response data:`, JSON.stringify(error.response.data, null, 2));
+          console.error(`DEBUG - callInternalAPI: ${endpoint} error response data:`, error.response.data);
         }
         throw error;
       }
     };
 
     // 步驟1：使用現有的 GetProjectPRList 端點
-    console.log('Step 1: Getting project PR list via internal API...');
+    console.log('Step 1: Getting project PR list via direct SOAP call...');
     const prListParams = { 
       projectCode,
       appID,
@@ -450,13 +503,13 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     };
     
     console.log('DEBUG - Calling GetProjectPRList with params:', JSON.stringify(prListParams, null, 2));
-    console.log('DEBUG - Internal API URL:', `http://localhost:${PORT}/GetProjectPRList`);
+    console.log('DEBUG - Using direct SOAP call instead of localhost HTTP request');
     
     const prList = await callInternalAPI('GetProjectPRList', prListParams);
-    console.log('DEBUG - PR List Result from internal API (type):', typeof prList);
-    console.log('DEBUG - PR List Result from internal API (isArray):', Array.isArray(prList));
-    console.log('DEBUG - PR List Result from internal API (length if array):', Array.isArray(prList) ? prList.length : 'N/A');
-    console.log('DEBUG - PR List Result from internal API (full data):', JSON.stringify(prList, null, 2));
+    console.log('DEBUG - PR List Result from direct SOAP call (type):', typeof prList);
+    console.log('DEBUG - PR List Result from direct SOAP call (isArray):', Array.isArray(prList));
+    console.log('DEBUG - PR List Result from direct SOAP call (length if array):', Array.isArray(prList) ? prList.length : 'N/A');
+    console.log('DEBUG - PR List Result from direct SOAP call (full data):', JSON.stringify(prList, null, 2));
 
     // 檢查是否獲取到問題列表
     if (!prList || prList === null) {
@@ -559,8 +612,8 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
       });
     }
 
-    // 步驟3：批量獲取每個問題的詳細資訊（使用內部 API）
-    console.log('Step 2: Getting detailed info for each issue via internal API...');
+    // 步驟3：批量獲取每個問題的詳細資訊（使用直接 SOAP 調用）
+    console.log('Step 2: Getting detailed info for each issue via direct SOAP calls...');
     const issuesDetails = [];
     const failedIssues = [];
 
