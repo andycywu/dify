@@ -318,6 +318,211 @@ soapMethods.forEach((method) => {
   });
 });
 
+// 新增：獲取項目所有問題點詳細內容的組合 API
+app.post('/getProjectIssuesDetails', async (req, res) => {
+  const appID = req.body.appID !== undefined ? req.body.appID : process.env.APP_ID || '';
+  const apiPwd = req.body.apiPwd !== undefined ? req.body.apiPwd : process.env.API_PWD || '';
+  const { projectCode, ...otherParams } = req.body;
+  
+  if (!projectCode) {
+    return res.status(400).json({ 
+      error: 'Missing required parameter', 
+      detail: 'projectCode is required' 
+    });
+  }
+
+  console.log(`---Getting all issues details for project: ${projectCode}---`);
+
+  try {
+    // 組合多個 SOAP 調用的輔助函數
+    const callSoapMethod = async (method, params) => {
+      let paramXML = '';
+      for (const [k, v] of Object.entries(params)) {
+        paramXML += `<${k}>${v}</${k}>`;
+      }
+      
+      const soapBody =
+        `<${method} xmlns=\"http://tempuri.org/\">` +
+        `<appID>${appID}</appID>` +
+        `<apiPwd>${apiPwd}</apiPwd>` +
+        paramXML +
+        `</${method}>`;
+      
+      const xml =
+        `<?xml version=\"1.0\" encoding=\"utf-8\"?>` +
+        `<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">` +
+        `<soap12:Body>${soapBody}</soap12:Body></soap12:Envelope>`;
+
+      const headers = {
+        'Content-Type': 'application/soap+xml; charset=utf-8',
+        'User-Agent': 'PostmanRuntime/7.36.3',
+        'Accept': '*/*',
+        'Connection': 'keep-alive'
+      };
+
+      const response = await axios.post(
+        wsdlUrl,
+        Buffer.from(xml, 'utf8'),
+        {
+          headers,
+          timeout: 15000,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity
+        }
+      );
+
+      return new Promise((resolve, reject) => {
+        xml2js.parseString(response.data, { explicitArray: false }, (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            const cleanResult = cleanSoapResponse(result, method);
+            const finalResult = deepCleanResult(cleanResult);
+            resolve(finalResult);
+          }
+        });
+      });
+    };
+
+    // 步驟1：獲取項目問題列表
+    console.log('Step 1: Getting project PR list...');
+    const prListParams = { 
+      projectCode, 
+      ...otherParams 
+    };
+    delete prListParams.appID;
+    delete prListParams.apiPwd;
+    
+    const prList = await callSoapMethod('GetProjectPRList', prListParams);
+    console.log('PR List Result:', JSON.stringify(prList, null, 2));
+
+    // 檢查是否獲取到問題列表
+    if (!prList || (Array.isArray(prList) && prList.length === 0)) {
+      return res.json({
+        projectCode,
+        totalIssues: 0,
+        issues: [],
+        summary: 'No issues found for this project'
+      });
+    }
+
+    // 步驟2：解析問題列表，提取問題ID
+    let issueIds = [];
+    if (Array.isArray(prList)) {
+      issueIds = prList.map(item => item.issueID || item.IssueID || item.id).filter(Boolean);
+    } else if (prList && typeof prList === 'object') {
+      // 如果返回單一問題或包含問題列表的對象
+      if (prList.issueID || prList.IssueID || prList.id) {
+        issueIds = [prList.issueID || prList.IssueID || prList.id];
+      } else {
+        // 嘗試找到包含問題列表的屬性
+        const possibleListKeys = Object.keys(prList).filter(key => 
+          key.toLowerCase().includes('issue') || 
+          key.toLowerCase().includes('list') ||
+          Array.isArray(prList[key])
+        );
+        
+        for (const key of possibleListKeys) {
+          if (Array.isArray(prList[key])) {
+            issueIds = prList[key].map(item => item.issueID || item.IssueID || item.id).filter(Boolean);
+            break;
+          }
+        }
+      }
+    }
+
+    console.log(`Found ${issueIds.length} issue IDs:`, issueIds);
+
+    if (issueIds.length === 0) {
+      return res.json({
+        projectCode,
+        totalIssues: 0,
+        issues: [],
+        prListRaw: prList,
+        summary: 'No valid issue IDs found in project PR list'
+      });
+    }
+
+    // 步驟3：批量獲取每個問題的詳細資訊
+    console.log('Step 2: Getting detailed info for each issue...');
+    const issuesDetails = [];
+    const failedIssues = [];
+
+    // 限制併發數量，避免過載
+    const batchSize = 5;
+    for (let i = 0; i < issueIds.length; i += batchSize) {
+      const batch = issueIds.slice(i, i + batchSize);
+      const batchPromises = batch.map(async (issueID) => {
+        try {
+          console.log(`Getting details for issue ID: ${issueID}`);
+          
+          // 獲取基本問題資訊
+          const issueInfo = await callSoapMethod('GetIssueInfo', { 
+            issueID, 
+            includeFields: true, 
+            includeAttachments: true, 
+            includeRecords: true 
+          });
+          
+          // 嘗試獲取擴展資訊
+          let extInfo = null;
+          try {
+            extInfo = await callSoapMethod('GetIssueExtInfo', { issueID });
+          } catch (extErr) {
+            console.warn(`Failed to get ext info for issue ${issueID}:`, extErr.message);
+          }
+
+          return {
+            issueID,
+            basicInfo: issueInfo,
+            extendedInfo: extInfo,
+            status: 'success'
+          };
+        } catch (error) {
+          console.error(`Failed to get details for issue ${issueID}:`, error.message);
+          failedIssues.push({ issueID, error: error.message });
+          return {
+            issueID,
+            status: 'failed',
+            error: error.message
+          };
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      issuesDetails.push(...batchResults.filter(result => result.status === 'success'));
+    }
+
+    // 步驟4：整理並回傳結果
+    const result = {
+      projectCode,
+      totalIssues: issueIds.length,
+      successfulIssues: issuesDetails.length,
+      failedIssues: failedIssues.length,
+      issues: issuesDetails,
+      failedIssuesList: failedIssues,
+      originalPrList: prList,
+      summary: `Successfully retrieved details for ${issuesDetails.length} out of ${issueIds.length} issues`,
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('---PROJECT ISSUES DETAILS COMPLETED---');
+    console.log(`Total issues processed: ${issueIds.length}`);
+    console.log(`Successful: ${issuesDetails.length}`);
+    console.log(`Failed: ${failedIssues.length}`);
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Error in getProjectIssuesDetails:', error);
+    res.status(500).json({ 
+      error: 'Failed to get project issues details', 
+      detail: error.message,
+      projectCode 
+    });
+  }
+});
+
 // SOAP 1.2 RAW XML endpoint
 app.post('/soap12/:method', async (req, res) => {
   const method = req.params.method;
@@ -366,6 +571,26 @@ app.post('/soap12/:method', async (req, res) => {
 app.get('/', (req, res) => {
   res.send(`
     <h1>REST to SOAP Proxy Server</h1>
+    
+    <h2>🆕 Enhanced API</h2>
+    <div style="background-color: #f0f8ff; padding: 15px; border-left: 4px solid #0066cc; margin-bottom: 20px;">
+      <h3>POST /getProjectIssuesDetails</h3>
+      <p><strong>Description:</strong> Get complete details for all issues in a project</p>
+      <p><strong>Parameters:</strong></p>
+      <ul>
+        <li><code>projectCode</code> (required) - The project code to query</li>
+        <li><code>appID</code> (optional) - Override default APP_ID</li>
+        <li><code>apiPwd</code> (optional) - Override default API_PWD</li>
+        <li>Additional parameters will be passed to GetProjectPRList</li>
+      </ul>
+      <p><strong>Returns:</strong> Comprehensive project issues data including basic info and extended info for each issue</p>
+      <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
+curl -X POST http://localhost:5001/getProjectIssuesDetails \\
+  -H "Content-Type: application/json" \\
+  -d '{"projectCode": "PROJECT_CODE_HERE"}'</pre>
+    </div>
+
+    <h2>Standard SOAP Method Endpoints</h2>
     <p>Available endpoints:</p>
     <ul>
       ${soapMethods.map(method => `
@@ -402,7 +627,9 @@ curl -X POST http://localhost:5001/soap12/GetIssueInfo \\
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`REST-to-SOAP Proxy Server listening on port ${PORT}`);
-  console.log(`\nAvailable endpoints:`);
+  console.log(`\n🆕 Enhanced API:`);
+  console.log(`• Project Issues Details: POST /getProjectIssuesDetails`);
+  console.log(`\nStandard SOAP Method Endpoints:`);
   console.log(`• Clean JSON: /${soapMethods.join('/, /')}`);
   console.log(`• Full SOAP: /${soapMethods.join('/full, /')}/full`);
   console.log(`• Raw XML: /soap12/{method}`);
