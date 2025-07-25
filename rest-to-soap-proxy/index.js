@@ -399,24 +399,12 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
   console.log(`---Getting all issues details for project: ${projectCode}---`);
   console.log(`Using appID: ${appID ? '[SET]' : '[EMPTY]'}, apiPwd: ${apiPwd ? '[SET]' : '[EMPTY]'}`);
   
-  // 檢查認證參數
+  // 檢查認證參數 - 與標準 SOAP 方法保持一致，只發出警告但不阻止執行
   if (!appID) {
-    return res.status(400).json({ 
-      error: 'Missing APP_ID', 
-      detail: 'APP_ID is required for authentication. Please set APP_ID environment variable or provide appID in request body.',
-      troubleshooting: [
-        'Set APP_ID environment variable in your .env file',
-        'Or provide appID in the request: {"projectCode": "2897", "appID": "your_app_id"}',
-        'Check your Docker environment configuration'
-      ]
-    });
+    console.warn(`[getProjectIssuesDetails] Missing APP_ID - this may cause authentication failure`);
   }
-  
   if (!apiPwd) {
-    return res.status(400).json({ 
-      error: 'Missing API_PWD', 
-      detail: 'API_PWD is required for authentication. Please set API_PWD environment variable or provide apiPwd in request body.' 
-    });
+    console.warn(`[getProjectIssuesDetails] Missing API_PWD - this may cause authentication failure`);
   }
 
   try {
@@ -465,10 +453,10 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
         },
         summary: 'Empty response from GetProjectPRList - possible authentication issue or no data for this project',
         troubleshooting: [
-          'Check if APP_ID environment variable is set correctly',
-          'Verify API_PWD is correct',
-          'Confirm projectCode exists and has issues',
-          'Check if user has permission to access this project'
+          'Verify API_PWD is correct (APP_ID can be empty)',
+          'Confirm projectCode exists and has issues', 
+          'Check if user has permission to access this project',
+          'Try testing with /debug/testProjectPRList endpoint first'
         ]
       });
     }
@@ -755,10 +743,11 @@ app.get('/', (req, res) => {
       <p><strong>Parameters:</strong></p>
       <ul>
         <li><code>projectCode</code> (required) - The project code to query</li>
-        <li><code>appID</code> (optional) - Override default APP_ID</li>
+        <li><code>appID</code> (optional) - Override default APP_ID (can be empty)</li>
         <li><code>apiPwd</code> (optional) - Override default API_PWD</li>
         <li>Additional parameters will be passed to GetProjectPRList</li>
       </ul>
+      <p><strong>Note:</strong> APP_ID can be empty for this API - it follows the same authentication pattern as standard SOAP methods</p>
       <p><strong>Returns:</strong> Comprehensive project issues data including basic info and extended info for each issue</p>
       <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
 curl -X POST http://localhost:5001/getProjectIssuesDetails \\
@@ -820,8 +809,9 @@ const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`REST-to-SOAP Proxy Server listening on port ${PORT}`);
   console.log(`\n🔧 Environment Check:`);
-  console.log(`• APP_ID: ${process.env.APP_ID ? `[SET: ${process.env.APP_ID.substring(0, 3)}...]` : '[NOT SET]'}`);
+  console.log(`• APP_ID: ${process.env.APP_ID ? `[SET: ${process.env.APP_ID.substring(0, 3)}...]` : '[NOT SET - can be empty]'}`);
   console.log(`• API_PWD: ${process.env.API_PWD ? '[SET]' : '[NOT SET]'}`);
+  console.log(`\n📝 Note: APP_ID can be empty for some SOAP methods`);
   console.log(`\n🆕 Enhanced API:`);
   console.log(`• Project Issues Details: POST /getProjectIssuesDetails`);
   console.log(`\nStandard SOAP Method Endpoints:`);
