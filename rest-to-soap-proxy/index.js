@@ -22,7 +22,7 @@ function cleanSoapResponse(soapResult, method) {
       return soapResult;
     }
 
-    const body = envelope['soap:Body'] || envelope['sconst PORT = process.env.PORT || 5001;
+    const body = envelope['soap:Body'] || envelope['soap12:Body'];
 app.listen(PORT, () => {
   console.log(`REST-to-SOAP Proxy Server listening on port ${PORT}`);
   console.log(`\n🔧 Environment Check:`);
@@ -832,6 +832,9 @@ curl -X POST http://localhost:5001/soap12/GetIssueInfo \\
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`REST-to-SOAP Proxy Server listening on port ${PORT}`);
+  console.log(`\n🔧 Environment Check:`);
+  console.log(`• APP_ID: ${process.env.APP_ID ? `[SET: ${process.env.APP_ID.substring(0, 3)}...]` : '[NOT SET]'}`);
+  console.log(`• API_PWD: ${process.env.API_PWD ? '[SET]' : '[NOT SET]'}`);
   console.log(`\n🆕 Enhanced API:`);
   console.log(`• Project Issues Details: POST /getProjectIssuesDetails`);
   console.log(`\nStandard SOAP Method Endpoints:`);
