@@ -22,7 +22,20 @@ function cleanSoapResponse(soapResult, method) {
       return soapResult;
     }
 
-    const body = envelope['soap:Body'] || envelope['soap12:Body'];
+    const body = envelope['soap:Body'] || envelope['sconst PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`REST-to-SOAP Proxy Server listening on port ${PORT}`);
+  console.log(`\n🔧 Environment Check:`);
+  console.log(`• APP_ID: ${process.env.APP_ID ? `[SET: ${process.env.APP_ID.substring(0, 3)}...]` : '[NOT SET]'}`);
+  console.log(`• API_PWD: ${process.env.API_PWD ? '[SET]' : '[NOT SET]'}`);
+  console.log(`\n🆕 Enhanced API:`);
+  console.log(`• Project Issues Details: POST /getProjectIssuesDetails`);
+  console.log(`\nStandard SOAP Method Endpoints:`);
+  console.log(`• Clean JSON: /${soapMethods.join('/, /')}`);
+  console.log(`• Full SOAP: /${soapMethods.join('/full, /')}/full`);
+  console.log(`• Raw XML: /soap12/{method}`);
+  console.log(`\nVisit http://localhost:${PORT} for more information`);
+});];
     if (!body) {
       console.log('No SOAP body found, returning envelope');
       return envelope;
@@ -233,6 +246,15 @@ soapMethods.forEach((method) => {
     const params = { ...req.body };
     delete params.appID;
     delete params.apiPwd;
+    
+    // 檢查認證參數
+    if (!appID) {
+      console.warn(`[${method}] Missing APP_ID - this may cause authentication failure`);
+    }
+    if (!apiPwd) {
+      console.warn(`[${method}] Missing API_PWD - this may cause authentication failure`);
+    }
+    
     // 組 SOAP 1.2 XML
     let paramXML = '';
     for (const [k, v] of Object.entries(params)) {
@@ -389,6 +411,26 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
 
   console.log(`---Getting all issues details for project: ${projectCode}---`);
   console.log(`Using appID: ${appID ? '[SET]' : '[EMPTY]'}, apiPwd: ${apiPwd ? '[SET]' : '[EMPTY]'}`);
+  
+  // 檢查認證參數
+  if (!appID) {
+    return res.status(400).json({ 
+      error: 'Missing APP_ID', 
+      detail: 'APP_ID is required for authentication. Please set APP_ID environment variable or provide appID in request body.',
+      troubleshooting: [
+        'Set APP_ID environment variable in your .env file',
+        'Or provide appID in the request: {"projectCode": "2897", "appID": "your_app_id"}',
+        'Check your Docker environment configuration'
+      ]
+    });
+  }
+  
+  if (!apiPwd) {
+    return res.status(400).json({ 
+      error: 'Missing API_PWD', 
+      detail: 'API_PWD is required for authentication. Please set API_PWD environment variable or provide apiPwd in request body.' 
+    });
+  }
 
   try {
     // 組合多個 SOAP 調用的輔助函數 - 使用內部 API 調用而不是重新實現 SOAP
