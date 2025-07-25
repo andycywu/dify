@@ -1,0 +1,48 @@
+name: Prisma Check
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'dify-next-frontend/prisma/**'
+      - 'dify-next-frontend/package.json'
+      - 'dify-next-frontend/package-lock.json'
+      - '.github/workflows/prisma-check.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'dify-next-frontend/prisma/**'
+      - 'dify-next-frontend/package.json'
+      - 'dify-next-frontend/package-lock.json'
+      - '.github/workflows/prisma-check.yml'
+
+jobs:
+  prisma-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'dify-next-frontend/package-lock.json'
+          
+      - name: Install dependencies
+        working-directory: ./dify-next-frontend
+        run: npm ci
+        
+      - name: Generate Prisma Client
+        working-directory: ./dify-next-frontend
+        run: npx prisma generate
+        
+      - name: Validate Prisma Schema
+        working-directory: ./dify-next-frontend
+        run: npx prisma validate
+        
+      - name: Check Prisma Format
+        working-directory: ./dify-next-frontend
+        run: npx prisma format --check
