@@ -387,17 +387,21 @@ soapMethods.forEach((method) => {
 app.post('/getProjectIssuesDetails', async (req, res) => {
   const appID = req.body.appID !== undefined ? req.body.appID : process.env.APP_ID || '';
   const apiPwd = req.body.apiPwd !== undefined ? req.body.apiPwd : process.env.API_PWD || '';
-  const { projectCode, ...otherParams } = req.body;
+  const { projectID, projectCode, ...otherParams } = req.body;
   
-  if (!projectCode) {
+  // 支援 projectID 或 projectCode，但優先使用 projectID（與標準 GetProjectPRList 一致）
+  const finalProjectID = projectID || projectCode;
+  
+  if (!finalProjectID) {
     return res.status(400).json({ 
       error: 'Missing required parameter', 
-      detail: 'projectCode is required' 
+      detail: 'projectID (or projectCode) is required' 
     });
   }
 
-  console.log(`---Getting all issues details for project: ${projectCode}---`);
+  console.log(`---Getting all issues details for project: ${finalProjectID}---`);
   console.log(`Using appID: ${appID ? '[SET]' : '[EMPTY]'}, apiPwd: ${apiPwd ? '[SET]' : '[EMPTY]'}`);
+  console.log(`Using parameter: projectID=${finalProjectID} (from ${projectID ? 'projectID' : 'projectCode'})`);
   
   // 檢查認證參數 - 與標準 SOAP 方法保持一致，只發出警告但不阻止執行
   if (!appID) {
@@ -496,7 +500,7 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     // 步驟1：使用現有的 GetProjectPRList 端點
     console.log('Step 1: Getting project PR list via direct SOAP call...');
     const prListParams = { 
-      projectCode,
+      projectID: finalProjectID,
       appID,
       apiPwd,
       ...otherParams 
@@ -515,7 +519,7 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     if (!prList || prList === null) {
       console.log('DEBUG - prList is null or undefined, returning empty response');
       return res.json({
-        projectCode,
+        projectID: finalProjectID,
         totalIssues: 0,
         issues: [],
         debugInfo: {
@@ -529,7 +533,7 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
         summary: 'Empty response from GetProjectPRList - possible authentication issue or no data for this project',
         troubleshooting: [
           'Verify API_PWD is correct (APP_ID can be empty)',
-          'Confirm projectCode exists and has issues', 
+          'Confirm projectID exists and has issues', 
           'Check if user has permission to access this project',
           'Try testing with /debug/testProjectPRList endpoint first'
         ]
@@ -539,7 +543,7 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     if (Array.isArray(prList) && prList.length === 0) {
       console.log('DEBUG - prList is empty array, returning no issues found');
       return res.json({
-        projectCode,
+        projectID: finalProjectID,
         totalIssues: 0,
         issues: [],
         summary: 'No issues found for this project'
@@ -598,7 +602,7 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     if (issueIds.length === 0) {
       console.log('DEBUG - No valid issue IDs found, returning empty result with debug info');
       return res.json({
-        projectCode,
+        projectID: finalProjectID,
         totalIssues: 0,
         issues: [],
         prListRaw: prList,
@@ -670,7 +674,7 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
 
     // 步驟4：整理並回傳結果
     const result = {
-      projectCode,
+      projectID: finalProjectID,
       totalIssues: issueIds.length,
       successfulIssues: issuesDetails.length,
       failedIssues: failedIssues.length,
@@ -693,7 +697,7 @@ app.post('/getProjectIssuesDetails', async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to get project issues details', 
       detail: error.message,
-      projectCode 
+      projectID: finalProjectID 
     });
   }
 });
@@ -847,17 +851,18 @@ app.get('/', (req, res) => {
       <p><strong>Description:</strong> Get complete details for all issues in a project</p>
       <p><strong>Parameters:</strong></p>
       <ul>
-        <li><code>projectCode</code> (required) - The project code to query</li>
+        <li><code>projectID</code> (required) - The project ID to query (preferred, follows GetProjectPRList standard)</li>
+        <li><code>projectCode</code> (alternative) - Alternative parameter name for project identifier</li>
         <li><code>appID</code> (optional) - Override default APP_ID (can be empty)</li>
         <li><code>apiPwd</code> (optional) - Override default API_PWD</li>
-        <li>Additional parameters will be passed to GetProjectPRList</li>
+        <li>Additional parameters will be passed to GetProjectPRList (e.g., newRecordOnly)</li>
       </ul>
       <p><strong>Note:</strong> APP_ID can be empty for this API - it follows the same authentication pattern as standard SOAP methods</p>
       <p><strong>Returns:</strong> Comprehensive project issues data including basic info and extended info for each issue</p>
       <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
 curl -X POST http://localhost:5001/getProjectIssuesDetails \\
   -H "Content-Type: application/json" \\
-  -d '{"projectCode": "PROJECT_CODE_HERE"}'</pre>
+  -d '{"projectID": 2897, "newRecordOnly": false}'</pre>
     </div>
 
     <h2>🔧 Debug API</h2>
@@ -870,6 +875,7 @@ curl -X POST http://localhost:5001/getProjectIssuesDetails \\
         <li><code>appID</code> (optional) - Override default APP_ID</li>
         <li><code>apiPwd</code> (optional) - Override default API_PWD</li>
       </ul>
+      <p><strong>Note:</strong> This debug endpoint still uses projectCode for backward compatibility</p>
       <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
 curl -X POST http://localhost:5001/debug/testProjectPRList \\
   -H "Content-Type: application/json" \\
