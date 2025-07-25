@@ -23,19 +23,6 @@ function cleanSoapResponse(soapResult, method) {
     }
 
     const body = envelope['soap:Body'] || envelope['soap12:Body'];
-app.listen(PORT, () => {
-  console.log(`REST-to-SOAP Proxy Server listening on port ${PORT}`);
-  console.log(`\n🔧 Environment Check:`);
-  console.log(`• APP_ID: ${process.env.APP_ID ? `[SET: ${process.env.APP_ID.substring(0, 3)}...]` : '[NOT SET]'}`);
-  console.log(`• API_PWD: ${process.env.API_PWD ? '[SET]' : '[NOT SET]'}`);
-  console.log(`\n🆕 Enhanced API:`);
-  console.log(`• Project Issues Details: POST /getProjectIssuesDetails`);
-  console.log(`\nStandard SOAP Method Endpoints:`);
-  console.log(`• Clean JSON: /${soapMethods.join('/, /')}`);
-  console.log(`• Full SOAP: /${soapMethods.join('/full, /')}/full`);
-  console.log(`• Raw XML: /soap12/{method}`);
-  console.log(`\nVisit http://localhost:${PORT} for more information`);
-});];
     if (!body) {
       console.log('No SOAP body found, returning envelope');
       return envelope;
