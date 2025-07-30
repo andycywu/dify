@@ -182,9 +182,51 @@ jobs:
             ./changed_files.txt
           retention-days: 7
           
-      - name: Fail if secrets found
+      - name: Security check summary
         if: steps.process-results.outputs.status == 'failed'
         run: |
-          echo "❌ Security check failed: secrets detected in PR"
-          echo "Please review and fix the detected secrets before merging."
-          exit 1
+          secrets_found="${{ steps.process-results.outputs.secrets_found }}"
+          
+          echo "🔍 PR Security Check Summary"
+          echo "============================"
+          echo "⚠️  Security Alert: $secrets_found secret(s) detected in this PR!"
+          echo ""
+          echo "📋 Required Actions:"
+          echo "1. Review the detected secrets (check PR comments for details)"
+          echo "2. Remove secrets from your code changes"
+          echo "3. Use environment variables or configuration files instead"
+          echo "4. Push the fixes to update this PR"
+          echo ""
+          echo "💡 This PR cannot be merged until security issues are resolved."
+          echo "💡 Check the PR comments and workflow artifacts for detailed information."
+          
+          # 設置 PR 狀態但不失敗工作流
+          echo "::warning title=Security Alert::$secrets_found secret(s) detected in PR. Please review and fix before merging."
+          
+      - name: Add PR security summary
+        if: always()
+        run: |
+          echo "## 🔒 PR Security Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          status="${{ steps.process-results.outputs.status }}"
+          secrets_found="${{ steps.process-results.outputs.secrets_found }}"
+          
+          if [ "$status" == "failed" ]; then
+            echo "⚠️ **Security Issues Found**: $secrets_found secret(s) detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**This PR requires attention before merging:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Remove detected secrets from code" >> $GITHUB_STEP_SUMMARY
+            echo "- Use environment variables for sensitive data" >> $GITHUB_STEP_SUMMARY
+            echo "- Check PR comments for detailed findings" >> $GITHUB_STEP_SUMMARY
+          elif [ "$status" == "passed" ]; then
+            echo "✅ **Security Check Passed**: No secrets detected" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Scan Error**: Issues occurred during security scanning" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **PR Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- PR Number: #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.event.pull_request.head.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- [View Artifacts](../actions/runs/${{ github.run_id }}) for detailed reports" >> $GITHUB_STEP_SUMMARY

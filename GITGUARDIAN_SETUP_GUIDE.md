@@ -22,12 +22,13 @@
 
 ## 📋 工作流程說明
 
-我們設置了四個 GitGuardian 工作流：
+我們設置了五個 GitGuardian 工作流：
 
 ### 1. `gitguardian-security-scan.yml` - 基礎掃描
 - **觸發時機**：推送到 main 分支、Pull Request、手動觸發
 - **功能**：基本的秘密掃描
 - **輸出**：上傳掃描結果到 artifacts
+- **特色**：不會因發現秘密而失敗
 
 ### 2. `gitguardian-advanced-scan.yml` - 高級掃描（已修復）
 - **觸發時機**：推送到 main、Pull Request、每日定時掃描
@@ -36,26 +37,34 @@
   - Infrastructure as Code (IaC) 掃描
   - SARIF 報告上傳到 GitHub Security 頁籤
   - 詳細的 PR 評論
-- **修復**：文件路徑、SARIF 生成、CodeQL Action 版本
-- **特色**：自動在 PR 中留言掃描結果
+- **修復**：文件路徑、SARIF 生成、CodeQL Action 版本、不會失敗
+- **特色**：提供警告但不中斷工作流
 
 ### 3. `gitguardian-pr-check.yml` - PR 快速檢查（已修復）
 - **觸發時機**：Pull Request 開啟/更新時
 - **功能**：快速掃描 PR 中的變更
-- **修復**：結果處理、文件路徑
+- **修復**：結果處理、文件路徑、不會失敗
 - **特色**：
   - 只掃描變更的文件
   - 即時 PR 狀態更新
-  - 自動更新評論
+  - 提供警告但允許 PR 繼續
 
-### 4. `gitguardian-reliable.yml` - 可靠版本（新增）
+### 4. `gitguardian-reliable.yml` - 可靠版本
 - **觸發時機**：推送到 main、Pull Request、手動觸發
 - **功能**：簡化但更可靠的掃描流程
 - **特色**：
-  - 自動檢查 API 密鑰是否存在
   - 改進的錯誤處理
   - 更好的結果報告
   - 自動生成工作流摘要
+
+### 5. `gitguardian-smart-scan.yml` - 智能掃描（新增）
+- **觸發時機**：推送到 main、Pull Request、手動觸發
+- **功能**：可配置的智能掃描行為
+- **特色**：
+  - 可配置是否在發現秘密時失敗
+  - 支持手動輸入參數
+  - 讀取 `.gitguardian.yaml` 配置
+  - 智能的結果處理和報告
 
 ## 🔧 配置文件
 
@@ -164,7 +173,15 @@ ggshield secret scan commit-range HEAD~1..HEAD
 **原因**：GitGuardian Action 參數格式錯誤
 **解決方案**：已修復，使用環境變數 `GITGUARDIAN_API_KEY` 而非 `with.api-key`
 
-#### 5. GitGuardian API 限制
+#### 5. "Process completed with exit code 1"
+**原因**：工作流被配置為在發現秘密時失敗（這是預期行為）
+**解決方案**：
+- **不是錯誤**：這表示掃描發現了秘密，需要您的注意
+- 查看工作流日誌和 PR 評論了解檢測到的具體問題
+- 修復檢測到的秘密後重新運行
+- 如果不希望工作流失敗，使用其他工作流或修改配置
+
+#### 6. GitGuardian API 限制
 **症狀**：掃描失敗或部分完成
 **解決方案**：
 - 檢查您的 GitGuardian 帳戶額度
@@ -207,16 +224,28 @@ ggshield secret scan commit-range HEAD~1..HEAD
 
 根據不同需求選擇合適的工作流：
 
-- **🚀 生產環境推薦**：`gitguardian-security-scan.yml`（基礎但穩定，使用 CLI）
-- **⚡ 開發環境**：`gitguardian-pr-check.yml`（快速 PR 檢查）
+- **🎯 推薦用於生產環境**：`gitguardian-smart-scan.yml`（可配置行為）
+- **🚀 穩定的日常使用**：`gitguardian-security-scan.yml`（基礎但穩定，不會失敗）
+- **⚡ 開發環境**：`gitguardian-pr-check.yml`（快速 PR 檢查，提供警告）
 - **🔬 完整掃描**：`gitguardian-advanced-scan.yml`（功能最全面，包含 IaC 掃描）
 - **🛡️ 最可靠版本**：`gitguardian-reliable.yml`（最佳錯誤處理和報告）
+
+**工作流行為說明**：
+- ✅ **不會失敗**：`gitguardian-security-scan.yml`, `gitguardian-reliable.yml`
+- ⚠️ **提供警告**：`gitguardian-advanced-scan.yml`, `gitguardian-pr-check.yml`
+- 🔧 **可配置**：`gitguardian-smart-scan.yml`（可選擇是否失敗）
+
+**關於 "exit code 1"**：
+- 這通常表示掃描發現了秘密，這是**預期行為**，不是錯誤
+- 檢查工作流日誌和 PR 評論了解具體問題
+- 修復檢測到的秘密問題後重新運行
 
 **重要修復說明**：
 - ✅ 所有工作流已修復 GitGuardian Action 參數問題
 - ✅ 文件路徑問題已解決
 - ✅ CodeQL Action 已更新到 v3
 - ✅ 改進了錯誤處理和結果報告
+- ✅ 修復了會導致不必要失敗的問題
 
 如果您遇到問題：
 

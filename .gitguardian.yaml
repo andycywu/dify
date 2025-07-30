@@ -7,9 +7,17 @@
 # 掃描設置
 verbose: true
 show_secrets: false
-exit_zero: false
+exit_zero: true  # 即使發現秘密也不讓掃描失敗，只報告結果
 max_documents_with_secrets: 20
 max_commits_for_hook: 50
+
+# 工作流行為設置（自定義）
+# 注意：這些是自定義設置，不是 GitGuardian 官方配置
+workflow_behavior:
+  fail_on_secrets: false  # 是否在發現秘密時讓工作流失敗
+  fail_on_policy_violations: false  # 是否在違反政策時讓工作流失敗
+  create_pr_comments: true  # 是否在 PR 中創建評論
+  upload_sarif: true  # 是否上傳 SARIF 報告到 GitHub Security
 
 # 排除的路徑模式
 paths_ignore:

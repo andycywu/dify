@@ -1,0 +1,302 @@
+name: GitGuardian Smart Security Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      fail_on_secrets:
+        description: 'Fail workflow if secrets are found'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+
+concurrency:
+  group: gitguardian-smart-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  smart-scan:
+    name: GitGuardian Smart Security Scan
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+      checks: write
+      
+    outputs:
+      secrets_found: ${{ steps.scan-results.outputs.secrets_found }}
+      scan_status: ${{ steps.scan-results.outputs.scan_status }}
+      should_fail: ${{ steps.scan-results.outputs.should_fail }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install ggshield yq jq
+          
+      - name: Create scan directory
+        run: |
+          mkdir -p ./scan-results
+          
+      - name: Read configuration
+        id: config
+        run: |
+          # 讀取 .gitguardian.yaml 中的配置
+          if [ -f ".gitguardian.yaml" ]; then
+            # 檢查是否設置了 fail_on_secrets
+            fail_on_secrets=$(yq '.workflow_behavior.fail_on_secrets // false' .gitguardian.yaml 2>/dev/null || echo "false")
+            create_pr_comments=$(yq '.workflow_behavior.create_pr_comments // true' .gitguardian.yaml 2>/dev/null || echo "true")
+            upload_sarif=$(yq '.workflow_behavior.upload_sarif // true' .gitguardian.yaml 2>/dev/null || echo "true")
+          else
+            fail_on_secrets="false"
+            create_pr_comments="true"
+            upload_sarif="true"
+          fi
+          
+          # 工作流輸入優先於配置文件
+          if [ "${{ github.event.inputs.fail_on_secrets }}" != "" ]; then
+            fail_on_secrets="${{ github.event.inputs.fail_on_secrets }}"
+          fi
+          
+          echo "fail_on_secrets=$fail_on_secrets" >> $GITHUB_OUTPUT
+          echo "create_pr_comments=$create_pr_comments" >> $GITHUB_OUTPUT
+          echo "upload_sarif=$upload_sarif" >> $GITHUB_OUTPUT
+          
+          echo "📋 Configuration:"
+          echo "  - Fail on secrets: $fail_on_secrets"
+          echo "  - Create PR comments: $create_pr_comments"
+          echo "  - Upload SARIF: $upload_sarif"
+          
+      - name: Run GitGuardian Scan
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+        run: |
+          echo "🔍 Starting GitGuardian security scan..."
+          
+          # 運行掃描，始終使用 --exit-zero 來獲得結果
+          if ggshield secret scan repo . --json --exit-zero > ./scan-results/scan-report.json 2>&1; then
+            echo "✅ Scan completed successfully"
+            scan_completed=true
+          else
+            echo "⚠️ Scan encountered issues but may have partial results"
+            scan_completed=partial
+          fi
+          
+          # 創建備用報告如果主報告不存在
+          if [ ! -f "./scan-results/scan-report.json" ] || [ ! -s "./scan-results/scan-report.json" ]; then
+            echo '{"total_secrets": 0, "total_files_scanned": 0, "status": "no_results"}' > ./scan-results/scan-report.json
+          fi
+          
+          echo "scan_completed=$scan_completed" >> $GITHUB_ENV
+          
+      - name: Process scan results
+        id: scan-results
+        run: |
+          echo "📊 Processing scan results..."
+          
+          # 解析結果
+          if [ -f "./scan-results/scan-report.json" ]; then
+            secrets_count=$(jq '.total_secrets // 0' ./scan-results/scan-report.json 2>/dev/null || echo "0")
+            files_scanned=$(jq '.total_files_scanned // 0' ./scan-results/scan-report.json 2>/dev/null || echo "0")
+          else
+            secrets_count=0
+            files_scanned=0
+          fi
+          
+          # 確定掃描狀態
+          if [ "$secrets_count" -gt 0 ]; then
+            scan_status="secrets_found"
+          elif [ "$scan_completed" == "true" ]; then
+            scan_status="clean"
+          else
+            scan_status="error"
+          fi
+          
+          # 決定是否應該失敗
+          should_fail="false"
+          if [ "${{ steps.config.outputs.fail_on_secrets }}" == "true" ] && [ "$secrets_count" -gt 0 ]; then
+            should_fail="true"
+          fi
+          
+          # 設置輸出
+          echo "secrets_found=$secrets_count" >> $GITHUB_OUTPUT
+          echo "files_scanned=$files_scanned" >> $GITHUB_OUTPUT
+          echo "scan_status=$scan_status" >> $GITHUB_OUTPUT
+          echo "should_fail=$should_fail" >> $GITHUB_OUTPUT
+          
+          echo "📊 Scan Summary:"
+          echo "  - Files scanned: $files_scanned"
+          echo "  - Secrets found: $secrets_count"
+          echo "  - Status: $scan_status"
+          echo "  - Should fail: $should_fail"
+          
+      - name: Generate SARIF report
+        if: steps.config.outputs.upload_sarif == 'true'
+        run: |
+          echo "📄 Generating SARIF report..."
+          
+          # 嘗試生成 SARIF
+          if ggshield secret scan repo . --format sarif --exit-zero > ./scan-results/gitguardian.sarif 2>&1; then
+            if [ -s "./scan-results/gitguardian.sarif" ]; then
+              echo "✅ SARIF report generated successfully"
+            else
+              echo "⚠️ SARIF file is empty, creating minimal report"
+              echo '{"version":"2.1.0","$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"GitGuardian","version":"1.27.0"}},"results":[]}]}' > ./scan-results/gitguardian.sarif
+            fi
+          else
+            echo "⚠️ Failed to generate SARIF, creating empty report"
+            echo '{"version":"2.1.0","$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"GitGuardian","version":"1.27.0"}},"results":[]}]}' > ./scan-results/gitguardian.sarif
+          fi
+          
+      - name: Upload SARIF to GitHub Security
+        if: steps.config.outputs.upload_sarif == 'true'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ./scan-results/gitguardian.sarif
+          category: gitguardian-smart-scan
+        continue-on-error: true
+        
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && steps.config.outputs.create_pr_comments == 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const secretsFound = '${{ steps.scan-results.outputs.secrets_found }}';
+            const scanStatus = '${{ steps.scan-results.outputs.scan_status }}';
+            const filesScanned = '${{ steps.scan-results.outputs.files_scanned }}';
+            const shouldFail = '${{ steps.scan-results.outputs.should_fail }}';
+            
+            let comment = '## 🔒 GitGuardian Smart Security Scan\n\n';
+            
+            if (scanStatus === 'secrets_found') {
+              comment += `⚠️ **Security Alert**: ${secretsFound} secret(s) detected in this PR\n\n`;
+              comment += '**📋 Required Actions:**\n';
+              comment += '- Review and remove detected secrets\n';
+              comment += '- Use environment variables for sensitive data\n';
+              comment += '- Consider rotating any exposed credentials\n\n';
+              
+              if (shouldFail === 'true') {
+                comment += '❌ **This PR will be blocked until security issues are resolved.**\n\n';
+              } else {
+                comment += '💡 **This is a warning.** Please address these issues when convenient.\n\n';
+              }
+            } else if (scanStatus === 'clean') {
+              comment += `✅ **Security Check Passed**\n\n`;
+              comment += `Scanned ${filesScanned} files - no secrets detected. Great job! 🎉\n\n`;
+            } else {
+              comment += '⚠️ **Scan Issues**: The security scan encountered problems.\n\n';
+              comment += 'Please check the workflow logs for details.\n\n';
+            }
+            
+            comment += '---\n';
+            comment += `📊 **Scan Details:**\n`;
+            comment += `- Files scanned: ${filesScanned}\n`;
+            comment += `- Secrets found: ${secretsFound}\n`;
+            comment += `- Configuration: Fail on secrets = ${shouldFail}\n`;
+            comment += `- [View detailed results](${context.payload.repository.html_url}/actions/runs/${context.runId})\n`;
+            
+            // 查找並更新現有評論
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const existingComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('GitGuardian Smart Security Scan')
+            );
+            
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+            
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitguardian-smart-scan-${{ github.run_number }}
+          path: |
+            ./scan-results/
+          retention-days: 30
+          
+      - name: Create workflow summary
+        if: always()
+        run: |
+          echo "## 🔒 GitGuardian Smart Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          secrets_found="${{ steps.scan-results.outputs.secrets_found }}"
+          scan_status="${{ steps.scan-results.outputs.scan_status }}"
+          files_scanned="${{ steps.scan-results.outputs.files_scanned }}"
+          should_fail="${{ steps.scan-results.outputs.should_fail }}"
+          
+          echo "**📊 Scan Summary:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Files scanned: $files_scanned" >> $GITHUB_STEP_SUMMARY
+          echo "- Secrets found: $secrets_found" >> $GITHUB_STEP_SUMMARY
+          echo "- Scan status: $scan_status" >> $GITHUB_STEP_SUMMARY
+          echo "- Fail on secrets: $should_fail" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$scan_status" == "secrets_found" ]; then
+            echo "⚠️ **Security Issues Detected**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Review detailed findings in the Security tab" >> $GITHUB_STEP_SUMMARY
+            echo "- Remove secrets and use environment variables" >> $GITHUB_STEP_SUMMARY
+            echo "- Rotate any exposed credentials" >> $GITHUB_STEP_SUMMARY
+          elif [ "$scan_status" == "clean" ]; then
+            echo "✅ **All Clear** - No security issues found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Scan Error** - Please check workflow logs" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **Resources:**" >> $GITHUB_STEP_SUMMARY
+          echo "- [Security Tab](../security/code-scanning)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Workflow Artifacts](../actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [GitGuardian Guide](../blob/main/GITGUARDIAN_SETUP_GUIDE.md)" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Conditional workflow failure
+        if: steps.scan-results.outputs.should_fail == 'true'
+        run: |
+          echo "❌ Workflow configured to fail when secrets are detected"
+          echo "🔍 Found ${{ steps.scan-results.outputs.secrets_found }} secret(s)"
+          echo "📋 Please resolve security issues and re-run the workflow"
+          echo ""
+          echo "💡 To change this behavior, modify 'fail_on_secrets' in .gitguardian.yaml"
+          echo "   or use the workflow_dispatch input parameter"
+          exit 1

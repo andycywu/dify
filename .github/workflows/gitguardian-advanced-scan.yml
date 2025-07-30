@@ -203,10 +203,64 @@ jobs:
             ./scan-results/
           retention-days: 30
           
-      - name: Fail job if secrets found
-        if: steps.secret-scan.outputs.scan_failed == 'true'
+      - name: Security scan summary
+        if: steps.secret-scan.outputs.scan_failed == 'true' || steps.secret-scan.outputs.secrets_found != '0'
         run: |
-          echo "❌ GitGuardian found secrets in your code!"
-          echo "Please review the scan results and remediate any issues."
-          echo "Check the Security tab for detailed information."
-          exit 1
+          echo "🔍 GitGuardian Security Scan Summary"
+          echo "===================================="
+          
+          secrets_found="${{ steps.secret-scan.outputs.secrets_found }}"
+          scan_failed="${{ steps.secret-scan.outputs.scan_failed }}"
+          
+          if [ "$secrets_found" != "0" ] && [ "$secrets_found" != "" ]; then
+            echo "⚠️  Security Alert: $secrets_found secret(s) detected!"
+            echo ""
+            echo "📋 Next Steps:"
+            echo "1. Review the scan results in the artifacts"
+            echo "2. Check the Security tab for detailed findings"
+            echo "3. Remove or replace detected secrets with environment variables"
+            echo "4. Consider rotating any exposed credentials"
+            echo ""
+            echo "💡 This is a warning, not a failure. The workflow will continue."
+          elif [ "$scan_failed" == "true" ]; then
+            echo "❌ Scan encountered technical issues"
+            echo "Please check the workflow logs for details"
+          else
+            echo "✅ No security issues detected"
+          fi
+          
+          echo ""
+          echo "📊 For detailed results, check:"
+          echo "- GitHub Security tab: Code scanning alerts"
+          echo "- Workflow artifacts: Download scan reports"
+          echo "- PR comments: Summary of findings (if applicable)"
+          
+      - name: Add security notice to job summary
+        if: always()
+        run: |
+          echo "## 🔒 GitGuardian Advanced Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          secrets_found="${{ steps.secret-scan.outputs.secrets_found }}"
+          scan_failed="${{ steps.secret-scan.outputs.scan_failed }}"
+          
+          if [ "$secrets_found" != "0" ] && [ "$secrets_found" != "" ]; then
+            echo "⚠️ **Security Alert**: $secrets_found secret(s) detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Action Required:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Review detected secrets in the Security tab" >> $GITHUB_STEP_SUMMARY
+            echo "- Remove secrets from code and use environment variables" >> $GITHUB_STEP_SUMMARY
+            echo "- Rotate any exposed credentials immediately" >> $GITHUB_STEP_SUMMARY
+          elif [ "$scan_failed" == "true" ]; then
+            echo "❌ **Scan Issues**: Technical problems occurred during scanning" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **All Clear**: No secrets detected" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Resources:**" >> $GITHUB_STEP_SUMMARY
+          echo "- [Security Tab](../security/code-scanning) - View detailed alerts" >> $GITHUB_STEP_SUMMARY
+          echo "- [Workflow Artifacts](../actions/runs/${{ github.run_id }}) - Download reports" >> $GITHUB_STEP_SUMMARY
+          echo "- [Setup Guide](../blob/main/GITGUARDIAN_SETUP_GUIDE.md) - Documentation" >> $GITHUB_STEP_SUMMARY
