@@ -37,8 +37,9 @@ jobs:
           
       - name: GitGuardian Secret Scan for PR
         uses: GitGuardian/ggshield-action@v1.27.0
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
         with:
-          api-key: ${{ secrets.GITGUARDIAN_API_KEY }}
           args: --all-policies --verbose --json --exit-zero
         continue-on-error: true
         

@@ -158,9 +158,13 @@ ggshield secret scan commit-range HEAD~1..HEAD
 **原因**：掃描結果文件未生成或路徑錯誤
 **解決方案**：
 - 檢查 `GITGUARDIAN_API_KEY` 是否正確設置
-- 使用 `gitguardian-reliable.yml` 工作流，具有更好的錯誤處理
+- 使用 `gitguardian-reliable.yml` 或 `gitguardian-security-scan.yml` 工作流，具有更好的錯誤處理
 
-#### 4. GitGuardian API 限制
+#### 4. "Unexpected input(s) 'api-key', valid inputs are ['entryPoint', 'args']"
+**原因**：GitGuardian Action 參數格式錯誤
+**解決方案**：已修復，使用環境變數 `GITGUARDIAN_API_KEY` 而非 `with.api-key`
+
+#### 5. GitGuardian API 限制
 **症狀**：掃描失敗或部分完成
 **解決方案**：
 - 檢查您的 GitGuardian 帳戶額度
@@ -201,9 +205,18 @@ ggshield secret scan commit-range HEAD~1..HEAD
 
 ### 推薦的工作流選擇
 
-- **生產環境**：使用 `gitguardian-reliable.yml`（最穩定）
-- **開發環境**：使用 `gitguardian-pr-check.yml`（快速 PR 檢查）
-- **完整掃描**：使用 `gitguardian-advanced-scan.yml`（功能最全面）
+根據不同需求選擇合適的工作流：
+
+- **🚀 生產環境推薦**：`gitguardian-security-scan.yml`（基礎但穩定，使用 CLI）
+- **⚡ 開發環境**：`gitguardian-pr-check.yml`（快速 PR 檢查）
+- **🔬 完整掃描**：`gitguardian-advanced-scan.yml`（功能最全面，包含 IaC 掃描）
+- **🛡️ 最可靠版本**：`gitguardian-reliable.yml`（最佳錯誤處理和報告）
+
+**重要修復說明**：
+- ✅ 所有工作流已修復 GitGuardian Action 參數問題
+- ✅ 文件路徑問題已解決
+- ✅ CodeQL Action 已更新到 v3
+- ✅ 改進了錯誤處理和結果報告
 
 如果您遇到問題：
 
