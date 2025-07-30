@@ -1,0 +1,56 @@
+name: GitGuardian Security Scan
+
+on:
+  # 在推送到主分支時運行
+  push:
+    branches:
+      - main
+  # 在 Pull Request 時運行
+  pull_request:
+    branches:
+      - main
+  # 允許手動觸發
+  workflow_dispatch:
+
+# 確保只有一個掃描作業同時運行
+concurrency:
+  group: gitguardian-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  scanning:
+    name: GitGuardian Security Scan
+    runs-on: ubuntu-latest
+    
+    permissions:
+      # 需要讀取代碼權限
+      contents: read
+      # 需要寫入檢查結果權限（可選，用於在 PR 中顯示結果）
+      checks: write
+      # 需要寫入 Pull Request 評論權限（可選）
+      pull-requests: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # 獲取完整的 git 歷史，以便 GitGuardian 可以掃描所有提交
+          fetch-depth: 0
+          
+      - name: GitGuardian Security Scan
+        uses: GitGuardian/ggshield-action@v1.27.0
+        with:
+          # GitGuardian API 密鑰，需要在 GitHub Secrets 中設置
+          api-key: ${{ secrets.GITGUARDIAN_API_KEY }}
+          # 掃描模式：可以是 'commit', 'pre-commit', 'pre-push'
+          args: --all-policies --verbose
+          
+      - name: Upload GitGuardian results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gitguardian-results
+          path: |
+            ggshield-report.json
+            ggshield-report.sarif
+          retention-days: 30

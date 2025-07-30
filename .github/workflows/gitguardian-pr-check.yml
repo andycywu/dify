@@ -1,0 +1,179 @@
+name: GitGuardian PR Security Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: gitguardian-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  security-check:
+    name: Security Check for PR
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+      
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          # 只獲取 PR 的變更
+          fetch-depth: 2
+          
+      - name: Get changed files
+        id: changed-files
+        run: |
+          # 獲取 PR 中變更的文件
+          git diff --name-only HEAD~1 HEAD > changed_files.txt
+          echo "Changed files:"
+          cat changed_files.txt
+          
+      - name: GitGuardian Secret Scan for PR
+        uses: GitGuardian/ggshield-action@v1.27.0
+        with:
+          api-key: ${{ secrets.GITGUARDIAN_API_KEY }}
+          args: --all-policies --verbose --json --output ./pr-scan-results.json
+          
+      - name: Process scan results
+        id: process-results
+        if: always()
+        run: |
+          if [ -f "./pr-scan-results.json" ]; then
+            echo "Scan results found"
+            # 檢查是否發現了秘密
+            secrets_found=$(jq '.secrets_detection_summary.secrets_found // 0' ./pr-scan-results.json)
+            echo "secrets_found=$secrets_found" >> $GITHUB_OUTPUT
+            
+            if [ "$secrets_found" -gt 0 ]; then
+              echo "status=failed" >> $GITHUB_OUTPUT
+              echo "⚠️ Found $secrets_found secrets in the PR"
+            else
+              echo "status=passed" >> $GITHUB_OUTPUT
+              echo "✅ No secrets found in the PR"
+            fi
+          else
+            echo "status=error" >> $GITHUB_OUTPUT
+            echo "❌ Scan results not found"
+          fi
+          
+      - name: Create or update PR comment
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const secretsFound = '${{ steps.process-results.outputs.secrets_found }}';
+            const status = '${{ steps.process-results.outputs.status }}';
+            
+            let comment = '## 🔒 GitGuardian Security Scan Results\n\n';
+            
+            if (status === 'passed') {
+              comment += '✅ **Security Check Passed**\n\n';
+              comment += 'No secrets were detected in this Pull Request. Good job! 🎉\n\n';
+            } else if (status === 'failed') {
+              comment += '❌ **Security Check Failed**\n\n';
+              comment += `⚠️ **${secretsFound} secret(s) detected** in this Pull Request.\n\n`;
+              comment += '**Action Required:**\n';
+              comment += '1. Review the detected secrets\n';
+              comment += '2. Remove or replace them with environment variables\n';
+              comment += '3. Consider rotating any exposed credentials\n';
+              comment += '4. Push the fixes to update this PR\n\n';
+            } else {
+              comment += '⚠️ **Security Scan Encountered an Error**\n\n';
+              comment += 'Please check the workflow logs for more details.\n\n';
+            }
+            
+            comment += '---\n';
+            comment += `🔍 **Scan Details:**\n`;
+            comment += `- PR: #${{ github.event.pull_request.number }}\n`;
+            comment += `- Commit: \`${{ github.event.pull_request.head.sha }}\`\n`;
+            comment += `- Scanned by: GitGuardian\n\n`;
+            
+            if (fs.existsSync('./pr-scan-results.json')) {
+              comment += '📊 Detailed results are available in the workflow artifacts.\n';
+            }
+            
+            // 查找現有的評論
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('GitGuardian Security Scan Results')
+            );
+            
+            if (botComment) {
+              // 更新現有評論
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              // 創建新評論
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+            
+      - name: Set PR status check
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const status = '${{ steps.process-results.outputs.status }}';
+            const secretsFound = '${{ steps.process-results.outputs.secrets_found }}';
+            
+            let state, description;
+            
+            if (status === 'passed') {
+              state = 'success';
+              description = 'No secrets detected';
+            } else if (status === 'failed') {
+              state = 'failure';
+              description = `${secretsFound} secret(s) detected`;
+            } else {
+              state = 'error';
+              description = 'Scan encountered an error';
+            }
+            
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.pull_request.head.sha,
+              state: state,
+              target_url: `${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              description: description,
+              context: 'GitGuardian Security Check'
+            });
+            
+      - name: Upload PR scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-security-scan-${{ github.event.pull_request.number }}
+          path: |
+            ./pr-scan-results.json
+            ./changed_files.txt
+          retention-days: 7
+          
+      - name: Fail if secrets found
+        if: steps.process-results.outputs.status == 'failed'
+        run: |
+          echo "❌ Security check failed: secrets detected in PR"
+          echo "Please review and fix the detected secrets before merging."
+          exit 1

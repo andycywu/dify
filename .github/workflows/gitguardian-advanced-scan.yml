@@ -1,0 +1,178 @@
+name: GitGuardian Advanced Security Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # 每天凌晨 2 點運行一次完整掃描
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: gitguardian-advanced-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  gitguardian-scan:
+    name: GitGuardian Advanced Security Scan
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      security-events: write
+      checks: write
+      pull-requests: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install GitGuardian CLI
+        run: |
+          pip install --upgrade pip
+          pip install ggshield
+          
+      - name: Create GitGuardian config
+        run: |
+          mkdir -p ~/.gitguardian
+          cat > ~/.gitguardian/config.yaml << EOF
+          # GitGuardian 配置文件
+          api_key: ${{ secrets.GITGUARDIAN_API_KEY }}
+          
+          # 自定義設置
+          verbose: true
+          show_secrets: false
+          exit_zero: false
+          
+          # 忽略的路徑
+          paths_ignore:
+            - "**/*.log"
+            - "**/node_modules/**"
+            - "**/dist/**"
+            - "**/build/**"
+            - "**/.git/**"
+            - "**/venv/**"
+            - "**/__pycache__/**"
+            
+          # 忽略的檔案類型
+          matches_ignore:
+            - name: "Test secrets"
+              match: "test_.*"
+            - name: "Example secrets"
+              match: "example_.*"
+              
+          # 自定義檢測器設置
+          secret_scan_preference: maximum_coverage
+          EOF
+          
+      - name: Run GitGuardian Secret Scan
+        id: secret-scan
+        run: |
+          echo "::group::GitGuardian Secret Scan"
+          ggshield secret scan repo . \
+            --output ./gitguardian-secrets.json \
+            --json \
+            --exit-zero || echo "scan_failed=true" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
+          
+      - name: Run GitGuardian IaC Scan
+        id: iac-scan
+        continue-on-error: true
+        run: |
+          echo "::group::GitGuardian IaC Scan"
+          ggshield iac scan all . \
+            --output ./gitguardian-iac.json \
+            --json \
+            --exit-zero || echo "iac_scan_failed=true" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
+          
+      - name: Generate SARIF Report
+        if: always()
+        run: |
+          echo "::group::Generate SARIF Report"
+          ggshield secret scan repo . \
+            --output ./gitguardian.sarif \
+            --format sarif \
+            --exit-zero || true
+          echo "::endgroup::"
+          
+      - name: Upload SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ./gitguardian.sarif
+          category: gitguardian
+          
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## 🔒 GitGuardian Security Scan Results\n\n';
+            
+            // 檢查秘密掃描結果
+            if (fs.existsSync('./gitguardian-secrets.json')) {
+              const secretResults = JSON.parse(fs.readFileSync('./gitguardian-secrets.json', 'utf8'));
+              if (secretResults.secrets_detection_summary) {
+                const summary = secretResults.secrets_detection_summary;
+                comment += `### 🔐 Secrets Detection\n`;
+                comment += `- **Files scanned**: ${summary.files_scanned || 0}\n`;
+                comment += `- **Secrets found**: ${summary.secrets_found || 0}\n`;
+                comment += `- **Commits scanned**: ${summary.commits_scanned || 0}\n\n`;
+                
+                if (summary.secrets_found > 0) {
+                  comment += '⚠️ **Secrets detected in your code!** Please review and remediate.\n\n';
+                } else {
+                  comment += '✅ **No secrets detected.** Great job!\n\n';
+                }
+              }
+            }
+            
+            // 檢查 IaC 掃描結果
+            if (fs.existsSync('./gitguardian-iac.json')) {
+              const iacResults = JSON.parse(fs.readFileSync('./gitguardian-iac.json', 'utf8'));
+              comment += `### ☁️ Infrastructure as Code (IaC) Scan\n`;
+              comment += `IaC scan completed. Check the detailed results in the Security tab.\n\n`;
+            }
+            
+            comment += '---\n';
+            comment += '🔍 Detailed results are available in the [Security tab](../security) of this repository.\n';
+            comment += '📊 Full scan reports are uploaded as artifacts.\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          
+      - name: Upload scan results as artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitguardian-scan-results-${{ github.run_number }}
+          path: |
+            ./gitguardian-secrets.json
+            ./gitguardian-iac.json  
+            ./gitguardian.sarif
+          retention-days: 30
+          
+      - name: Fail job if secrets found
+        if: steps.secret-scan.outputs.scan_failed == 'true'
+        run: |
+          echo "❌ GitGuardian found secrets in your code!"
+          echo "Please review the scan results and remediate any issues."
+          echo "Check the Security tab for detailed information."
+          exit 1
