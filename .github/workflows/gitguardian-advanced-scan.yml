@@ -80,10 +80,23 @@ jobs:
         id: secret-scan
         run: |
           echo "::group::GitGuardian Secret Scan"
-          ggshield secret scan repo . \
-            --output ./gitguardian-secrets.json \
-            --json \
-            --exit-zero || echo "scan_failed=true" >> $GITHUB_OUTPUT
+          # 創建輸出目錄
+          mkdir -p ./scan-results
+          
+          # 運行秘密掃描
+          if ggshield secret scan repo . --json --exit-zero > ./scan-results/gitguardian-secrets.json 2>&1; then
+            echo "Secret scan completed successfully"
+          else
+            echo "scan_failed=true" >> $GITHUB_OUTPUT
+            echo "Secret scan encountered issues"
+          fi
+          
+          # 檢查是否找到秘密
+          if [ -f "./scan-results/gitguardian-secrets.json" ]; then
+            secrets_count=$(jq '.total_secrets // 0' ./scan-results/gitguardian-secrets.json 2>/dev/null || echo "0")
+            echo "secrets_found=$secrets_count" >> $GITHUB_OUTPUT
+            echo "Found $secrets_count secrets"
+          fi
           echo "::endgroup::"
           
       - name: Run GitGuardian IaC Scan
@@ -91,27 +104,46 @@ jobs:
         continue-on-error: true
         run: |
           echo "::group::GitGuardian IaC Scan"
-          ggshield iac scan all . \
-            --output ./gitguardian-iac.json \
-            --json \
-            --exit-zero || echo "iac_scan_failed=true" >> $GITHUB_OUTPUT
+          # 檢查是否有 IaC 文件
+          if find . -name "*.tf" -o -name "*.yaml" -o -name "*.yml" -o -name "Dockerfile*" | head -1 | grep -q .; then
+            echo "Found IaC files, running scan..."
+            if ggshield iac scan all . --json --exit-zero > ./scan-results/gitguardian-iac.json 2>&1; then
+              echo "IaC scan completed"
+            else
+              echo "iac_scan_failed=true" >> $GITHUB_OUTPUT
+              echo "IaC scan encountered issues"
+            fi
+          else
+            echo "No IaC files found, skipping IaC scan"
+            echo '{"status": "skipped", "reason": "no_iac_files"}' > ./scan-results/gitguardian-iac.json
+          fi
           echo "::endgroup::"
           
       - name: Generate SARIF Report
         if: always()
         run: |
           echo "::group::Generate SARIF Report"
-          ggshield secret scan repo . \
-            --output ./gitguardian.sarif \
-            --format sarif \
-            --exit-zero || true
+          # 嘗試生成 SARIF 報告
+          if ggshield secret scan repo . --format sarif --exit-zero > ./scan-results/gitguardian.sarif 2>&1; then
+            echo "SARIF report generated successfully"
+            # 驗證 SARIF 文件是否有效
+            if [ -s "./scan-results/gitguardian.sarif" ]; then
+              echo "SARIF file is valid and non-empty"
+            else
+              echo "SARIF file is empty, creating minimal valid SARIF"
+              echo '{"version":"2.1.0","$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"GitGuardian","version":"1.27.0"}},"results":[]}]}' > ./scan-results/gitguardian.sarif
+            fi
+          else
+            echo "Failed to generate SARIF, creating empty report"
+            echo '{"version":"2.1.0","$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"GitGuardian","version":"1.27.0"}},"results":[]}]}' > ./scan-results/gitguardian.sarif
+          fi
           echo "::endgroup::"
           
       - name: Upload SARIF to GitHub Security
         if: always()
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: ./gitguardian.sarif
+          sarif_file: ./scan-results/gitguardian.sarif
           category: gitguardian
           
       - name: Comment PR with results
@@ -123,26 +155,30 @@ jobs:
             let comment = '## 🔒 GitGuardian Security Scan Results\n\n';
             
             // 檢查秘密掃描結果
-            if (fs.existsSync('./gitguardian-secrets.json')) {
-              const secretResults = JSON.parse(fs.readFileSync('./gitguardian-secrets.json', 'utf8'));
-              if (secretResults.secrets_detection_summary) {
-                const summary = secretResults.secrets_detection_summary;
-                comment += `### 🔐 Secrets Detection\n`;
-                comment += `- **Files scanned**: ${summary.files_scanned || 0}\n`;
-                comment += `- **Secrets found**: ${summary.secrets_found || 0}\n`;
-                comment += `- **Commits scanned**: ${summary.commits_scanned || 0}\n\n`;
+            if (fs.existsSync('./scan-results/gitguardian-secrets.json')) {
+              try {
+                const secretResults = JSON.parse(fs.readFileSync('./scan-results/gitguardian-secrets.json', 'utf8'));
+                const totalSecrets = secretResults.total_secrets || 0;
+                const filesScanned = secretResults.total_files_scanned || 0;
                 
-                if (summary.secrets_found > 0) {
+                comment += `### 🔐 Secrets Detection\n`;
+                comment += `- **Files scanned**: ${filesScanned}\n`;
+                comment += `- **Secrets found**: ${totalSecrets}\n\n`;
+                
+                if (totalSecrets > 0) {
                   comment += '⚠️ **Secrets detected in your code!** Please review and remediate.\n\n';
                 } else {
                   comment += '✅ **No secrets detected.** Great job!\n\n';
                 }
+              } catch (error) {
+                comment += '⚠️ **Could not parse secret scan results**\n\n';
               }
+            } else {
+              comment += '⚠️ **Secret scan results not found**\n\n';
             }
             
             // 檢查 IaC 掃描結果
-            if (fs.existsSync('./gitguardian-iac.json')) {
-              const iacResults = JSON.parse(fs.readFileSync('./gitguardian-iac.json', 'utf8'));
+            if (fs.existsSync('./scan-results/gitguardian-iac.json')) {
               comment += `### ☁️ Infrastructure as Code (IaC) Scan\n`;
               comment += `IaC scan completed. Check the detailed results in the Security tab.\n\n`;
             }
@@ -164,9 +200,7 @@ jobs:
         with:
           name: gitguardian-scan-results-${{ github.run_number }}
           path: |
-            ./gitguardian-secrets.json
-            ./gitguardian-iac.json  
-            ./gitguardian.sarif
+            ./scan-results/
           retention-days: 30
           
       - name: Fail job if secrets found

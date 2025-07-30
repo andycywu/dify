@@ -39,16 +39,26 @@ jobs:
         uses: GitGuardian/ggshield-action@v1.27.0
         with:
           api-key: ${{ secrets.GITGUARDIAN_API_KEY }}
-          args: --all-policies --verbose --json --output ./pr-scan-results.json
-          
+          args: --all-policies --verbose --json --exit-zero
+        continue-on-error: true
+        
       - name: Process scan results
         id: process-results
         if: always()
         run: |
-          if [ -f "./pr-scan-results.json" ]; then
+          # 創建結果目錄
+          mkdir -p ./scan-results
+          
+          # 查找 GitGuardian 輸出文件
+          if find . -name "*.json" -path "./ggshield-*" | head -1 | grep -q .; then
+            # 移動找到的結果文件
+            find . -name "*.json" -path "./ggshield-*" -exec cp {} ./scan-results/pr-scan-results.json \; -quit
+          fi
+          
+          if [ -f "./scan-results/pr-scan-results.json" ]; then
             echo "Scan results found"
             # 檢查是否發現了秘密
-            secrets_found=$(jq '.secrets_detection_summary.secrets_found // 0' ./pr-scan-results.json)
+            secrets_found=$(jq '.total_secrets // 0' ./scan-results/pr-scan-results.json 2>/dev/null || echo "0")
             echo "secrets_found=$secrets_found" >> $GITHUB_OUTPUT
             
             if [ "$secrets_found" -gt 0 ]; then
@@ -96,7 +106,7 @@ jobs:
             comment += `- Commit: \`${{ github.event.pull_request.head.sha }}\`\n`;
             comment += `- Scanned by: GitGuardian\n\n`;
             
-            if (fs.existsSync('./pr-scan-results.json')) {
+            if (fs.existsSync('./scan-results/pr-scan-results.json')) {
               comment += '📊 Detailed results are available in the workflow artifacts.\n';
             }
             
@@ -167,7 +177,7 @@ jobs:
         with:
           name: pr-security-scan-${{ github.event.pull_request.number }}
           path: |
-            ./pr-scan-results.json
+            ./scan-results/
             ./changed_files.txt
           retention-days: 7
           

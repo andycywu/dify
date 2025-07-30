@@ -22,29 +22,40 @@
 
 ## 📋 工作流程說明
 
-我們設置了三個 GitGuardian 工作流：
+我們設置了四個 GitGuardian 工作流：
 
 ### 1. `gitguardian-security-scan.yml` - 基礎掃描
 - **觸發時機**：推送到 main 分支、Pull Request、手動觸發
 - **功能**：基本的秘密掃描
 - **輸出**：上傳掃描結果到 artifacts
 
-### 2. `gitguardian-advanced-scan.yml` - 高級掃描
+### 2. `gitguardian-advanced-scan.yml` - 高級掃描（已修復）
 - **觸發時機**：推送到 main、Pull Request、每日定時掃描
 - **功能**：
   - 秘密掃描
   - Infrastructure as Code (IaC) 掃描
   - SARIF 報告上傳到 GitHub Security 頁籤
   - 詳細的 PR 評論
+- **修復**：文件路徑、SARIF 生成、CodeQL Action 版本
 - **特色**：自動在 PR 中留言掃描結果
 
-### 3. `gitguardian-pr-check.yml` - PR 快速檢查
+### 3. `gitguardian-pr-check.yml` - PR 快速檢查（已修復）
 - **觸發時機**：Pull Request 開啟/更新時
 - **功能**：快速掃描 PR 中的變更
+- **修復**：結果處理、文件路徑
 - **特色**：
   - 只掃描變更的文件
   - 即時 PR 狀態更新
   - 自動更新評論
+
+### 4. `gitguardian-reliable.yml` - 可靠版本（新增）
+- **觸發時機**：推送到 main、Pull Request、手動觸發
+- **功能**：簡化但更可靠的掃描流程
+- **特色**：
+  - 自動檢查 API 密鑰是否存在
+  - 改進的錯誤處理
+  - 更好的結果報告
+  - 自動生成工作流摘要
 
 ## 🔧 配置文件
 
@@ -129,7 +140,70 @@ ggshield secret scan path /path/to/file
 ggshield secret scan commit-range HEAD~1..HEAD
 ```
 
-## 📞 支援
+## 📞 支援與故障排除
+
+### 常見問題
+
+#### 1. "Path does not exist: ./gitguardian.sarif"
+**原因**：SARIF 文件生成失敗或路徑錯誤
+**解決方案**：
+- 使用 `gitguardian-reliable.yml` 工作流（已修復此問題）
+- 檢查 GitGuardian API 密鑰是否正確設置
+
+#### 2. "CodeQL Action v2 is now deprecated"
+**原因**：使用了過時的 CodeQL Action 版本
+**解決方案**：已更新到 `github/codeql-action/upload-sarif@v3`
+
+#### 3. "No files were found with the provided path"
+**原因**：掃描結果文件未生成或路徑錯誤
+**解決方案**：
+- 檢查 `GITGUARDIAN_API_KEY` 是否正確設置
+- 使用 `gitguardian-reliable.yml` 工作流，具有更好的錯誤處理
+
+#### 4. GitGuardian API 限制
+**症狀**：掃描失敗或部分完成
+**解決方案**：
+- 檢查您的 GitGuardian 帳戶額度
+- 考慮升級到付費方案以獲得更多掃描額度
+
+### 調試步驟
+
+如果您遇到問題：
+
+1. **檢查 GitHub Secrets**
+   ```bash
+   # 在 GitHub repository 中確認
+   Settings → Secrets and variables → Actions → GITGUARDIAN_API_KEY
+   ```
+
+2. **查看工作流日誌**
+   - 進入 Actions 頁籤
+   - 點擊失敗的工作流運行
+   - 展開每個步驟查看詳細日誌
+
+3. **驗證 GitGuardian API 密鑰**
+   ```bash
+   # 本地測試（如果已安裝 ggshield）
+   export GITGUARDIAN_API_KEY="your_api_key"
+   ggshield auth login --api-key $GITGUARDIAN_API_KEY
+   ```
+
+4. **檢查 `.gitguardian.yaml` 配置**
+   - 確保文件語法正確
+   - 驗證忽略規則是否過於寬泛
+
+5. **測試本地掃描**
+   ```bash
+   pip install ggshield
+   export GITGUARDIAN_API_KEY="your_api_key"
+   ggshield secret scan repo . --exit-zero
+   ```
+
+### 推薦的工作流選擇
+
+- **生產環境**：使用 `gitguardian-reliable.yml`（最穩定）
+- **開發環境**：使用 `gitguardian-pr-check.yml`（快速 PR 檢查）
+- **完整掃描**：使用 `gitguardian-advanced-scan.yml`（功能最全面）
 
 如果您遇到問題：
 

@@ -15,6 +15,7 @@ required_files=(
     ".github/workflows/gitguardian-security-scan.yml"
     ".github/workflows/gitguardian-advanced-scan.yml"
     ".github/workflows/gitguardian-pr-check.yml"
+    ".github/workflows/gitguardian-reliable.yml"
     ".gitguardian.yaml"
     "GITGUARDIAN_SETUP_GUIDE.md"
 )
