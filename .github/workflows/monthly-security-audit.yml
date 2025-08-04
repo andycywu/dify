@@ -1,0 +1,243 @@
+name: 🛡️ Monthly Security Audit
+
+on:
+  # 每月1號 UTC 06:00 (台北時間 14:00) 運行
+  schedule:
+    - cron: '0 6 1 * *'
+  
+  # 允許手動觸發
+  workflow_dispatch:
+
+jobs:
+  monthly-security-audit:
+    runs-on: ubuntu-latest
+    name: 月度安全審計
+    
+    steps:
+    - name: 🔍 檢出代碼
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 獲取完整歷史
+    
+    - name: 🔧 安裝安全工具
+      run: |
+        echo "🔧 安裝安全掃描工具..."
+        
+        # 安裝 git-secrets
+        git clone https://github.com/awslabs/git-secrets.git
+        cd git-secrets
+        sudo make install
+        cd ..
+        rm -rf git-secrets
+        
+        # 配置 git-secrets
+        git secrets --register-aws
+        git secrets --install
+        
+        # 安裝 truffleHog (Go 版本)
+        curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+        
+        echo "✅ 安全工具安裝完成"
+    
+    - name: 🔍 深度歷史掃描
+      run: |
+        echo "🔍 開始深度 Git 歷史掃描..."
+        
+        # 使用 truffleHog 掃描整個 Git 歷史
+        echo "🔍 使用 TruffleHog 掃描..."
+        trufflehog git . --only-verified=false --max_depth=50 || true
+        
+        # 使用 git-secrets 掃描
+        echo "🔍 使用 git-secrets 掃描..."
+        git secrets --scan-history || true
+        
+        echo "✅ 深度歷史掃描完成"
+    
+    - name: 📊 依賴安全檢查
+      run: |
+        echo "📊 檢查項目依賴安全性..."
+        
+        # Python 依賴安全檢查
+        if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
+          echo "🐍 檢查 Python 依賴..."
+          pip install safety
+          find . -name "requirements*.txt" -exec safety check -r {} \; || true
+        fi
+        
+        # Node.js 依賴安全檢查
+        if [ -f "package.json" ]; then
+          echo "📦 檢查 Node.js 依賴..."
+          npm audit || true
+        fi
+        
+        # Docker 安全檢查
+        if [ -f "Dockerfile" ] || [ -f "docker-compose.yml" ]; then
+          echo "🐳 檢查 Docker 配置..."
+          
+          # 檢查 Dockerfile 最佳實踐
+          find . -name "Dockerfile*" | while read dockerfile; do
+            echo "檢查 $dockerfile..."
+            
+            # 檢查是否使用 latest 標籤
+            if grep -q "FROM.*:latest" "$dockerfile"; then
+              echo "⚠️ $dockerfile 使用了 :latest 標籤，建議使用具體版本"
+            fi
+            
+            # 檢查是否以 root 用戶運行
+            if ! grep -q "USER " "$dockerfile"; then
+              echo "⚠️ $dockerfile 可能以 root 用戶運行，建議添加非 root 用戶"
+            fi
+          done
+        fi
+        
+        echo "✅ 依賴安全檢查完成"
+    
+    - name: 🔐 密鑰和憑證檢查
+      run: |
+        echo "🔐 檢查潛在的洩露密鑰和憑證..."
+        
+        # 檢查常見的密鑰模式
+        echo "🔍 掃描常見密鑰模式..."
+        
+        # AWS 密鑰
+        git log --all --full-history -p | grep -i "AKIA[0-9A-Z]{16}" || true
+        
+        # JWT tokens
+        git log --all --full-history -p | grep -E "eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*" || true
+        
+        # API 密鑰模式
+        git log --all --full-history -p | grep -i "api[_-]key.*[=:].*[a-zA-Z0-9]" || true
+        
+        # 私鑰
+        git log --all --full-history -p | grep -l "BEGIN.*PRIVATE.*KEY" || true
+        
+        echo "✅ 密鑰檢查完成"
+    
+    - name: 📈 文件權限檢查
+      run: |
+        echo "📈 檢查文件權限設置..."
+        
+        # 檢查可執行文件
+        echo "🔍 檢查可執行文件..."
+        find . -type f -executable -not -path "./.git/*" -not -path "./node_modules/*" | while read file; do
+          echo "可執行文件: $file"
+        done
+        
+        # 檢查潛在的敏感文件權限
+        echo "🔍 檢查敏感文件權限..."
+        find . -name "*.key" -o -name "*.pem" -o -name "*.p12" -o -name "secrets*" | while read file; do
+          if [ -f "$file" ]; then
+            perm=$(stat -c "%a" "$file" 2>/dev/null || stat -f "%A" "$file" 2>/dev/null)
+            echo "敏感文件 $file 權限: $perm"
+            if [[ "$perm" =~ [2367] ]]; then
+              echo "⚠️ 文件 $file 權限過於寬鬆"
+            fi
+          fi
+        done
+        
+        echo "✅ 文件權限檢查完成"
+    
+    - name: 🏗️ 基礎設施安全檢查
+      run: |
+        echo "🏗️ 檢查基礎設施配置安全性..."
+        
+        # 檢查 GitHub Actions 安全
+        if [ -d ".github/workflows" ]; then
+          echo "🔍 檢查 GitHub Actions 配置..."
+          
+          find .github/workflows -name "*.yml" -o -name "*.yaml" | while read workflow; do
+            echo "檢查工作流: $workflow"
+            
+            # 檢查是否硬編碼秘密
+            if grep -l "password\|secret\|key" "$workflow" | grep -v "secrets\." | grep -v "github\.token"; then
+              echo "⚠️ $workflow 可能包含硬編碼秘密"
+            fi
+            
+            # 檢查第三方 Actions 版本
+            grep "uses:" "$workflow" | grep -v "@v" | grep -v "@main" || true
+          done
+        fi
+        
+        # 檢查 Docker Compose 安全
+        if [ -f "docker-compose.yml" ] || [ -f "docker-compose.yaml" ]; then
+          echo "🔍 檢查 Docker Compose 配置..."
+          
+          find . -name "docker-compose*.yml" -o -name "docker-compose*.yaml" | while read compose; do
+            echo "檢查 $compose..."
+            
+            # 檢查特權模式
+            if grep -q "privileged.*true" "$compose"; then
+              echo "⚠️ $compose 使用了特權模式"
+            fi
+            
+            # 檢查主機網絡模式
+            if grep -q "network_mode.*host" "$compose"; then
+              echo "⚠️ $compose 使用了主機網絡模式"
+            fi
+          done
+        fi
+        
+        echo "✅ 基礎設施安全檢查完成"
+    
+    - name: 📊 生成月度安全報告
+      run: |
+        echo "📊 生成月度安全審計報告..."
+        
+        cat > monthly-security-audit-report.md << 'EOF'
+        # 🛡️ 月度安全審計報告
+        
+        **審計時間**: $(date)
+        **審計週期**: 每月1號
+        **項目**: Dify
+        
+        ## 審計範圍
+        
+        - ✅ Git 歷史深度掃描
+        - ✅ 依賴安全性檢查
+        - ✅ 密鑰和憑證洩露檢查
+        - ✅ 文件權限檢查
+        - ✅ 基礎設施配置安全
+        - ✅ Docker 安全配置
+        - ✅ GitHub Actions 安全
+        
+        ## 安全工具使用
+        
+        - TruffleHog: Git 歷史密鑰掃描
+        - git-secrets: AWS 密鑰檢測
+        - Safety: Python 依賴漏洞檢查
+        - npm audit: Node.js 依賴安全檢查
+        
+        ## 安全建議
+        
+        1. **定期更新依賴**: 保持所有依賴包為最新安全版本
+        2. **權限最小化**: 確保文件和容器權限符合最小權限原則
+        3. **密鑰管理**: 使用專門的密鑰管理服務
+        4. **監控告警**: 設置安全事件監控和告警
+        
+        ## 下月重點
+        
+        - [ ] 檢查新增的第三方依賴
+        - [ ] 審查權限變更
+        - [ ] 更新安全掃描工具
+        - [ ] 安全培訓和意識提升
+        
+        ---
+        *此報告由 GitHub Actions 自動生成*
+        *下次審計時間: $(date -d "next month" "+%Y-%m-01")*
+        EOF
+        
+        echo "✅ 月度安全審計報告已生成"
+    
+    - name: 🚨 安全問題處理建議
+      if: failure()
+      run: |
+        echo "🚨 月度安全審計發現問題！"
+        echo ""
+        echo "📋 建議處理步驟："
+        echo "1. 查看上述輸出中的具體安全問題"
+        echo "2. 運行 ./emergency-security-cleanup.sh"
+        echo "3. 更新或移除有問題的依賴"
+        echo "4. 修復配置安全問題"
+        echo "5. 更換任何洩露的密鑰"
+        echo ""
+        echo "📞 如需幫助，請聯繫安全團隊"

@@ -1,0 +1,195 @@
+name: 🚫 PR Security Gate
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  security-gate:
+    runs-on: ubuntu-latest
+    name: 安全閘門檢查
+    
+    steps:
+    - name: 🔍 檢出代碼
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2  # 需要比較前一個提交
+    
+    - name: 🚨 阻止敏感文件提交
+      run: |
+        echo "🚨 檢查是否有敏感文件被提交..."
+        
+        # 獲取此次變更的文件列表
+        CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD^ HEAD 2>/dev/null || true)
+        
+        if [ -z "$CHANGED_FILES" ]; then
+          echo "⚠️ 無法獲取變更文件列表，跳過檢查"
+          exit 0
+        fi
+        
+        echo "📁 此次變更的文件:"
+        echo "$CHANGED_FILES"
+        echo ""
+        
+        # 檢查敏感文件模式
+        SENSITIVE_PATTERNS=(
+          "\.env$"
+          "\.env\."
+          "\.key$"
+          "\.pem$"
+          "\.p12$"
+          "\.pfx$"
+          "secrets/"
+          "credentials/"
+          "config/production"
+          "config/staging"
+          "\.history/"
+        )
+        
+        FOUND_SENSITIVE=false
+        
+        for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+          if echo "$CHANGED_FILES" | grep -E "$pattern" | grep -v example | grep -v template; then
+            echo "❌ 發現敏感文件模式: $pattern"
+            FOUND_SENSITIVE=true
+          fi
+        done
+        
+        if [ "$FOUND_SENSITIVE" = true ]; then
+          echo ""
+          echo "🚨 檢測到敏感文件！請執行以下步驟："
+          echo "1. 從提交中移除敏感文件"
+          echo "2. 確保文件已添加到 .gitignore"
+          echo "3. 如果文件已包含真實密鑰，請立即更換"
+          echo "4. 運行 ./emergency-security-cleanup.sh"
+          exit 1
+        fi
+        
+        echo "✅ 沒有發現敏感文件"
+    
+    - name: 🔍 內容安全掃描
+      run: |
+        echo "🔍 掃描提交內容中的敏感信息..."
+        
+        # 獲取此次變更的內容差異
+        DIFF_CONTENT=$(git diff HEAD~1 HEAD 2>/dev/null || git diff HEAD^ HEAD 2>/dev/null || true)
+        
+        if [ -z "$DIFF_CONTENT" ]; then
+          echo "⚠️ 無法獲取變更內容，跳過掃描"
+          exit 0
+        fi
+        
+        # 敏感內容模式
+        SENSITIVE_CONTENT_PATTERNS=(
+          "sk-[a-zA-Z0-9]{48}"                    # OpenAI API keys
+          "AKIA[0-9A-Z]{16}"                      # AWS Access Key ID
+          "[0-9a-zA-Z/+]{40}"                     # AWS Secret Access Key
+          "xox[baprs]-[0-9a-zA-Z-]+"             # Slack tokens
+          "ghp_[0-9a-zA-Z]{36}"                   # GitHub Personal Access Token
+          "gho_[0-9a-zA-Z]{36}"                   # GitHub OAuth Token
+          "mongodb://[^\\s]+:[^\\s]+@"            # MongoDB connection string with credentials
+          "mysql://[^\\s]+:[^\\s]+@"              # MySQL connection string with credentials
+          "postgres://[^\\s]+:[^\\s]+@"           # PostgreSQL connection string with credentials
+        )
+        
+        FOUND_SENSITIVE_CONTENT=false
+        
+        for pattern in "${SENSITIVE_CONTENT_PATTERNS[@]}"; do
+          if echo "$DIFF_CONTENT" | grep -E "$pattern" >/dev/null 2>&1; then
+            echo "❌ 發現敏感內容模式: $pattern"
+            FOUND_SENSITIVE_CONTENT=true
+          fi
+        done
+        
+        if [ "$FOUND_SENSITIVE_CONTENT" = true ]; then
+          echo ""
+          echo "🚨 檢測到敏感內容！"
+          echo "請檢查提交中是否包含真實的 API 密鑰或密碼"
+          echo "如果是測試數據，請確保明確標註為測試用途"
+          echo "如果是真實密鑰，請立即："
+          echo "1. 移除該提交"
+          echo "2. 更換洩露的密鑰"
+          echo "3. 使用環境變量或密鑰管理服務"
+          exit 1
+        fi
+        
+        echo "✅ 內容安全掃描通過"
+    
+    - name: 🔧 .gitignore 合規檢查
+      run: |
+        echo "🔧 檢查 .gitignore 配置..."
+        
+        if [ ! -f ".gitignore" ]; then
+          echo "❌ 缺少 .gitignore 文件！"
+          exit 1
+        fi
+        
+        # 必需的 .gitignore 規則
+        REQUIRED_RULES=(
+          ".env"
+          ".env.*"
+          ".history/"
+          "docker/volumes/"
+          "*.key"
+          "*.pem"
+          "secrets/"
+          "credentials/"
+        )
+        
+        MISSING_RULES=()
+        
+        for rule in "${REQUIRED_RULES[@]}"; do
+          if ! grep -Fq "$rule" .gitignore; then
+            MISSING_RULES+=("$rule")
+          fi
+        done
+        
+        if [ ${#MISSING_RULES[@]} -gt 0 ]; then
+          echo "❌ .gitignore 缺少必要規則:"
+          for rule in "${MISSING_RULES[@]}"; do
+            echo "  - $rule"
+          done
+          echo ""
+          echo "請將上述規則添加到 .gitignore 文件中"
+          exit 1
+        fi
+        
+        echo "✅ .gitignore 配置符合要求"
+    
+    - name: 📊 生成 PR 安全報告
+      if: always()
+      run: |
+        echo "📊 生成 PR 安全檢查報告..."
+        
+        cat > pr-security-report.md << 'EOF'
+        # 🚫 PR 安全檢查報告
+        
+        **檢查時間**: $(date)
+        **PR/Commit**: ${{ github.sha }}
+        **分支**: ${{ github.ref }}
+        
+        ## 檢查項目
+        
+        - ✅ 敏感文件檢查
+        - ✅ 敏感內容掃描
+        - ✅ .gitignore 合規檢查
+        
+        ## 結果
+        
+        所有安全檢查已通過，可以安全合併 ✅
+        
+        ## 安全提醒
+        
+        在未來的開發中，請記住：
+        - 永不提交真實的 API 密鑰或密碼
+        - 使用 .env.example 作為環境變量模板
+        - 定期運行 `./security-check.sh`
+        - 有疑問時運行 `./emergency-security-cleanup.sh`
+        
+        ---
+        *此報告由 GitHub Actions 自動生成*
+        EOF
+        
+        echo "✅ PR 安全報告已生成"

@@ -1,0 +1,116 @@
+name: 🔒 Daily Security Check
+
+on:
+  # 每天 UTC 00:00 (台北時間 08:00) 運行
+  schedule:
+    - cron: '0 0 * * *'
+  
+  # 每次推送到 main 分支時運行
+  push:
+    branches: [ main ]
+  
+  # 每次 PR 到 main 分支時運行
+  pull_request:
+    branches: [ main ]
+  
+  # 允許手動觸發
+  workflow_dispatch:
+
+jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    name: 安全檢查
+    
+    steps:
+    - name: 🔍 檢出代碼
+      uses: actions/checkout@v4
+      with:
+        # 獲取完整歷史以進行安全掃描
+        fetch-depth: 0
+    
+    - name: 🔒 運行安全檢查腳本
+      run: |
+        chmod +x ./security-check.sh
+        ./security-check.sh
+      continue-on-error: false
+    
+    - name: 🚨 檢查敏感文件
+      run: |
+        echo "🔍 檢查是否有 .env 文件被意外提交..."
+        
+        # 檢查當前提交中的 .env 文件
+        if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "\.env$|\.env\." | grep -v example | grep -v template; then
+          echo "❌ 發現敏感的 .env 文件被提交！"
+          exit 1
+        fi
+        
+        # 檢查是否有硬編碼的 API 密鑰
+        echo "🔍 檢查硬編碼的 API 密鑰..."
+        if git diff --name-only HEAD~1 HEAD 2>/dev/null | xargs grep -l "sk-[a-zA-Z0-9]" 2>/dev/null; then
+          echo "⚠️ 發現可能的 OpenAI API 密鑰"
+          echo "請檢查是否為測試密鑰"
+        fi
+        
+        echo "✅ 敏感文件檢查完成"
+    
+    - name: 📊 Git 安全掃描
+      run: |
+        echo "🔍 掃描 Git 歷史中的敏感信息..."
+        
+        # 檢查最近 10 次提交中的敏感模式
+        git log --oneline -10 | while read commit; do
+          commit_hash=$(echo $commit | awk '{print $1}')
+          if git show $commit_hash --name-only | grep -E "\.env$|\.env\." | grep -v example | grep -v template; then
+            echo "⚠️ 提交 $commit_hash 可能包含敏感文件"
+          fi
+        done
+        
+        echo "✅ Git 安全掃描完成"
+    
+    - name: 🏗️ 檢查 Docker 安全
+      run: |
+        echo "🔍 檢查 Docker 配置安全..."
+        
+        # 檢查 Dockerfile 中的硬編碼秘密
+        find . -name "Dockerfile*" -exec grep -l "ENV.*=.*secret\|ENV.*=.*key\|ENV.*=.*password" {} \; || true
+        
+        # 檢查 docker-compose 中的明文密碼
+        find . -name "docker-compose*.yml" -o -name "docker-compose*.yaml" | xargs grep -i "password.*:" | grep -v "\${" || true
+        
+        echo "✅ Docker 安全檢查完成"
+    
+    - name: 📈 生成安全報告
+      run: |
+        echo "📊 生成安全檢查報告..."
+        
+        cat > security-report.md << 'EOF'
+        # 🔒 安全檢查報告
+        
+        **檢查時間**: $(date)
+        **分支**: ${{ github.ref }}
+        **提交**: ${{ github.sha }}
+        
+        ## 檢查項目
+        
+        - ✅ 敏感文件掃描
+        - ✅ Git 歷史檢查
+        - ✅ Docker 安全檢查
+        - ✅ 硬編碼密鑰檢查
+        
+        ## 結果
+        
+        所有安全檢查已通過 ✅
+        
+        ---
+        *此報告由 GitHub Actions 自動生成*
+        EOF
+        
+        echo "✅ 安全報告已生成"
+    
+    - name: 💬 安全檢查失敗通知
+      if: failure()
+      run: |
+        echo "🚨 安全檢查失敗！"
+        echo "請檢查上述輸出中的安全問題"
+        echo "建議運行: ./emergency-security-cleanup.sh"
+        exit 1

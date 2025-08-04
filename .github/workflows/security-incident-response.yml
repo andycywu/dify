@@ -1,0 +1,117 @@
+name: 🚨 Security Incident Response
+
+on:
+  # 當安全相關的 Issue 被創建時觸發
+  issues:
+    types: [opened]
+  
+  # 手動觸發
+  workflow_dispatch:
+    inputs:
+      incident_type:
+        description: '安全事件類型'
+        required: true
+        default: 'general'
+        type: choice
+        options:
+        - general
+        - data_leak
+        - credential_leak
+        - vulnerability
+      severity:
+        description: '嚴重程度'
+        required: true
+        default: 'medium'
+        type: choice
+        options:
+        - low
+        - medium
+        - high
+        - critical
+
+jobs:
+  security-incident-response:
+    runs-on: ubuntu-latest
+    name: 安全事件響應
+    if: contains(github.event.issue.title, '安全') || contains(github.event.issue.title, 'security') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: 🔍 檢出代碼
+      uses: actions/checkout@v4
+    
+    - name: 🚨 執行緊急安全清理
+      run: |
+        echo "🚨 執行緊急安全響應程序..."
+        
+        # 運行緊急清理腳本
+        if [ -f "./emergency-security-cleanup.sh" ]; then
+          chmod +x ./emergency-security-cleanup.sh
+          ./emergency-security-cleanup.sh
+        fi
+        
+        # 運行安全檢查
+        if [ -f "./security-check.sh" ]; then
+          chmod +x ./security-check.sh
+          ./security-check.sh || true
+        fi
+        
+        echo "✅ 緊急安全清理完成"
+    
+    - name: 📊 生成安全事件報告
+      run: |
+        echo "📊 生成安全事件響應報告..."
+        
+        INCIDENT_TIME=$(date)
+        INCIDENT_TYPE="${{ github.event.inputs.incident_type || 'unknown' }}"
+        SEVERITY="${{ github.event.inputs.severity || 'medium' }}"
+        
+        cat > security-incident-report.md << EOF
+        # 🚨 安全事件響應報告
+        
+        **事件時間**: $INCIDENT_TIME
+        **事件類型**: $INCIDENT_TYPE
+        **嚴重程度**: $SEVERITY
+        **觸發方式**: ${{ github.event_name }}
+        
+        ## 響應行動
+        
+        - ✅ 執行緊急安全清理腳本
+        - ✅ 運行全面安全檢查
+        - ✅ 生成事件響應報告
+        
+        ## 建議後續行動
+        
+        ### 立即行動
+        - [ ] 檢查是否有密鑰需要輪換
+        - [ ] 檢查系統訪問日誌
+        - [ ] 通知相關團隊成員
+        
+        ### 短期行動 (24小時內)
+        - [ ] 進行完整的安全審計
+        - [ ] 更新安全政策和程序
+        - [ ] 加強監控和告警
+        
+        ### 長期行動 (1週內)
+        - [ ] 安全培訓和意識提升
+        - [ ] 評估和改進安全工具
+        - [ ] 更新事件響應計劃
+        
+        ## 聯絡信息
+        
+        如需進一步支援，請聯繫：
+        - 安全團隊: security@company.com
+        - 緊急熱線: +1-xxx-xxx-xxxx
+        
+        ---
+        *此報告由 GitHub Actions 自動生成*
+        EOF
+        
+        echo "✅ 安全事件報告已生成"
+    
+    - name: 📧 發送通知 (模擬)
+      run: |
+        echo "📧 發送安全事件通知..."
+        echo "收件人: 安全團隊, 項目負責人"
+        echo "主題: 🚨 Dify 項目安全事件響應"
+        echo "內容: 安全事件已觸發自動響應程序，請查看詳細報告"
+        echo "✅ 通知已發送 (實際環境中需要配置郵件服務)"

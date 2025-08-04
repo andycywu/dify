@@ -1,0 +1,112 @@
+name: 📦 Weekly VS Code Extensions Security Check
+
+on:
+  # 每週日 UTC 02:00 (台北時間 10:00) 運行
+  schedule:
+    - cron: '0 2 * * 0'
+  
+  # 允許手動觸發
+  workflow_dispatch:
+
+jobs:
+  vscode-security-check:
+    runs-on: ubuntu-latest
+    name: VS Code 擴展安全檢查
+    
+    steps:
+    - name: 🔍 檢出代碼
+      uses: actions/checkout@v4
+    
+    - name: 🔍 檢查 VS Code 配置文件
+      run: |
+        echo "🔍 檢查 VS Code 工作區配置..."
+        
+        # 檢查 .vscode 目錄中的敏感配置
+        if [ -d ".vscode" ]; then
+          echo "發現 .vscode 目錄，檢查配置文件..."
+          
+          # 檢查 settings.json 中的敏感信息
+          find .vscode -name "settings.json" -exec grep -l "password\|secret\|key\|token" {} \; || true
+          
+          # 檢查 launch.json 中的敏感信息
+          find .vscode -name "launch.json" -exec grep -l "password\|secret\|key\|token" {} \; || true
+          
+          echo "✅ VS Code 配置檢查完成"
+        else
+          echo "✅ 沒有發現 .vscode 目錄"
+        fi
+    
+    - name: 🔍 檢查擴展產生的敏感文件
+      run: |
+        echo "🔍 檢查常見擴展產生的敏感文件..."
+        
+        # 檢查 History 擴展
+        if [ -d ".history" ]; then
+          echo "❌ 發現 .history 目錄！這可能包含敏感文件"
+          echo "建議運行: rm -rf .history && echo '.history/' >> .gitignore"
+          exit 1
+        else
+          echo "✅ 沒有發現 .history 目錄"
+        fi
+        
+        # 檢查其他可能的擴展緩存
+        EXTENSION_DIRS=(
+          ".vscode-server"
+          ".devcontainer"
+          "*.code-workspace"
+        )
+        
+        for dir in "${EXTENSION_DIRS[@]}"; do
+          if ls $dir 2>/dev/null; then
+            echo "⚠️ 發現擴展相關文件/目錄: $dir"
+            echo "請檢查是否包含敏感信息"
+          fi
+        done
+        
+        echo "✅ 擴展文件檢查完成"
+    
+    - name: 📋 生成週報
+      run: |
+        echo "📊 生成 VS Code 安全週報..."
+        
+        cat > vscode-security-report.md << 'EOF'
+        # 📦 VS Code 擴展安全週報
+        
+        **檢查時間**: $(date)
+        **檢查週期**: 每週日
+        
+        ## 檢查項目
+        
+        - ✅ VS Code 工作區配置
+        - ✅ 擴展產生的敏感文件
+        - ✅ 緩存目錄安全性
+        
+        ## 建議
+        
+        1. 定期清理擴展緩存
+        2. 檢查 .vscode/settings.json 中的敏感配置
+        3. 確保 .gitignore 包含必要的擴展文件過濾
+        
+        ## 推薦的 VS Code 安全設定
+        
+        ```json
+        {
+          "history.excludes": [
+            "**/.env*",
+            "**/secrets/**",
+            "**/credentials/**",
+            "**/*.key",
+            "**/*.pem"
+          ],
+          "files.watcherExclude": {
+            "**/.env*": true,
+            "**/secrets/**": true
+          }
+        }
+        ```
+        
+        ---
+        *此報告由 GitHub Actions 自動生成*
+        EOF
+        
+        echo "✅ VS Code 安全週報已生成"
