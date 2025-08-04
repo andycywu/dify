@@ -119,6 +119,22 @@ env.bak/
 venv.bak/
 .conda/
 
+# VS Code History Extension (contains sensitive files)
+.history/
+
+# Docker volumes (may contain sensitive data)
+docker/volumes/
+
+# Additional sensitive file patterns
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+config/production.*
+config/staging.*
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -214,3 +230,5 @@ plugins.jsonl
 # mise
 mise.toml
 node_modules
+.history/
+docker/volumes/
