@@ -579,6 +579,63 @@ services:
       ENABLE_WEBSITE_JINAREADER: ${ENABLE_WEBSITE_JINAREADER:-true}
       ENABLE_WEBSITE_FIRECRAWL: ${ENABLE_WEBSITE_FIRECRAWL:-true}
       ENABLE_WEBSITE_WATERCRAWL: ${ENABLE_WEBSITE_WATERCRAWL:-true}
+
+  # Wiki.js service with Dify integration
+  wiki:
+    image: ghcr.io/requarks/wiki:2
+    container_name: dify-wiki
+    restart: always
+    ports:
+      - "${WIKI_PORT:-3002}:3000"
+    environment:
+      # Database configuration - using shared PostgreSQL
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${WIKI_DB_NAME:-wiki}
+      DB_USER: ${DB_USERNAME:-postgres}
+      DB_PASS: ${DB_PASSWORD:-difyai123456}
+      
+      # Wiki.js basic configuration
+      WIKI_ADMIN_EMAIL: ${WIKI_ADMIN_EMAIL:-admin@example.com}
+      WIKI_HOST: ${WIKI_HOST:-http://localhost:3002}
+      
+      # Dify integration environment variables
+      DIFY_API_URL: http://api:5001
+      DIFY_API_KEY: ${DIFY_API_KEY:-}
+      
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - wiki-content:/wiki/data/content
+      - ../wiki/config:/wiki/config
+      - ../wiki/themes:/wiki/themes
+    networks:
+      - ssrf_proxy_network
+      - default
+
+  # Wiki database initialization service
+  wiki-db-init:
+    image: postgres:15-alpine
+    restart: "no"
+    environment:
+      PGPASSWORD: ${DB_PASSWORD:-difyai123456}
+    command: >
+      sh -c "
+        until pg_isready -h db -p 5432 -U ${DB_USERNAME:-postgres}; do
+          echo 'Waiting for database...';
+          sleep 2;
+        done;
+        psql -h db -U ${DB_USERNAME:-postgres} -c 'CREATE DATABASE ${WIKI_DB_NAME:-wiki};' || echo 'Wiki database already exists';
+        echo 'Wiki database ready!'
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - default
+
   # The postgres database.
   db:
     image: postgres:15-alpine
@@ -1180,38 +1237,39 @@ services:
       - ./volumes/unstructured:/app/data
 
   # Dify Next.js frontend
-  dify-next-frontend:
-    image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
-    #build: ../dify-next-frontend
-    restart: always
-    env_file: ../dify-next-frontend/.env.aws
-    environment:
-      API_URL: ${API_URL:-http://api:5001}
-      NEXT_PUBLIC_API_URL: ${API_URL:-http://api:5001}
-      NEXTAUTH_URL: ${APP_WEB_URL:-http://localhost:3000}
-      NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: "file:/app/data/dev.db"
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./volumes/dify-next-frontend:/app/data
-    depends_on:
-      - api
-    networks:
-      - default
+  # dify-next-frontend (temporarily disabled due to missing env file)
+  # dify-next-frontend:
+  #   image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
+  #   #build: ../dify-next-frontend
+  #   restart: always
+  #   env_file: ../dify-next-frontend/.env.aws
+  #   environment:
+  #     API_URL: ${API_URL:-http://api:5001}
+  #     NEXT_PUBLIC_API_URL: ${API_URL:-http://api:5001}
+  #     NEXTAUTH_URL: ${APP_WEB_URL:-http://localhost:3000}
+  #     NODE_ENV: production
+  #     PORT: 3000
+  #     DATABASE_URL: "file:/app/data/dev.db"
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./volumes/dify-next-frontend:/app/data
+  #   depends_on:
+  #     - api
+  #   networks:
+  #     - default
 
-  # rest-to-soap-proxy service
-  rest-to-soap-proxy:
-    image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
-    # build: ../rest-to-soap-proxy
-    restart: always
-    env_file:
-      - ../rest-to-soap-proxy/.env
-    ports:
-      - "5100:5001"
-    networks:
-      - default
+  # rest-to-soap-proxy service (temporarily disabled)
+  # rest-to-soap-proxy:
+  #   image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
+  #   # build: ../rest-to-soap-proxy
+  #   restart: always
+  #   env_file:
+  #     - ../rest-to-soap-proxy/.env
+  #   ports:
+  #     - "5100:5001"
+  #   networks:
+  #     - default
 
 networks:
   # create a network between sandbox, api and ssrf_proxy, and can not access outside.
@@ -1227,3 +1285,5 @@ networks:
 volumes:
   oradata:
   dify_es01_data:
+  wiki-content:
+    driver: local

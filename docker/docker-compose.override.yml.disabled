@@ -1,0 +1,52 @@
+# Docker Compose 覆蓋文件，用於開發環境
+# 確保 Prisma 在開發中正常工作
+
+services:
+  dify-next-frontend:
+    build:
+      context: ./dify-next-frontend
+      dockerfile: Dockerfile
+      args:
+        # 確保建構時生成正確的 Prisma 客戶端
+        NODE_ENV: production
+        # 指定使用 .env.aws 文件進行建構
+        ENV_FILE: .env.aws
+    environment:
+      # 開發環境變數
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=file:/app/data/dev.db
+    ports:
+      # 直接暴露8080端口給Next.js前端
+      - "8080:3000"
+    volumes:
+      # 掛載數據庫持久化目錄
+      - ./volumes/dify-next-frontend:/app/data
+    user: "1001:1001"
+    command: >
+      sh -c "
+        mkdir -p /app/data &&
+        chmod 755 /app/data &&
+        echo 'Checking Prisma schema...' &&
+        ls -la /app/prisma/ &&
+        echo 'Checking if database exists...' &&
+        if [ ! -f /app/data/dev.db ] && [ -f /app/dev.db ]; then
+          echo 'Copying initial database to data directory...';
+          cp /app/dev.db /app/data/dev.db;
+        fi &&
+        if [ ! -f /app/data/dev.db ]; then
+          echo 'Initializing database...';
+          npx prisma db push --accept-data-loss;
+        fi &&
+        echo 'Generating Prisma client...' &&
+        npx prisma generate &&
+        echo 'Starting application...' &&
+        npm run start
+      "
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped

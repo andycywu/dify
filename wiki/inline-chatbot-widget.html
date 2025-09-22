@@ -1,0 +1,377 @@
+<!-- Wiki.js AI 聊天機器人 - 內嵌版本 -->
+<!-- 將此代碼粘貼到 Wiki.js 管理界面：設置 → 主題 → 代碼注入 → 頁腳代碼 -->
+
+<script>
+(function() {
+    'use strict';
+    
+    // 防止重複加載
+    if (document.getElementById('dify-chatbot-widget')) {
+        console.log('聊天機器人已經存在');
+        return;
+    }
+    
+    // 等待 DOM 加載完成
+    function initChatbot() {
+        // Configuration
+        const CONFIG = {
+            PRIMARY_COLOR: '#1976d2',
+            CHAT_TITLE: 'AI 助手'
+        };
+        
+        // Create chatbot widget HTML
+        const widgetHTML = `
+            <div id="dify-chatbot-widget" style="position: fixed; bottom: 20px; left: 20px; z-index: 10000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                <!-- Chatbot Trigger Button -->
+                <div id="chatbot-trigger" style="
+                    width: 60px; 
+                    height: 60px; 
+                    background: linear-gradient(135deg, ${CONFIG.PRIMARY_COLOR}, #42a5f5); 
+                    border-radius: 50%; 
+                    cursor: pointer; 
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center;
+                    transition: all 0.3s ease;
+                    color: white;
+                    font-size: 24px;
+                ">
+                    💬
+                </div>
+                
+                <!-- Chatbot Window -->
+                <div id="chatbot-window" style="
+                    position: absolute; 
+                    bottom: 80px; 
+                    left: 0; 
+                    width: 350px; 
+                    height: 500px; 
+                    background: white; 
+                    border-radius: 12px; 
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.15); 
+                    display: none; 
+                    flex-direction: column;
+                    overflow: hidden;
+                ">
+                    <!-- Header -->
+                    <div style="
+                        background: linear-gradient(135deg, ${CONFIG.PRIMARY_COLOR}, #42a5f5); 
+                        color: white; 
+                        padding: 16px; 
+                        font-weight: 600;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <span>${CONFIG.CHAT_TITLE}</span>
+                        <span id="close-chat" style="cursor: pointer; font-size: 18px;">✕</span>
+                    </div>
+                    
+                    <!-- Messages Container -->
+                    <div id="chat-messages" style="
+                        flex: 1; 
+                        padding: 16px; 
+                        overflow-y: auto; 
+                        background: #f5f5f5;
+                    ">
+                        <div class="message bot-message" style="
+                            margin-bottom: 12px; 
+                            padding: 10px 12px; 
+                            background: white; 
+                            border-radius: 12px; 
+                            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                            font-size: 14px;
+                            line-height: 1.4;
+                        ">
+                            🤖 您好！我是 Wiki.js 的 AI 助手。我可以幫您：<br>
+                            • 回答關於當前頁面的問題<br>
+                            • 搜索相關文檔內容<br>
+                            • 提供使用指導<br><br>
+                            <small style="color: #666;">💡 配置 Dify API Key 後可獲得完整 AI 功能</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Input Area -->
+                    <div style="
+                        padding: 16px; 
+                        background: white; 
+                        border-top: 1px solid #e0e0e0;
+                        display: flex;
+                        gap: 8px;
+                    ">
+                        <input 
+                            id="chat-input" 
+                            type="text" 
+                            placeholder="輸入您的問題..."
+                            style="
+                                flex: 1; 
+                                padding: 10px 12px; 
+                                border: 1px solid #ddd; 
+                                border-radius: 20px; 
+                                outline: none;
+                                font-size: 14px;
+                            "
+                        />
+                        <button 
+                            id="send-button"
+                            style="
+                                padding: 10px 16px; 
+                                background: ${CONFIG.PRIMARY_COLOR}; 
+                                color: white; 
+                                border: none; 
+                                border-radius: 20px; 
+                                cursor: pointer;
+                                font-size: 14px;
+                                transition: background-color 0.2s;
+                            "
+                        >
+                            發送
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Insert the widget into the page
+        document.body.insertAdjacentHTML('beforeend', widgetHTML);
+        
+        // Toggle chatbot window
+        function toggleChatbot() {
+            const window = document.getElementById('chatbot-window');
+            const trigger = document.getElementById('chatbot-trigger');
+            
+            if (window.style.display === 'none' || window.style.display === '') {
+                window.style.display = 'flex';
+                trigger.style.transform = 'scale(0.9)';
+            } else {
+                window.style.display = 'none';
+                trigger.style.transform = 'scale(1)';
+            }
+        }
+        
+        // Send message function
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const messagesContainer = document.getElementById('chat-messages');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            addTypingIndicator();
+            
+            // Try to call real Dify API first, fallback to demo responses
+            setTimeout(async () => {
+                removeTypingIndicator();
+                
+                try {
+                    // Try to get page context
+                    const pageTitle = document.title || 'Wiki 頁面';
+                    const pageContent = document.body.innerText.substring(0, 1000);
+                    
+                    // Attempt API call (will fail if no API key configured)
+                    const response = await fetch('/api/dify-chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            context: {
+                                page_title: pageTitle,
+                                page_content: pageContent
+                            }
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        addMessage(data.response || data.answer, 'bot');
+                        return;
+                    }
+                } catch (error) {
+                    console.log('API 調用失敗，使用演示模式:', error);
+                }
+                
+                // Fallback to intelligent demo responses
+                const demoResponses = getDemoResponse(message);
+                addMessage(demoResponses, 'bot');
+                
+            }, 800 + Math.random() * 1200);
+        }
+        
+        // Get intelligent demo response based on message content
+        function getDemoResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Page-specific responses
+            const pageTitle = document.title || '';
+            const pageContent = document.body.innerText;
+            
+            if (lowerMessage.includes('如何') || lowerMessage.includes('怎麼')) {
+                return `關於"${message}"的問題，建議您查看當前頁面的相關章節。在 "${pageTitle}" 中可能包含您需要的操作步驟。<br><br><small style="color: #666;">💡 這是演示回應，配置 API Key 後可獲得更準確的答案</small>`;
+            }
+            
+            if (lowerMessage.includes('是什麼') || lowerMessage.includes('什麼是')) {
+                return `"${message}"是一個很好的概念性問題。根據當前頁面的內容，您可以在文檔中找到詳細的定義和說明。<br><br><small style="color: #666;">💡 這是演示回應，配置 API Key 後可獲得更準確的答案</small>`;
+            }
+            
+            if (lowerMessage.includes('錯誤') || lowerMessage.includes('問題') || lowerMessage.includes('bug')) {
+                return `遇到"${message}"這類問題時，建議您：<br>1. 檢查相關的故障排除章節<br>2. 查看系統日誌<br>3. 參考常見問題解答<br><br><small style="color: #666;">💡 這是演示回應，配置 API Key 後可獲得更準確的答案</small>`;
+            }
+            
+            // Generic responses
+            const genericResponses = [
+                `關於"${message}"，這是一個很好的問題！建議您瀏覽 "${pageTitle}" 的相關部分來獲取詳細信息。`,
+                `針對"${message}"這個問題，Wiki 中應該有相關的文檔說明。您可以使用搜索功能來查找更多信息。`,
+                `我理解您對"${message}"的疑問。建議您查看頁面的導航菜單，找到相關主題的詳細説明。`,
+                `"${message}"是一個很有價值的問題。您可以在當前 Wiki 的其他相關頁面中找到更深入的解答。`
+            ];
+            
+            const response = genericResponses[Math.floor(Math.random() * genericResponses.length)];
+            return `${response}<br><br><small style="color: #666;">💡 這是演示回應，配置 API Key 後可獲得更準確的答案</small>`;
+        }
+        
+        // Add message to chat
+        function addMessage(text, type) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const isBot = type === 'bot';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.style.cssText = `
+                margin-bottom: 12px; 
+                padding: 10px 12px; 
+                border-radius: 12px; 
+                font-size: 14px;
+                line-height: 1.4;
+                max-width: 85%;
+                word-break: break-word;
+                ${isBot ? `
+                    background: white; 
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                    margin-right: auto;
+                ` : `
+                    background: ${CONFIG.PRIMARY_COLOR}; 
+                    color: white;
+                    margin-left: auto;
+                    text-align: right;
+                `}
+            `;
+            
+            messageDiv.innerHTML = isBot ? `🤖 ${text}` : text;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Add typing indicator
+        function addTypingIndicator() {
+            const messagesContainer = document.getElementById('chat-messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.style.cssText = `
+                margin-bottom: 12px; 
+                padding: 10px 12px; 
+                background: white; 
+                border-radius: 12px; 
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                font-size: 14px;
+                color: #666;
+                font-style: italic;
+            `;
+            typingDiv.innerHTML = '🤖 正在思考中...';
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Remove typing indicator
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('chatbot-trigger').addEventListener('click', toggleChatbot);
+        document.getElementById('close-chat').addEventListener('click', toggleChatbot);
+        document.getElementById('send-button').addEventListener('click', sendMessage);
+        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Add responsive CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @media (max-width: 480px) {
+                #dify-chatbot-widget #chatbot-window {
+                    width: calc(100vw - 40px) !important;
+                    height: calc(100vh - 120px) !important;
+                    left: 20px !important;
+                    bottom: 80px !important;
+                }
+            }
+            
+            #chat-input:focus {
+                border-color: ${CONFIG.PRIMARY_COLOR} !important;
+                box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
+            }
+            
+            #send-button:hover {
+                opacity: 0.9 !important;
+            }
+            
+            #chatbot-trigger:hover {
+                transform: scale(1.05) !important;
+            }
+            
+            #chatbot-trigger:active {
+                transform: scale(0.95) !important;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        console.log('✅ Dify AI 聊天機器人已成功加載！');
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initChatbot);
+    } else {
+        initChatbot();
+    }
+    
+})();
+</script>
+
+<style>
+/* 額外的 CSS 樣式確保聊天機器人正確顯示 */
+#dify-chatbot-widget * {
+    box-sizing: border-box;
+}
+
+#dify-chatbot-widget #chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#dify-chatbot-widget #chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#dify-chatbot-widget #chat-messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+#dify-chatbot-widget #chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
