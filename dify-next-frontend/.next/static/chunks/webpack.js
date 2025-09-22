@@ -23,8 +23,8 @@
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
+/******/ 			id: moduleId,
+/******/ 			loaded: false,
 /******/ 			exports: {}
 /******/ 		};
 /******/ 	
@@ -40,6 +40,9 @@
 /******/ 			if(threw) delete __webpack_module_cache__[moduleId];
 /******/ 		}
 /******/ 	
+/******/ 		// Flag the module as loaded
+/******/ 		module.loaded = true;
+/******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
@@ -54,11 +57,6 @@
 /******/ 	__webpack_require__.i = [];
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/amd options */
-/******/ 	(() => {
-/******/ 		__webpack_require__.amdO = {};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/chunk loaded */
 /******/ 	(() => {
 /******/ 		var deferred = [];
@@ -126,12 +124,12 @@
 /******/ 	
 /******/ 	/* webpack/runtime/get update manifest filename */
 /******/ 	(() => {
-/******/ 		__webpack_require__.hmrF = () => ("static/webpack/" + __webpack_require__.h() + ".edge-runtime-webpack.hot-update.json");
+/******/ 		__webpack_require__.hmrF = () => ("static/webpack/" + __webpack_require__.h() + ".webpack.hot-update.json");
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("b9cb5aba8a10d085")
+/******/ 		__webpack_require__.h = () => ("be05d04ff51f8337")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
@@ -177,7 +175,7 @@
 /******/ 				}
 /******/ 				script.setAttribute("data-webpack", dataWebpackPrefix + key);
 /******/ 		
-/******/ 				script.src = url;
+/******/ 				script.src = __webpack_require__.tu(url);
 /******/ 			}
 /******/ 			inProgress[url] = [done];
 /******/ 			var onScriptComplete = (prev, event) => {
@@ -206,6 +204,43 @@
 /******/ 			}
 /******/ 			Object.defineProperty(exports, '__esModule', { value: true });
 /******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/node module decorator */
+/******/ 	(() => {
+/******/ 		__webpack_require__.nmd = (module) => {
+/******/ 			module.paths = [];
+/******/ 			if (!module.children) module.children = [];
+/******/ 			return module;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/trusted types policy */
+/******/ 	(() => {
+/******/ 		var policy;
+/******/ 		__webpack_require__.tt = () => {
+/******/ 			// Create Trusted Type policy if Trusted Types are available and the policy doesn't exist yet.
+/******/ 			if (policy === undefined) {
+/******/ 				policy = {
+/******/ 					createScript: (script) => (script),
+/******/ 					createScriptURL: (url) => (url)
+/******/ 				};
+/******/ 				if (typeof trustedTypes !== "undefined" && trustedTypes.createPolicy) {
+/******/ 					policy = trustedTypes.createPolicy("nextjs#bundler", policy);
+/******/ 				}
+/******/ 			}
+/******/ 			return policy;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/trusted types script */
+/******/ 	(() => {
+/******/ 		__webpack_require__.ts = (script) => (__webpack_require__.tt().createScript(script));
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/trusted types script url */
+/******/ 	(() => {
+/******/ 		__webpack_require__.tu = (url) => (__webpack_require__.tt().createScriptURL(url));
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/hot module replacement */
@@ -604,6 +639,37 @@
 /******/ 		__webpack_require__.p = "/_next/";
 /******/ 	})();
 /******/ 	
+/******/ 	/* webpack/runtime/react refresh */
+/******/ 	(() => {
+/******/ 		if (__webpack_require__.i) {
+/******/ 		__webpack_require__.i.push((options) => {
+/******/ 			const originalFactory = options.factory;
+/******/ 			options.factory = (moduleObject, moduleExports, webpackRequire) => {
+/******/ 				const hasRefresh = typeof self !== "undefined" && !!self.$RefreshInterceptModuleExecution$;
+/******/ 				const cleanup = hasRefresh ? self.$RefreshInterceptModuleExecution$(moduleObject.id) : () => {};
+/******/ 				try {
+/******/ 					originalFactory.call(this, moduleObject, moduleExports, webpackRequire);
+/******/ 				} finally {
+/******/ 					cleanup();
+/******/ 				}
+/******/ 			}
+/******/ 		})
+/******/ 		}
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat */
+/******/ 	
+/******/ 	
+/******/ 	// noop fns to prevent runtime errors during initialization
+/******/ 	if (typeof self !== "undefined") {
+/******/ 		self.$RefreshReg$ = function () {};
+/******/ 		self.$RefreshSig$ = function () {
+/******/ 			return function (type) {
+/******/ 				return type;
+/******/ 			};
+/******/ 		};
+/******/ 	}
+/******/ 	
 /******/ 	/* webpack/runtime/jsonp chunk loading */
 /******/ 	(() => {
 /******/ 		// no baseURI
@@ -612,7 +678,7 @@
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = __webpack_require__.hmrS_jsonp = __webpack_require__.hmrS_jsonp || {
-/******/ 			"edge-runtime-webpack": 0
+/******/ 			"webpack": 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -1141,6 +1207,11 @@
 /******/ 		var chunkLoadingGlobal = self["webpackChunk_N_E"] = self["webpackChunk_N_E"] || [];
 /******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
 /******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/nonce */
+/******/ 	(() => {
+/******/ 		__webpack_require__.nc = undefined;
 /******/ 	})();
 /******/ 	
 /************************************************************************/
