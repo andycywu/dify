@@ -390,5 +390,5 @@ if [ ${#successful_services[@]} -gt 0 ]; then
     echo "2. 部署到 EC2:"
     echo "   git add . && git commit -m 'Update Docker images' && git push"
     echo "   # 在 EC2 上："
-    echo "   git pull && cd docker && docker-compose pull && docker-compose up -d"
+    echo "   git pull && cd ../docker && docker-compose pull && docker-compose up -d"
 fi

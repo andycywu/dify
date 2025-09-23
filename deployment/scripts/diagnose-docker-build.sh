@@ -75,7 +75,7 @@ elif [ "$OS" = "Linux" ]; then
     
     # 創建或更新 Docker daemon 配置
     sudo mkdir -p /etc/docker
-    sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+    sudo tee /etc/../docker/daemon.json > /dev/null <<EOF
 {
   "dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"],
   "registry-mirrors": [

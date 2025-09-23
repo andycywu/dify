@@ -23,9 +23,9 @@ curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" http://54.169.166.197/cons
 
 echo ""
 echo "📋 檢查環境變數配置:"
-echo "CONSOLE_API_URL: $(grep "^CONSOLE_API_URL=" /Users/andycyw/dify/docker/.env)"
-echo "SERVICE_API_URL: $(grep "^SERVICE_API_URL=" /Users/andycyw/dify/docker/.env)"
-echo "APP_API_URL: $(grep "^APP_API_URL=" /Users/andycyw/dify/docker/.env)"
+echo "CONSOLE_API_URL: $(grep "^CONSOLE_API_URL=" /Users/andycyw/dify/../docker/.env)"
+echo "SERVICE_API_URL: $(grep "^SERVICE_API_URL=" /Users/andycyw/dify/../docker/.env)"
+echo "APP_API_URL: $(grep "^APP_API_URL=" /Users/andycyw/dify/../docker/.env)"
 
 echo ""
 echo "🔍 檢查容器內部連接:"

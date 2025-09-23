@@ -18,7 +18,7 @@ git pull origin main
 
 # 3. 重新構建並啟動服務
 echo "🔨 重新構建前端映像..."
-cd docker
+cd ../docker
 docker-compose build --no-cache dify-next-frontend
 
 echo "🚀 啟動服務..."

@@ -49,11 +49,11 @@ echo -e "${GREEN}${CHECK} Docker 環境檢查完成${NC}"
 echo -e "${BLUE}${FOLDER} 創建目錄結構...${NC}"
 
 mkdir -p wiki/{config,themes/dify-integration/{components,layouts,assets},data}
-mkdir -p docker/volumes/{wiki-content,wiki-config}
+mkdir -p ../docker/volumes/{wiki-content,wiki-config}
 
 # 設置權限
 chmod -R 755 wiki/
-chmod -R 755 docker/volumes/
+chmod -R 755 ../docker/volumes/
 
 echo -e "${GREEN}${CHECK} 目錄結構創建完成${NC}"
 
@@ -61,10 +61,10 @@ echo -e "${GREEN}${CHECK} 目錄結構創建完成${NC}"
 echo -e "${BLUE}${INFO} 檢查環境配置...${NC}"
 
 # 創建 .env 文件（如果不存在）
-if [ ! -f "docker/.env" ]; then
+if [ ! -f "../docker/.env" ]; then
     echo -e "${YELLOW}${WARNING} 未找到 .env 文件，創建默認配置...${NC}"
     
-    cat > docker/.env << EOF
+    cat > ../docker/.env << EOF
 # Dify 基本配置
 SECRET_KEY=sk-9f73s3ljTXVcMT3Blb3ljTqtsKiGHXVcMT3BlbkFJLK7U
 INIT_PASSWORD=password123
@@ -104,9 +104,9 @@ EOF
 fi
 
 # 檢查 DIFY_API_KEY
-if [ -z "$DIFY_API_KEY" ] && ! grep -q "DIFY_API_KEY=." docker/.env; then
+if [ -z "$DIFY_API_KEY" ] && ! grep -q "DIFY_API_KEY=." ../docker/.env; then
     echo -e "${YELLOW}${WARNING} 警告: DIFY_API_KEY 未設置${NC}"
-    echo -e "${INFO} 請在 docker/.env 文件中設置您的 Dify API Key${NC}"
+    echo -e "${INFO} 請在 ../docker/.env 文件中設置您的 Dify API Key${NC}"
     echo -e "${INFO} 或運行: export DIFY_API_KEY=your_api_key_here${NC}"
 fi
 
@@ -125,7 +125,7 @@ echo -e "${GREEN}${CHECK} Wiki.js 配置完成${NC}"
 # 構建和啟動服務
 echo -e "${BLUE}${ROCKET} 啟動服務...${NC}"
 
-cd docker
+cd ../docker
 
 # 停止現有服務（如果存在）
 echo -e "${YELLOW}${INFO} 停止現有服務...${NC}"
@@ -214,15 +214,15 @@ echo "   - 用戶名: postgres"
 echo "   - 密碼: difyai123456"
 echo ""
 echo -e "${YELLOW}3. 設置 Dify API Key (重要):${NC}"
-echo "   - 編輯 docker/.env 文件"
+echo "   - 編輯 ../docker/.env 文件"
 echo "   - 設置 DIFY_API_KEY=your_actual_api_key"
-echo "   - 重啟服務: cd docker && docker-compose restart wiki"
+echo "   - 重啟服務: cd ../docker && docker-compose restart wiki"
 echo ""
 echo -e "${CYAN}${INFO} 常用命令:${NC}"
-echo "• 查看日誌: cd docker && docker-compose logs -f"
-echo "• 重啟服務: cd docker && docker-compose restart"
-echo "• 停止服務: cd docker && docker-compose down"
-echo "• 更新服務: cd docker && docker-compose pull && docker-compose up -d"
+echo "• 查看日誌: cd ../docker && docker-compose logs -f"
+echo "• 重啟服務: cd ../docker && docker-compose restart"
+echo "• 停止服務: cd ../docker && docker-compose down"
+echo "• 更新服務: cd ../docker && docker-compose pull && docker-compose up -d"
 echo ""
 echo -e "${GREEN}${CHECK} 部署腳本執行完成！${NC}"
 

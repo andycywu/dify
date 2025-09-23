@@ -112,9 +112,9 @@ EOL
 # Step 6: Rebuild Docker container
 echo "Step 6: Rebuilding Docker container..."
 cd /Users/andycyw/dify
-docker-compose -f docker/docker-compose.yaml down dify-next-frontend
-docker-compose -f docker/docker-compose.yaml build dify-next-frontend
-docker-compose -f docker/docker-compose.yaml up -d dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml down dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml build dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml up -d dify-next-frontend
 
 echo ""
 echo "===== Fix Complete! ====="
@@ -122,4 +122,4 @@ echo "The dify-next-frontend should now be running properly with styling and i18
 echo "You can access it at: http://localhost:3100"
 echo ""
 echo "If you continue to have issues, check the logs with:"
-echo "docker-compose -f docker/docker-compose.yaml logs -f dify-next-frontend"
+echo "docker-compose -f ../docker/docker-compose.yaml logs -f dify-next-frontend"

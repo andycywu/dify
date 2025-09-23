@@ -23,13 +23,13 @@ echo "🔑 檢查認證相關配置:"
 
 # 檢查初始密碼設置
 echo "檢查初始密碼配置:"
-echo "INIT_PASSWORD: $(grep "^INIT_PASSWORD=" /Users/andycyw/dify/docker/.env | cut -d'=' -f2)"
+echo "INIT_PASSWORD: $(grep "^INIT_PASSWORD=" /Users/andycyw/dify/../docker/.env | cut -d'=' -f2)"
 
 # 檢查密鑰配置
-echo "SECRET_KEY 是否設置: $(grep "^SECRET_KEY=" /Users/andycyw/dify/docker/.env | cut -d'=' -f1)"
+echo "SECRET_KEY 是否設置: $(grep "^SECRET_KEY=" /Users/andycyw/dify/../docker/.env | cut -d'=' -f1)"
 
 # 檢查調試模式
-echo "DEBUG 模式: $(grep "^DEBUG=" /Users/andycyw/dify/docker/.env | cut -d'=' -f2)"
+echo "DEBUG 模式: $(grep "^DEBUG=" /Users/andycyw/dify/../docker/.env | cut -d'=' -f2)"
 
 echo ""
 echo "📋 檢查 API 和數據庫日誌:"

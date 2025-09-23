@@ -22,7 +22,7 @@ docker rmi andywu719/dify-next-frontend:latest 2>/dev/null || true
 
 # 步驟4: 重新構建前端映像
 echo "🔨 重新構建前端映像（使用正確的環境變數）..."
-cd docker
+cd ../docker
 docker-compose build --no-cache dify-next-frontend
 
 # 步驟5: 拉取其他映像更新

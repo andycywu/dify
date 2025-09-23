@@ -10,8 +10,8 @@ mv Dockerfile.new Dockerfile
 
 echo "Rebuilding Docker container..."
 cd /Users/andycyw/dify
-docker-compose -f docker/docker-compose.yaml down dify-next-frontend
-docker-compose -f docker/docker-compose.yaml build dify-next-frontend
-docker-compose -f docker/docker-compose.yaml up -d dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml down dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml build dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml up -d dify-next-frontend
 
 echo "Twin.macro setup complete! The frontend container has been rebuilt."

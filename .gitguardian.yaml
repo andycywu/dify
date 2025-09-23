@@ -1,138 +1,80 @@
-# GitGuardian 配置文件
-# 這個文件定義了 GitGuardian 掃描的行為和規則
-
-# API 設置（在 GitHub Actions 中會被環境變數覆蓋）
-# api_key: YOUR_API_KEY_HERE
-
-# 掃描設置
+exit_zero: true
+secret:
+  ignored_matches:
+  - match: test_api_key_.*
+    name: Test API Keys
+  - match: example_.*
+    name: Example secrets
+  - match: dummy_.*
+    name: Dummy secrets
+  - match: fake_.*
+    name: Fake secrets
+  - match: sample_.*
+    name: Sample secrets
+  - match: demo_.*
+    name: Demo secrets
+  - match: mock_.*
+    name: Mock secrets
+  - match: your_.*_here
+    name: Placeholder values
+  - match: TODO:.*
+    name: TODO placeholders
+  - match: FIXME:.*
+    name: FIXME placeholders
+  - match: dev_.*
+    name: Development secrets
+  - match: localhost.*
+    name: Local development
+  - match: .*dev\.db
+    name: Development database
+  ignored_paths:
+  - '**/samples/**'
+  - '**/*.jpeg'
+  - '**/*.mp4'
+  - '**/build/**'
+  - '**/*.webp'
+  - '**/*.woff2'
+  - '**/*.svg'
+  - '**/*.pfx'
+  - '**/fixtures/**'
+  - '**/*.jpg'
+  - '**/*.log'
+  - '**/*.crt'
+  - '**/*.mov'
+  - '**/*.gif'
+  - '**/*.woff'
+  - '**/dist/**'
+  - '**/*.wav'
+  - '**/*.sqlite'
+  - '**/*.pem'
+  - '**/*.p12'
+  - '**/*.cert'
+  - '**/*.otf'
+  - '**/examples/**'
+  - '**/tmp/**'
+  - '**/test_data/**'
+  - '**/env/**'
+  - '**/*.sqlite3'
+  - '**/*.7z'
+  - '**/*.png'
+  - '**/*.ico'
+  - '**/*.rar'
+  - '**/*.zip'
+  - '**/temp/**'
+  - '**/*.ttf'
+  - '**/*.tmp'
+  - '**/*.avi'
+  - '**/.hg/**'
+  - '**/.next/**'
+  - '**/venv/**'
+  - '**/*.tar.gz'
+  - '**/*.db'
+  - '**/node_modules/**'
+  - '**/*.mp3'
+  - '**/*.key'
+  - '**/.svn/**'
+  - '**/.git/**'
+  - '**/target/**'
+  - '**/__pycache__/**'
 verbose: true
-show_secrets: false
-exit_zero: true  # 即使發現秘密也不讓掃描失敗，只報告結果
-max_documents_with_secrets: 20
-max_commits_for_hook: 50
-
-# 工作流行為設置（自定義）
-# 注意：這些是自定義設置，不是 GitGuardian 官方配置
-workflow_behavior:
-  fail_on_secrets: false  # 是否在發現秘密時讓工作流失敗
-  fail_on_policy_violations: false  # 是否在違反政策時讓工作流失敗
-  create_pr_comments: true  # 是否在 PR 中創建評論
-  upload_sarif: true  # 是否上傳 SARIF 報告到 GitHub Security
-
-# 排除的路徑模式
-paths_ignore:
-  # 構建和依賴目錄
-  - "**/node_modules/**"
-  - "**/dist/**"
-  - "**/build/**"
-  - "**/target/**"
-  - "**/.next/**"
-  - "**/venv/**"
-  - "**/env/**"
-  - "**/__pycache__/**"
-  
-  # 版本控制
-  - "**/.git/**"
-  - "**/.svn/**"
-  - "**/.hg/**"
-  
-  # 日誌和臨時文件
-  - "**/*.log"
-  - "**/*.tmp"
-  - "**/tmp/**"
-  - "**/temp/**"
-  
-  # 測試數據和示例
-  - "**/test_data/**"
-  - "**/fixtures/**"
-  - "**/examples/**"
-  - "**/samples/**"
-  
-  # 數據庫文件
-  - "**/*.db"
-  - "**/*.sqlite"
-  - "**/*.sqlite3"
-  
-  # 壓縮文件
-  - "**/*.zip"
-  - "**/*.tar.gz"
-  - "**/*.rar"
-  - "**/*.7z"
-  
-  # 圖片和媒體文件
-  - "**/*.jpg"
-  - "**/*.jpeg"
-  - "**/*.png"
-  - "**/*.gif"
-  - "**/*.svg"
-  - "**/*.ico"
-  - "**/*.webp"
-  - "**/*.mp4"
-  - "**/*.avi"
-  - "**/*.mov"
-  - "**/*.mp3"
-  - "**/*.wav"
-  
-  # 字體文件
-  - "**/*.ttf"
-  - "**/*.otf"
-  - "**/*.woff"
-  - "**/*.woff2"
-  
-  # 證書和密鑰文件（真實的不應該在代碼庫中）
-  - "**/*.pem"
-  - "**/*.key"
-  - "**/*.crt"
-  - "**/*.cert"
-  - "**/*.p12"
-  - "**/*.pfx"
-
-# 忽略特定的匹配模式
-matches_ignore:
-  # 測試用的假數據
-  - name: "Test API Keys"
-    match: "test_api_key_.*"
-  - name: "Example secrets"
-    match: "example_.*"
-  - name: "Dummy secrets"
-    match: "dummy_.*"
-  - name: "Fake secrets"
-    match: "fake_.*"
-  - name: "Sample secrets"
-    match: "sample_.*"
-  - name: "Demo secrets"
-    match: "demo_.*"
-  - name: "Mock secrets"
-    match: "mock_.*"
-  
-  # 常見的佔位符
-  - name: "Placeholder values"
-    match: "your_.*_here"
-  - name: "TODO placeholders"
-    match: "TODO:.*"
-  - name: "FIXME placeholders"
-    match: "FIXME:.*"
-  
-  # 開發環境的通用值
-  - name: "Development secrets"
-    match: "dev_.*"
-  - name: "Local development"
-    match: "localhost.*"
-  - name: "Development database"
-    match: ".*dev\\.db"
-
-# 掃描偏好設置
-secret_scan_preference: maximum_coverage
-
-# 輸出格式設置
-output_format: "text"
-
-# IaC 掃描設置（如果支持）
-iac_scan:
-  enabled: true
-  minimum_severity: "MEDIUM"
-  
-# SCA（軟體組成分析）設置（如果支持）
-sca_scan:
-  enabled: true
-  minimum_severity: "HIGH"
+version: 2

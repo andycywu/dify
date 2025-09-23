@@ -30,9 +30,9 @@ echo "======================================================="
 echo "2. 🧹 清理 Docker volumes 敏感文件"
 echo "======================================================="
 
-if [ -d "docker/volumes" ]; then
-    echo -e "${YELLOW}正在檢查 docker/volumes 中的 .env 文件...${NC}"
-    find docker/volumes -name ".env*" -type f | while read file; do
+if [ -d "../docker/volumes" ]; then
+    echo -e "${YELLOW}正在檢查 ../docker/volumes 中的 .env 文件...${NC}"
+    find ../docker/volumes -name ".env*" -type f | while read file; do
         echo "發現: $file"
         # 備份後刪除
         cp "$file" "$file.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null
@@ -41,7 +41,7 @@ if [ -d "docker/volumes" ]; then
     done
     echo -e "${GREEN}✅ 已清理 Docker volumes 中的敏感文件${NC}"
 else
-    echo -e "${GREEN}✅ docker/volumes 目錄不存在${NC}"
+    echo -e "${GREEN}✅ ../docker/volumes 目錄不存在${NC}"
 fi
 
 # 3. 檢查並清理其他潛在敏感文件
@@ -71,7 +71,7 @@ echo "======================================================="
 # 檢查必要的 .gitignore 規則
 REQUIRED_RULES=(
     ".history/"
-    "docker/volumes/"
+    "../docker/volumes/"
     "*.key"
     "*.pem"
     "secrets/"
@@ -95,7 +95,7 @@ echo "======================================================="
 
 echo "清理 Git 快取中的敏感文件..."
 git rm -r --cached .history/ 2>/dev/null || true
-git rm -r --cached docker/volumes/ 2>/dev/null || true
+git rm -r --cached ../docker/volumes/ 2>/dev/null || true
 
 echo -e "${GREEN}✅ Git 快取已清理${NC}"
 

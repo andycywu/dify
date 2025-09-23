@@ -7,7 +7,7 @@ echo "================================"
 LOCAL_DB_PATH="./dify-next-frontend/prisma/dev.db"
 EC2_HOST="ec2-user@ec2-54-169-166-197.ap-southeast-1.compute.amazonaws.com"
 TEMP_DB_PATH="/tmp/dev.db"
-EC2_DB_PATH="/home/ec2-user/dify/docker/volumes/dify-next-frontend/dev.db"
+EC2_DB_PATH="/home/ec2-user/dify/../docker/volumes/dify-next-frontend/dev.db"
 BACKUP_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 echo "📋 上傳資訊："

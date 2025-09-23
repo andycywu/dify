@@ -9,7 +9,7 @@ cd /home/ec2-user/dify
 
 # 步驟1: 停止前端容器
 echo "📦 停止前端容器..."
-cd docker
+cd ../docker
 docker-compose stop dify-next-frontend
 
 # 步驟2: 刪除舊的前端映像和容器

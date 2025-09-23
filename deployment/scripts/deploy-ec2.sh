@@ -56,7 +56,7 @@ echo -e "${GREEN}✓ Docker 權限正常${NC}"
 # 檢查 Docker Compose
 if ! command -v docker-compose &> /dev/null; then
     echo -e "${YELLOW}安裝 Docker Compose...${NC}"
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo curl -L "https://github.com/../docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
     sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
     echo -e "${GREEN}✓ Docker Compose 安裝完成${NC}"
@@ -103,7 +103,7 @@ else
 fi
 
 # 進入 docker 目錄
-cd docker
+cd ../docker
 
 # 檢查並設置 .env 檔案
 echo -e "${YELLOW}配置環境變數...${NC}"

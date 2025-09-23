@@ -13,8 +13,8 @@ EOL
 
 echo "Rebuilding Docker container..."
 cd /Users/andycyw/dify
-docker-compose -f docker/docker-compose.yaml down dify-next-frontend
-docker-compose -f docker/docker-compose.yaml build dify-next-frontend
-docker-compose -f docker/docker-compose.yaml up -d dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml down dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml build dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml up -d dify-next-frontend
 
 echo "Setup complete! The frontend should now be accessible with proper styling."

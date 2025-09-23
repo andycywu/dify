@@ -24,7 +24,7 @@ echo "🔧 應用修復..."
 
 # 1. 設置更可靠的 DNS
 echo "1. 設置 DNS..."
-sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+sudo tee /etc/../docker/daemon.json > /dev/null <<EOF
 {
   "dns": ["8.8.8.8", "8.8.4.4", "1.1.1.1"],
   "registry-mirrors": ["https://docker.mirrors.ustc.edu.cn"]

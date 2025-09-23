@@ -25,15 +25,15 @@ echo ""
 # 檢查必要文件
 echo -e "${BLUE}${INFO} 檢查配置文件...${NC}"
 
-if [ ! -f "docker/docker-compose.yaml" ]; then
+if [ ! -f "../docker/docker-compose.yaml" ]; then
     echo -e "${RED}${ERROR} docker-compose.yaml 文件不存在${NC}"
     exit 1
 fi
 
-if [ ! -f "docker/.env" ]; then
-    if [ -f "docker/.env.example" ]; then
+if [ ! -f "../docker/.env" ]; then
+    if [ -f "../docker/.env.example" ]; then
         echo -e "${YELLOW}${WARNING} .env 文件不存在，從 .env.example 創建...${NC}"
-        cp docker/.env.example docker/.env
+        cp ../docker/.env.example ../docker/.env
         echo -e "${GREEN}${CHECK} 已創建 .env 文件${NC}"
     else
         echo -e "${RED}${ERROR} .env 和 .env.example 文件都不存在${NC}"
@@ -84,7 +84,7 @@ fi
 # 檢查環境變量
 echo -e "${BLUE}${INFO} 檢查關鍵環境變量...${NC}"
 
-cd docker
+cd ../docker
 
 # 檢查 DIFY_API_KEY
 if grep -q "DIFY_API_KEY=$" .env || ! grep -q "DIFY_API_KEY=" .env; then
@@ -110,7 +110,7 @@ cd ..
 # 檢查 Docker 服務狀態
 echo -e "${BLUE}${INFO} 檢查 Docker 服務狀態...${NC}"
 
-cd docker
+cd ../docker
 
 if docker-compose ps | grep -q "Up"; then
     echo -e "${GREEN}${CHECK} Docker 服務正在運行${NC}"
@@ -188,21 +188,21 @@ if [ ${#missing_files[@]} -gt 0 ]; then
     echo -e "${YELLOW}1. 運行 ./setup-wiki.sh 重新生成缺失的文件${NC}"
 fi
 
-if grep -q "DIFY_API_KEY=$" docker/.env 2>/dev/null || ! grep -q "DIFY_API_KEY=" docker/.env 2>/dev/null; then
+if grep -q "DIFY_API_KEY=$" ../docker/.env 2>/dev/null || ! grep -q "DIFY_API_KEY=" ../docker/.env 2>/dev/null; then
     echo -e "${YELLOW}2. 設置 Dify API Key:${NC}"
     echo "   - 登入 Dify 控制台"
     echo "   - 前往 API 管理頁面"
     echo "   - 創建新的 API Key"
-    echo "   - 在 docker/.env 中設置 DIFY_API_KEY=your_key"
+    echo "   - 在 ../docker/.env 中設置 DIFY_API_KEY=your_key"
 fi
 
 if ! docker-compose ps | grep -q "Up" 2>/dev/null; then
     echo -e "${YELLOW}3. 啟動服務:${NC}"
-    echo "   cd docker && docker-compose up -d"
+    echo "   cd ../docker && docker-compose up -d"
 fi
 
 echo ""
 echo -e "${GREEN}🎉 檢查完成！${NC}"
 echo ""
 echo -e "${INFO} 如有問題，請查看詳細日誌:${NC}"
-echo "   cd docker && docker-compose logs -f"
+echo "   cd ../docker && docker-compose logs -f"

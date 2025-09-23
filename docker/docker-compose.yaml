@@ -595,15 +595,15 @@ services:
       DB_NAME: ${WIKI_DB_NAME:-wiki}
       DB_USER: ${DB_USERNAME:-postgres}
       DB_PASS: ${DB_PASSWORD:-difyai123456}
-      
+
       # Wiki.js basic configuration
       WIKI_ADMIN_EMAIL: ${WIKI_ADMIN_EMAIL:-admin@example.com}
       WIKI_HOST: ${WIKI_HOST:-http://localhost:3002}
-      
+
       # Dify integration environment variables
       DIFY_API_URL: http://api:5001
       DIFY_API_KEY: ${DIFY_API_KEY:-}
-      
+
     depends_on:
       db:
         condition: service_healthy
@@ -1237,39 +1237,52 @@ services:
       - ./volumes/unstructured:/app/data
 
   # Dify Next.js frontend
-  # dify-next-frontend (temporarily disabled due to missing env file)
-  # dify-next-frontend:
-  #   image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
-  #   #build: ../dify-next-frontend
-  #   restart: always
-  #   env_file: ../dify-next-frontend/.env.aws
-  #   environment:
-  #     API_URL: ${API_URL:-http://api:5001}
-  #     NEXT_PUBLIC_API_URL: ${API_URL:-http://api:5001}
-  #     NEXTAUTH_URL: ${APP_WEB_URL:-http://localhost:3000}
-  #     NODE_ENV: production
-  #     PORT: 3000
-  #     DATABASE_URL: "file:/app/data/dev.db"
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - ./volumes/dify-next-frontend:/app/data
-  #   depends_on:
-  #     - api
-  #   networks:
-  #     - default
+  dify-next-frontend:
+    image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
+    #build: ../dify-next-frontend
+    restart: always
+    env_file: ../dify-next-frontend/.env.aws
+    environment:
+      API_URL: ${API_URL:-http://api:5001}
+      NEXT_PUBLIC_API_URL: ${API_URL:-http://api:5001}
+      NEXTAUTH_URL: ${APP_WEB_URL:-http://localhost:3000}
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: "file:/app/data/dev.db"
+    ports:
+      - "${DIFY_NEXT_FRONTEND_PORT:-3001}:3000"
+    volumes:
+      - ./volumes/dify-next-frontend:/app/data
+    depends_on:
+      - api
+    networks:
+      - default
 
-  # rest-to-soap-proxy service (temporarily disabled)
-  # rest-to-soap-proxy:
-  #   image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
-  #   # build: ../rest-to-soap-proxy
-  #   restart: always
-  #   env_file:
-  #     - ../rest-to-soap-proxy/.env
-  #   ports:
-  #     - "5100:5001"
-  #   networks:
-  #     - default
+  # rest-to-soap-proxy service
+  rest-to-soap-proxy:
+    image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
+    # build: ../rest-to-soap-proxy
+    restart: always
+    env_file:
+      - ../rest-to-soap-proxy/.env
+    ports:
+      - "5100:5001"
+    networks:
+      - default
+
+  # Ollama AI model service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: dify-ollama
+    restart: always
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ./volumes/ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - default
 
 networks:
   # create a network between sandbox, api and ssrf_proxy, and can not access outside.

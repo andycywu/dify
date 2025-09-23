@@ -28,7 +28,7 @@ fi
 
 # 步驟4: 完全重新構建前端
 echo "🔨 完全重新構建前端容器..."
-cd docker
+cd ../docker
 
 # 停止並清理
 echo "🛑 停止並清理前端容器..."
@@ -43,12 +43,12 @@ docker system prune -f
 
 # 強制重新構建
 echo "🔨 強制重新構建（無快取）..."
-cd ../  # 回到根目錄，因為 docker-compose.yaml 在 docker/ 但 Dockerfile 在 dify-next-frontend/
-DOCKER_BUILDKIT=1 docker-compose -f docker/docker-compose.yaml build --no-cache --pull --force-rm dify-next-frontend
+cd ../  # 回到根目錄，因為 docker-compose.yaml 在 ../docker/ 但 Dockerfile 在 dify-next-frontend/
+DOCKER_BUILDKIT=1 docker-compose -f ../docker/docker-compose.yaml build --no-cache --pull --force-rm dify-next-frontend
 
 # 啟動容器
 echo "🚀 啟動前端容器..."
-docker-compose -f docker/docker-compose.yaml up -d dify-next-frontend
+docker-compose -f ../docker/docker-compose.yaml up -d dify-next-frontend
 
 # 步驟5: 等待並驗證
 echo "⏳ 等待容器啟動（30秒）..."
@@ -59,7 +59,7 @@ CONTAINER_NAME=$(docker ps | grep dify-next-frontend | awk '{print $NF}')
 if [ -z "$CONTAINER_NAME" ]; then
     echo "❌ 前端容器啟動失敗"
     echo "檢查日誌："
-    docker-compose -f docker/docker-compose.yaml logs --tail 50 dify-next-frontend
+    docker-compose -f ../docker/docker-compose.yaml logs --tail 50 dify-next-frontend
     exit 1
 fi
 
@@ -127,6 +127,6 @@ echo ""
 echo "✅ localhost問題應已徹底解決！"
 echo ""
 echo "🚨 如果仍有問題："
-echo "   - 檢查容器日誌: docker-compose -f docker/docker-compose.yaml logs -f dify-next-frontend"
+echo "   - 檢查容器日誌: docker-compose -f ../docker/docker-compose.yaml logs -f dify-next-frontend"
 echo "   - 強制清除瀏覽器所有資料"
 echo "   - 確認後端Dify服務正常運行"

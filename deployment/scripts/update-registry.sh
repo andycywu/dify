@@ -27,7 +27,7 @@ else
 fi
 
 # 更新 docker-compose.yaml 中的預設值
-COMPOSE_FILE="docker/docker-compose.yaml"
+COMPOSE_FILE="../docker/docker-compose.yaml"
 echo "更新 $COMPOSE_FILE 中的預設 registry 名稱..."
 
 if [[ "$OSTYPE" == "darwin"* ]]; then

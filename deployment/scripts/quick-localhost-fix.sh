@@ -41,7 +41,7 @@ fi
 if [ "$NEEDS_REBUILD" = true ]; then
     echo "🔨 執行完整重新構建..."
     
-    cd docker
+    cd ../docker
     
     # 停止並清理
     docker-compose stop dify-next-frontend

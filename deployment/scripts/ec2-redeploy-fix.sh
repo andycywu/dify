@@ -18,7 +18,7 @@ git pull origin main
 
 # 3. 重新構建前端映像（確保包含最新的Prisma文件）
 echo "🔨 重新構建前端映像..."
-cd docker
+cd ../docker
 docker-compose build --no-cache dify-next-frontend
 
 # 4. 拉取其他映像的更新
