@@ -1,7 +1,13 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL || "file:/app/data/dev.db"
+    }
+  }
+});
 
 async function main() {
   // 建立各種角色的 user
