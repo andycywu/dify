@@ -4,9 +4,31 @@
 
 set -e
 
-echo "🔧 Initializing Docker volumes directory structure..."
+echo "🔧 Initializing Docker environment..."
 
-# Create dify-next-frontend data directory
+# Step 1: Setup environment files
+echo ""
+echo "📝 Setting up environment files..."
+
+if [ ! -f "../dify-next-frontend/.env.aws" ]; then
+  if [ -f "../dify-next-frontend/.env.aws.example" ]; then
+    echo "📋 Copying .env.aws.example to .env.aws..."
+    cp "../dify-next-frontend/.env.aws.example" "../dify-next-frontend/.env.aws"
+    echo "✅ Created .env.aws from example file"
+    echo "⚠️  Please review and update the configuration in .env.aws if needed"
+  else
+    echo "❌ ERROR: .env.aws.example file not found!"
+    echo "   Please create dify-next-frontend/.env.aws manually"
+    exit 1
+  fi
+else
+  echo "✅ .env.aws already exists"
+fi
+
+# Step 2: Create dify-next-frontend data directory
+echo ""
+echo "📁 Creating volume directories..."
+
 FRONTEND_VOLUME_DIR="./volumes/dify-next-frontend"
 
 if [ ! -d "$FRONTEND_VOLUME_DIR" ]; then
@@ -37,14 +59,19 @@ for dir in "${VOLUME_DIRS[@]}"; do
 done
 
 echo ""
-echo "✅ Volume directories initialized successfully!"
+echo "✅ Initialization complete!"
 echo ""
 echo "📊 Volume structure:"
 ls -la volumes/ 2>/dev/null || echo "⚠️  No volumes directory found"
 
 echo ""
 echo "ℹ️  Next steps:"
-echo "   1. Run: docker-compose up -d"
-echo "   2. Check logs: docker-compose logs -f dify-next-frontend"
-echo "   3. Access frontend: http://localhost:3001"
-echo "   4. Login with: admin@example.com / dify12345"
+echo "   1. Review configuration in: dify-next-frontend/.env.aws"
+echo "   2. Run: docker-compose build dify-next-frontend"
+echo "   3. Run: docker-compose up -d"
+echo "   4. Check logs: docker-compose logs -f dify-next-frontend"
+echo "   5. Access frontend: http://localhost:3001"
+echo "   6. Login with: admin@example.com / dify12345"
+echo ""
+echo "⚠️  Default credentials should be changed in production!"
+

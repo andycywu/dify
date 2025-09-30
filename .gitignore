@@ -110,6 +110,7 @@ celerybeat.pid
 .env.*
 !.env.example
 !.env.template
+!.env.aws.example
 .env-local
 .venv
 env/
