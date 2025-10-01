@@ -8,7 +8,9 @@
 
 - ✅ Wiki.js 服務運行正常 (http://localhost:3002)
 - ✅ Dify API 服務運行正常 (http://localhost:5001)
-- ✅ 聊天機器人腳本已創建
+- ✅ 聊天機器人腳本已創建並可訪問 (/_assets/js/chatbot-widget.js)
+- ✅ 靜態資源路徑已正確配置
+- ✅ Docker 單文件掛載配置已修復
 - ⏳ 等待管理員配置和激活
 
 ## 🚀 快速演示聊天機器人
@@ -25,18 +27,22 @@
 ```
 
 5. 您將看到右下角出現聊天機器人圖標 💬
-6. 點擊圖標開始與 AI 助手對話
+6. **新功能**：您可以拖拽圖標來調整垂直位置
+7. 點擊圖標開始與 AI 助手對話
 
 ### 方法 2：通過 Wiki.js 管理界面（永久集成）
 
 1. 訪問 Wiki.js 管理界面：http://localhost:3002/admin
-2. 登入管理員帳戶
+2. 登入管理員帳戶（預設帳戶：admin@example.com / admin123）
 3. 導航到：**設置 → 主題 → 代碼注入**
 4. 在 "頁腳代碼" 區域添加：
 ```html
-<script src="/js/chatbot-widget.js"></script>
+<script src="/_assets/js/chatbot-widget.js"></script>
 ```
 5. 保存設置
+6. 刷新任何 Wiki.js 頁面，您將看到右下角的聊天機器人圖標
+
+**注意**：確保使用正確的路徑 `/_assets/js/chatbot-widget.js`，而不是 `/js/chatbot-widget.js`。
 
 ## 🔧 Dify API Key 配置
 
@@ -73,6 +79,16 @@ docker-compose restart wiki
 - 🧠 上下文記憶
 - 📄 文件上傳支持
 
+## 🎯 功能特點
+
+- ✅ **智能定位**：固定在右下角，不會影響頁面佈局
+- ✅ **拖拽移動**：用戶可以自由調整垂直位置，智能區分點擊和拖拽
+- ✅ **響應式設計**：適配桌面和移動設備
+- ✅ **DOM 安全**：等待頁面完全加載後才初始化
+- ✅ **演示模式**：無需 API Key 即可體驗基本功能
+- ✅ **美觀界面**：現代化的 Material Design 風格
+- ✅ **事件優化**：解決了拖拽和點擊事件的衝突問題
+
 ## 🎨 自定義配置
 
 可以在腳本中修改以下配置：
@@ -104,10 +120,39 @@ wiki/
 
 ## 🔍 故障排除
 
-### 聊天機器人不顯示
-1. 檢查瀏覽器控制台是否有錯誤
-2. 確認腳本路徑是否正確
-3. 檢查 Wiki.js 代碼注入設置
+### 聊天機器人腳本無法訪問 (404 錯誤)
+1. 檢查 Docker 掛載配置是否包含單文件掛載：`../wiki/assets/js/chatbot-widget.js:/wiki/assets/js/chatbot-widget.js`
+2. 重啟 wiki 容器：`docker compose up -d --force-recreate wiki`
+3. 確認腳本路徑：`/_assets/js/chatbot-widget.js`
+
+### Wiki.js 頁面樣式丟失
+1. 確保沒有掛載整個 `/wiki/assets` 目錄，只掛載單個文件
+2. 如果意外掛載了整個目錄，請移除該掛載配置
+3. 重啟容器讓原始 assets 文件恢復
+
+### 腳本加載後又消失
+1. 這通常是因為容器重啟後掛載的文件丟失
+2. 確保 Docker Compose 配置正確掛載了單個腳本文件
+3. 檢查宿主機上的文件是否存在：`/Users/andycyw/dify/wiki/assets/js/chatbot-widget.js`
+
+### JavaScript 錯誤：document.body is null
+1. 這是因為腳本在 DOM 準備就緒前執行
+2. 聊天機器人腳本已實現 DOM 準備檢查
+3. 如果使用控制台注入，請確保頁面已完全加載
+4. 對於 Wiki.js 集成，腳本會自動等待 DOM 準備就緒
+
+### 聊天機器人按鈕無法使用
+1. **檢查腳本是否加載**：在瀏覽器控制台中運行 `document.querySelector('#dify-chatbot-widget')` 檢查元素是否存在
+2. **檢查腳本路徑**：確保使用正確的路徑 `/_assets/js/chatbot-widget.js`
+3. **檢查 Wiki.js 集成**：確認在管理界面中正確添加了腳本標籤
+4. **檢查 JavaScript 錯誤**：打開瀏覽器開發者工具的 Console 標籤查看錯誤
+5. **修復**：如果使用控制台注入，請確保頁面已完全加載；如果使用 Wiki.js 集成，請檢查代碼注入設置
+
+### 無法拖拽聊天機器人
+1. **檢查事件綁定**：確保腳本正確加載並綁定了事件監聽器
+2. **檢查拖拽邏輯**：實現了傳統拖拽行為，按下滑鼠按鍵開始拖拽，放開按鍵結束拖拽
+3. **測試拖拽**：按住滑鼠按鍵拖拽圖標來調整位置，放開按鍵結束拖拽
+4. **修復**：已實現標準拖拽行為，不會出現黏住或狀態錯亂問題
 
 ### AI 回應不工作
 1. 檢查 Dify API Key 是否配置正確
@@ -133,7 +178,7 @@ curl -H "Authorization: Bearer your-api-key" \
      http://localhost:5001/v1/parameters
 
 # 測試聊天機器人腳本訪問
-curl http://localhost:3002/js/chatbot-widget.js
+curl http://localhost:3002/_assets/js/chatbot-widget.js
 ```
 
 ## 🎯 下一步

@@ -1,4 +1,3 @@
-// 在瀏覽器開發者工具的控制台中運行此代碼來添加聊天機器人
 (function() {
     'use strict';
     
@@ -23,7 +22,7 @@
                 height: 60px; 
                 background: linear-gradient(135deg, ${CONFIG.PRIMARY_COLOR}, #42a5f5); 
                 border-radius: 50%; 
-                cursor: pointer; 
+                cursor: move; 
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
                 display: flex; 
                 align-items: center; 
@@ -31,6 +30,7 @@
                 transition: all 0.3s ease;
                 color: white;
                 font-size: 24px;
+                user-select: none;
             ">
                 💬
             </div>
@@ -125,14 +125,96 @@
         </div>
     `;
     
-    // Insert the widget into the page
-    function insertWidget() {
+    // 等待 DOM 準備就緒
+    function initializeChatbot() {
         if (!document.body) {
-            setTimeout(insertWidget, 100);
+            // 如果 body 還不存在，等待一下再試
+            setTimeout(initializeChatbot, 100);
             return;
         }
+        
+        // Insert the widget into the page
         document.body.insertAdjacentHTML('beforeend', widgetHTML);
-    
+        
+        // Add drag functionality
+        let isDragging = false;
+        let dragStartY = 0;
+        let initialBottom = 20;
+        
+        const widget = document.getElementById('dify-chatbot-widget');
+        const trigger = document.getElementById('chatbot-trigger');
+        
+        // Mouse down event - 開始拖拽
+        trigger.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            dragStartY = e.clientY;
+            initialBottom = parseInt(widget.style.bottom) || 20;
+            trigger.style.cursor = 'grabbing';
+            e.preventDefault(); // 防止選中文本
+        });
+        
+        // Mouse move event - 只有在拖拽狀態下才移動
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            
+            const deltaY = dragStartY - e.clientY;
+            let newBottom = initialBottom + deltaY;
+            
+            // 限制在視窗範圍內
+            const maxBottom = window.innerHeight - 80; // 留出一些空間
+            const minBottom = 20;
+            newBottom = Math.max(minBottom, Math.min(maxBottom, newBottom));
+            
+            widget.style.bottom = newBottom + 'px';
+        });
+        
+        // Mouse up event - 結束拖拽
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                trigger.style.cursor = 'move';
+            }
+        });
+        
+        // 點擊事件 - 只有在沒有拖拽時才觸發
+        trigger.addEventListener('click', function(e) {
+            // 如果剛才在拖拽，不要觸發點擊
+            if (isDragging) {
+                e.preventDefault();
+                return;
+            }
+            toggleChatbot();
+        });
+        
+        // Touch events for mobile
+        trigger.addEventListener('touchstart', function(e) {
+            isDragging = true;
+            dragStartY = e.touches[0].clientY;
+            initialBottom = parseInt(widget.style.bottom) || 20;
+            trigger.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+        
+        document.addEventListener('touchmove', function(e) {
+            if (!isDragging) return;
+            
+            const deltaY = dragStartY - e.touches[0].clientY;
+            let newBottom = initialBottom + deltaY;
+            
+            const maxBottom = window.innerHeight - 80;
+            const minBottom = 20;
+            newBottom = Math.max(minBottom, Math.min(maxBottom, newBottom));
+            
+            widget.style.bottom = newBottom + 'px';
+        });
+        
+        document.addEventListener('touchend', function() {
+            if (isDragging) {
+                isDragging = false;
+                trigger.style.cursor = 'move';
+            }
+        });
+        
         // Toggle chatbot window
         function toggleChatbot() {
             const window = document.getElementById('chatbot-window');
@@ -240,7 +322,6 @@
         }
         
         // Event listeners
-        document.getElementById('chatbot-trigger').addEventListener('click', toggleChatbot);
         document.getElementById('close-chat').addEventListener('click', toggleChatbot);
         document.getElementById('send-button').addEventListener('click', sendMessage);
         document.getElementById('chat-input').addEventListener('keypress', function(e) {
@@ -277,14 +358,16 @@
         document.head.appendChild(style);
         
         console.log('✅ Dify AI 聊天機器人已成功加載！');
-        console.log('💬 點擊右下角的聊天圖標開始對話');
+        console.log('💬 點擊右下角的聊天圖標開始對話（可拖拽移動）');
     }
     
-    // 等待 DOM 準備就緒
+    // 檢查 DOM 是否已經準備就緒
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', insertWidget);
+        // DOM 還在加載中，等待 DOMContentLoaded 事件
+        document.addEventListener('DOMContentLoaded', initializeChatbot);
     } else {
-        insertWidget();
+        // DOM 已經準備就緒，直接初始化
+        initializeChatbot();
     }
     
 })();
