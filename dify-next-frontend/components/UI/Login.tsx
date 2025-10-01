@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
 
@@ -8,8 +9,8 @@ interface LoginProps {
   customLogo?: string;
 }
 
-const Login: React.FC<LoginProps> = ({ 
-  onSuccess, 
+const Login: React.FC<LoginProps> = ({
+  onSuccess,
   primaryColor = '#3B82F6',
   customLogo
 }) => {
@@ -75,23 +76,26 @@ const Login: React.FC<LoginProps> = ({
       <div className="p-8 bg-white rounded-lg shadow-md w-full max-w-md">
         <div className="flex flex-col items-center mb-6">
           {customLogo && (
-            <img 
-              src={customLogo} 
-              alt="Logo" 
-              className="h-16 w-auto mb-2" 
+            <Image
+              src={customLogo}
+              alt="Logo"
+              width={64}
+              height={64}
+              className="h-16 w-auto mb-2"
+              unoptimized
             />
           )}
           <h2 className="text-2xl font-bold text-center">TPV OBM測試助理</h2>
           <p className="mt-2 text-center text-gray-600">Login to access your assistant</p>
           <p className="mt-1 text-center text-gray-500 text-xs">Default: Test User / dify12345</p>
         </div>
-        
+
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
             {error}
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -107,7 +111,7 @@ const Login: React.FC<LoginProps> = ({
               required
             />
           </div>
-          
+
           <div className="mb-6">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -121,7 +125,7 @@ const Login: React.FC<LoginProps> = ({
               required
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={loading}

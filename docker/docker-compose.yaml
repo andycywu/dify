@@ -501,6 +501,7 @@ services:
   # API service
   api:
     image: ${DIFY_API_IMAGE:-andywu719/dify-api:latest}
+    platform: linux/amd64
     # build: ../api
     restart: always
     environment:
@@ -531,6 +532,7 @@ services:
   # The Celery worker for processing the queue.
   worker:
     image: ${DIFY_API_IMAGE:-andywu719/dify-api:latest}
+    platform: linux/amd64
     # build: ../api
     restart: always
     environment:
@@ -558,6 +560,7 @@ services:
   # Frontend web application.
   web:
     image: langgenius/dify-web:1.4.0
+    platform: linux/amd64
     restart: always
     environment:
       CONSOLE_API_URL: ${CONSOLE_API_URL:-}
@@ -593,8 +596,8 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: ${WIKI_DB_NAME:-wiki}
-      DB_USER: ${DB_USERNAME:-postgres}
-      DB_PASS: ${DB_PASSWORD:-difyai123456}
+      DB_USER: ${WIKI_DB_USER:-wiki_app}
+      DB_PASS: ${WIKI_DB_PASSWORD:-wiki_pass}
 
       # Wiki.js basic configuration
       WIKI_ADMIN_EMAIL: ${WIKI_ADMIN_EMAIL:-admin@example.com}
@@ -607,10 +610,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      wiki-db-init:
+        condition: service_completed_successfully
     volumes:
       - wiki-content:/wiki/data/content
       - ../wiki/config:/wiki/config
       - ../wiki/themes:/wiki/themes
+      - ../wiki/assets:/wiki/assets
     networks:
       - ssrf_proxy_network
       - default
@@ -621,13 +627,23 @@ services:
     restart: "no"
     environment:
       PGPASSWORD: ${DB_PASSWORD:-difyai123456}
+      DB_SUPERUSER: ${DB_USERNAME:-postgres}
+      WIKI_DB_NAME: ${WIKI_DB_NAME:-wiki}
+      WIKI_DB_USER: ${WIKI_DB_USER:-wiki_app}
+      WIKI_DB_PASSWORD: ${WIKI_DB_PASSWORD:-wiki_pass}
     command: >
       sh -c "
-        until pg_isready -h db -p 5432 -U ${DB_USERNAME:-postgres}; do
+        until pg_isready -h db -p 5432 -U ${DB_SUPERUSER:-postgres}; do
           echo 'Waiting for database...';
           sleep 2;
         done;
-        psql -h db -U ${DB_USERNAME:-postgres} -c 'CREATE DATABASE ${WIKI_DB_NAME:-wiki};' || echo 'Wiki database already exists';
+        psql -h db -U ${DB_SUPERUSER:-postgres} -tc \"SELECT 1 FROM pg_database WHERE datname='${WIKI_DB_NAME:-wiki}'\" | grep -q 1 || psql -h db -U ${DB_SUPERUSER:-postgres} -c 'CREATE DATABASE ${WIKI_DB_NAME:-wiki};';
+        psql -h db -U ${DB_SUPERUSER:-postgres} -tc \"SELECT 1 FROM pg_roles WHERE rolname='${WIKI_DB_USER:-wiki_app}'\" | grep -q 1 || psql -h db -U ${DB_SUPERUSER:-postgres} -c \"CREATE USER ${WIKI_DB_USER:-wiki_app} WITH PASSWORD '${WIKI_DB_PASSWORD:-wiki_pass}';\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"GRANT ALL PRIVILEGES ON DATABASE ${WIKI_DB_NAME:-wiki} TO ${WIKI_DB_USER:-wiki_app};\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"ALTER DATABASE ${WIKI_DB_NAME:-wiki} OWNER TO ${WIKI_DB_USER:-wiki_app};\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"GRANT ALL ON SCHEMA public TO ${WIKI_DB_USER:-wiki_app};\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO ${WIKI_DB_USER:-wiki_app};\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO ${WIKI_DB_USER:-wiki_app};\";
         echo 'Wiki database ready!'
       "
     depends_on:
@@ -676,6 +692,7 @@ services:
   # The DifySandbox
   sandbox:
     image: langgenius/dify-sandbox:0.2.12
+    platform: linux/amd64
     restart: always
     environment:
       # The DifySandbox configurations
@@ -700,6 +717,7 @@ services:
   # plugin daemon
   plugin_daemon:
     image: langgenius/dify-plugin-daemon:0.0.10-local
+    platform: linux/amd64
     restart: always
     environment:
       # Use the shared environment variables.
@@ -811,6 +829,9 @@ services:
       NGINX_HTTPS_ENABLED: ${NGINX_HTTPS_ENABLED:-false}
       NGINX_SSL_PORT: ${NGINX_SSL_PORT:-443}
       NGINX_PORT: ${NGINX_PORT:-80}
+      CUSTOM_FRONTEND_DOMAIN: ${CUSTOM_FRONTEND_DOMAIN:-frontend.localhost}
+      CUSTOM_FRONTEND_BASE_PATH: ${CUSTOM_FRONTEND_BASE_PATH:-/custom}
+      CUSTOM_FRONTEND_TARGET_PORT: ${CUSTOM_FRONTEND_PORT:-3000}
       # You're required to add your own SSL certificates/keys to the `./nginx/ssl` directory
       # and modify the env vars below in .env if HTTPS_ENABLED is true.
       NGINX_SSL_CERT_FILENAME: ${NGINX_SSL_CERT_FILENAME:-dify.crt}
@@ -826,6 +847,7 @@ services:
     depends_on:
       - api
       - web
+      - dify-next-frontend
     ports:
       - '${EXPOSE_NGINX_PORT:-80}:${NGINX_PORT:-80}'
       - '${EXPOSE_NGINX_SSL_PORT:-443}:${NGINX_SSL_PORT:-443}'
@@ -1239,18 +1261,22 @@ services:
   # Dify Next.js frontend
   dify-next-frontend:
     image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
+    platform: linux/amd64
     #build: ../dify-next-frontend
     restart: always
-    env_file: ../dify-next-frontend/.env.aws
+    env_file:
+      - ../dify-next-frontend/.env.docker
     environment:
-      API_URL: ${API_URL:-http://api:5001}
-      NEXT_PUBLIC_API_URL: ${API_URL:-http://api:5001}
-      NEXTAUTH_URL: ${APP_WEB_URL:-http://localhost:3000}
+      API_URL: ${DIFY_INTERNAL_API_ORIGIN:-http://api:5001}
+      NEXT_PUBLIC_API_URL: ${CUSTOM_FRONTEND_BASE_PATH:-/custom}/api
+      NEXT_PUBLIC_DIFY_API_BASE_URL: ${DIFY_PUBLIC_API_ORIGIN:-http://localhost/api/v1}
+      NEXT_PUBLIC_BASE_PATH: ${CUSTOM_FRONTEND_BASE_PATH:-/custom}
+      NEXTAUTH_URL: ${CUSTOM_FRONTEND_EXTERNAL_ORIGIN:-http://localhost}${CUSTOM_FRONTEND_BASE_PATH:-/custom}
       NODE_ENV: production
-      PORT: 3000
+      PORT: ${CUSTOM_FRONTEND_PORT:-3000}
       DATABASE_URL: "file:/app/data/dev.db"
     ports:
-      - "${DIFY_NEXT_FRONTEND_PORT:-3001}:3000"
+      - "${DIFY_NEXT_FRONTEND_PORT:-3001}:${CUSTOM_FRONTEND_PORT:-3000}"
     volumes:
       - ./volumes/dify-next-frontend:/app/data
     depends_on:
@@ -1261,12 +1287,13 @@ services:
   # rest-to-soap-proxy service
   rest-to-soap-proxy:
     image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
+    platform: linux/amd64
     # build: ../rest-to-soap-proxy
     restart: always
     env_file:
       - ../rest-to-soap-proxy/.env
     ports:
-      - "5100:5001"
+      - "${REST_TO_SOAP_PROXY_PORT:-5100}:5001"
     networks:
       - default
 

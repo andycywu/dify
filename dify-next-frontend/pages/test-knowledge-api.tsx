@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Link from 'next/link';
 import MainLayout from '../components/Layout/MainLayout';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -59,8 +60,8 @@ const TestKnowledgeAPI: React.FC = () => {
               </h2>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p><span className="font-medium">API Key:</span> {
-                  process.env.NEXT_PUBLIC_ADMIN_API_KEY ? 
-                  `${process.env.NEXT_PUBLIC_ADMIN_API_KEY.substring(0, 10)}...` : 
+                  process.env.NEXT_PUBLIC_ADMIN_API_KEY ?
+                  `${process.env.NEXT_PUBLIC_ADMIN_API_KEY.substring(0, 10)}...` :
                   '❌ Not configured'
                 }</p>
                 <p><span className="font-medium">Base URL:</span> {
@@ -100,12 +101,12 @@ const TestKnowledgeAPI: React.FC = () => {
               </h2>
               <div className="space-y-2">
                 {user && ['admin', 'owner'].includes(user.role) ? (
-                  <a
+                  <Link
                     href="/knowledge-management"
                     className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
                   >
                     Go to Knowledge Management
-                  </a>
+                  </Link>
                 ) : (
                   <p className="text-gray-600">
                     Admin access required to access Knowledge Management

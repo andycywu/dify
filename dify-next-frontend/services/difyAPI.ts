@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || '';
+const trimTrailingSlash = (value: string) => value.endsWith('/') ? value.replace(/\/+$/, '') : value;
+
+const resolveApiBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_DIFY_API_BASE_URL) {
+    return trimTrailingSlash(process.env.NEXT_PUBLIC_DIFY_API_BASE_URL);
+  }
+
+  return '/api/v1';
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 const API_KEY = process.env.NEXT_PUBLIC_DIFY_API_KEY || '';
 
 interface Message {
@@ -188,26 +198,26 @@ export class DifyAPI {
           params: { user: userId }
         }
       );
-      
+
       console.log('Suggested questions API response status:', response.status); // 調試用
       console.log('Suggested questions API response data:', JSON.stringify(response.data, null, 2)); // 調試用
-      
+
       if (response.data && response.data.result === 'success' && Array.isArray(response.data.data)) {
         console.log('Using response.data.data format:', response.data.data); // 調試用
         return response.data.data;
       }
-      
+
       // 嘗試其他可能的回應格式
       if (Array.isArray(response.data)) {
         console.log('Using direct array format:', response.data); // 調試用
         return response.data;
       }
-      
+
       if (response.data && Array.isArray(response.data.suggested_questions)) {
         console.log('Using response.data.suggested_questions format:', response.data.suggested_questions); // 調試用
         return response.data.suggested_questions;
       }
-      
+
       console.warn('Unexpected suggested questions response format:', response.data);
       return [];
     } catch (error: any) {

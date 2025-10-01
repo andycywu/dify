@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import DifyAPI from '../../services/difyAPI';
 import { useAuth } from '../../contexts/AuthContext';
 import Image from 'next/image';
@@ -62,7 +62,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const difyAPI = new DifyAPI(apiBaseUrl, apiKey);
+  const userId = user?.id;
+  const difyAPI = useMemo(() => new DifyAPI(apiBaseUrl, apiKey), [apiBaseUrl, apiKey]);
 
   // Feature flag
   const ENABLE_CITATION_AND_SUGGESTED = process.env.NEXT_PUBLIC_ENABLE_CHAT_CITATION_AND_SUGGESTED_QUESTIONS === 'true';
@@ -72,14 +73,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
     const initializeWithDifyConfig = async () => {
       // 獲取 Dify 應用程式配置
       try {
-        const difyConfig = await difyAPI.getParameters(user?.id);
+        const difyConfig = await difyAPI.getParameters(userId);
         const difyOpeningStatement = difyConfig.opening_statement;
         const difyOpeningQuestions = difyConfig.suggested_questions; // 新增：取得開場建議問題
-        
+
         console.log('Dify config:', difyConfig); // 調試用
         console.log('Opening questions:', difyOpeningQuestions); // 調試用
         console.log('Suggested questions after answer enabled:', difyConfig.suggested_questions_after_answer?.enabled); // 調試用
-        
+
         if (difyOpeningStatement && difyOpeningStatement.trim()) {
           setDifyWelcomeMessage(difyOpeningStatement);
           setMessages([
@@ -137,47 +138,63 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
     if (!authLoading) {
       initializeWithDifyConfig();
     }
+  }, [authLoading, difyAPI, welcomeMessage, userId]);
 
-    // Load conversation history if logged in and history enabled
-    if (isAuthenticated && enableHistory) {
+  const loadConversations = useCallback(async () => {
+    if (!userId) {
+      console.warn('No user found, cannot load conversations');
+      return;
+    }
+    try {
+      console.log('Loading conversations for user.id:', userId);
+      const result = await difyAPI.getConversations(userId); // 傳入 user.id
+      console.log('Dify getConversations result:', result);
+      // 支援 result.data 或 result.results 或直接陣列
+      if (Array.isArray(result)) {
+        setConversations(result);
+      } else if (Array.isArray(result.data)) {
+        setConversations(result.data);
+      } else if (Array.isArray(result.results)) {
+        setConversations(result.results);
+      } else {
+        setConversations([]);
+      }
+    } catch (error) {
+      console.error('Failed to load conversations', error);
+    }
+  }, [difyAPI, userId]);
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && enableHistory) {
       loadConversations();
     }
-  }, [isAuthenticated, enableHistory, welcomeMessage, user?.id, authLoading]);
-
-  // 修正：如果有 conversationId，且 messages 為 welcome，則自動載入歷史紀錄
-  useEffect(() => {
-    if (
-      conversationId &&
-      messages.length === 1 &&
-      messages[0].id === 'welcome' &&
-      isAuthenticated &&
-      enableHistory
-    ) {
-      selectConversation(conversationId);
-    }
-  }, [conversationId, messages, isAuthenticated, enableHistory]);
+  }, [authLoading, isAuthenticated, enableHistory, loadConversations]);
 
   // Scroll to bottom when messages change
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   // 新增：取得建議問題
-  const fetchSuggestedQuestions = async (messageId: string) => {
-    if (!showSuggestedQuestions || !user?.id || messageId === 'welcome') {
+  const fetchSuggestedQuestions = useCallback(async (messageId: string) => {
+    if (!showSuggestedQuestions || !userId || messageId === 'welcome') {
       setLatestSuggestedQuestions(undefined);
       return;
     }
     try {
-      console.log('Calling getSuggestedQuestions with messageId:', messageId, 'userId:', user.id); // 調試用
-      const questions = await difyAPI.getSuggestedQuestions(messageId, user.id);
+      console.log('Calling getSuggestedQuestions with messageId:', messageId, 'userId:', userId); // 調試用
+      const questions = await difyAPI.getSuggestedQuestions(messageId, userId);
       console.log('Got suggested questions:', questions); // 調試用
       setLatestSuggestedQuestions(questions);
     } catch (e) {
       console.error('Failed to fetch suggested questions:', e); // 調試用
       setLatestSuggestedQuestions(undefined);
     }
-  };
+  }, [difyAPI, showSuggestedQuestions, userId]);
 
   // 新增：每次 assistant 回覆後自動取得建議問題
   useEffect(() => {
@@ -197,7 +214,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
         hasMetadata: !!lastMsg.metadata,
         metadataSuggestedQuestions: lastMsg.metadata?.suggested_questions
       }); // 調試用
-      
+
       if (
         lastMsg.role === 'assistant' &&
         lastMsg.isLatestAssistant &&
@@ -218,42 +235,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
     } else {
       setLatestSuggestedQuestions(undefined);
     }
-  }, [messages, showSuggestedQuestions, user?.id, isHistoryLoading, loading]);
+  }, [messages, showSuggestedQuestions, isHistoryLoading, loading, fetchSuggestedQuestions]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const loadConversations = async () => {
-    if (!user) {
-      console.warn('No user found, cannot load conversations');
-      return;
-    }
-    try {
-      console.log('Loading conversations for user.id:', user.id);
-      const result = await difyAPI.getConversations(user.id); // 傳入 user.id
-      console.log('Dify getConversations result:', result);
-      // 支援 result.data 或 result.results 或直接陣列
-      if (Array.isArray(result)) {
-        setConversations(result);
-      } else if (Array.isArray(result.data)) {
-        setConversations(result.data);
-      } else if (Array.isArray(result.results)) {
-        setConversations(result.results);
-      } else {
-        setConversations([]);
-      }
-    } catch (error) {
-      console.error('Failed to load conversations', error);
-    }
-  };
-
-  const selectConversation = async (id: string) => {
+  const selectConversation = useCallback(async (id: string) => {
     setIsHistoryLoading(true);
     try {
       const historyResult = await difyAPI.getConversationHistory({
         conversation_id: id,
-        user_id: user?.id,
+        user_id: userId,
         limit: 50, // 可調整
       });
       setConversationId(id);
@@ -321,11 +310,24 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
     } finally {
       setIsHistoryLoading(false);
     }
-  };
+  }, [difyAPI, userId]);
+
+  // 修正：如果有 conversationId，且 messages 為 welcome，則自動載入歷史紀錄
+  useEffect(() => {
+    if (
+      conversationId &&
+      messages.length === 1 &&
+      messages[0].id === 'welcome' &&
+      isAuthenticated &&
+      enableHistory
+    ) {
+      selectConversation(conversationId);
+    }
+  }, [conversationId, messages, isAuthenticated, enableHistory, selectConversation]);
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
-    
+
     const userMessage: ChatMessage = {
       id: Math.random().toString(),
       content: input,
@@ -335,7 +337,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
       metadata: undefined, // 明確補齊
       fromHistory: false, // 明確補齊
     };
-    
+
     setMessages(prev => {
       // 新增：移除所有 isLatestAssistant 標記，並補齊 fromHistory 與 metadata
       return prev.map(m => ({
@@ -347,7 +349,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
     });
     setInput('');
     setLoading(true);
-    
+
     try {
       const response = await difyAPI.sendChatMessage({
         query: input,
@@ -358,7 +360,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
       });
       // 新增：回報 token 用量
       if (user?.id && response?.metadata?.usage?.total_tokens) {
-        fetch('/api/usage-log', {
+  fetch('/api/usage-log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -367,7 +369,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
           }),
         });
       }
-      
+
       const assistantMessage: ChatMessage = {
         id: response.id,
         content: response.answer,
@@ -380,7 +382,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
         isLatestAssistant: true, // 新增：標記為最新 assistant
         fromHistory: false, // 新增，確保型別一致
       };
-      
+
       // 檢查是否有建議問題在 metadata 中
       console.log('Assistant response metadata:', response.metadata); // 調試用
       if (response.metadata && response.metadata.suggested_questions) {
@@ -390,7 +392,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
         // 如果 metadata 中沒有建議問題，稍後通過 API 獲取
         console.log('No suggested questions in metadata, will fetch via API later'); // 調試用
       }
-      
+
       setMessages(prev => {
         // 新增：移除所有 isLatestAssistant 標記，並補齊 fromHistory 與 metadata
         return prev.map(m => ({
@@ -400,7 +402,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
           metadata: m.metadata ?? undefined,
         })).concat(assistantMessage);
       });
-      
+
       // Update conversation ID if this is a new conversation
       if (!conversationId) {
         setConversationId(response.conversation_id);
@@ -529,7 +531,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
   }
 
   return (
-    <div 
+    <div
       className="flex flex-col rounded-lg shadow-lg overflow-hidden border border-gray-200"
       style={{
         ...customStyles.chatContainer,
@@ -540,18 +542,18 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
       }}
     >
       {/* Header */}
-      <div 
-        className="flex justify-between items-center p-4 border-b" 
+      <div
+        className="flex justify-between items-center p-4 border-b"
         style={{ backgroundColor: primaryColor, color: 'white' }}
       >
         <div className="flex items-center">
           {customLogo ? (
             <div className="w-8 h-8 mr-2">
-              <Image 
-                src={customLogo} 
-                alt="Logo" 
-                width={32} 
-                height={32} 
+              <Image
+                src={customLogo}
+                alt="Logo"
+                width={32}
+                height={32}
                 className="rounded"
               />
             </div>
@@ -587,7 +589,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
         {showHistory && enableHistory && isAuthenticated && (
           <div className="w-64 border-r border-gray-200 overflow-y-auto p-2 bg-gray-50">
             <div className="mb-2">
-              <button 
+              <button
                 className="w-full p-2 rounded text-white mb-2"
                 style={{ backgroundColor: primaryColor }}
                 onClick={createNewConversation}
@@ -599,7 +601,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
               <h3 className="font-medium text-sm text-gray-500 mb-1">History</h3>
               {conversations.length > 0 ? (
                 conversations.map(conv => (
-                  <div 
+                  <div
                     key={conv.id}
                     className={`p-2 rounded cursor-pointer mb-1 hover:bg-gray-200 ${
                       conversationId === conv.id ? 'bg-gray-200' : ''
@@ -622,9 +624,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
             </div>
           </div>
         )}
-        
+
         {/* Messages Container */}
-        <div 
+        <div
           className="flex-1 flex flex-col overflow-hidden"
           style={customStyles.messageContainer}
         >
@@ -707,9 +709,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
             )}
             <div ref={messagesEndRef} />
           </div>
-          
+
           {/* Input Area */}
-          <div 
+          <div
             className="border-t border-gray-200 p-4 bg-white"
             style={customStyles.inputArea}
           >

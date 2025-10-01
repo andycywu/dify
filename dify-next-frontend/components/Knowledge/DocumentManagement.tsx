@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { formatDate } from '../../utils/dateUtils';
 import { KnowledgeBase, Document, getDocuments, createDocumentFromText, createDocumentFromFile, deleteDocument } from '../../services/knowledgeAdmin';
 
@@ -13,35 +13,38 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ knowledgeBase, 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [activeKeyword, setActiveKeyword] = useState('');
 
-  useEffect(() => {
-    fetchDocuments();
-  }, [knowledgeBase.id]);
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async (keyword: string) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await getDocuments(knowledgeBase.id, { keyword: searchTerm });
+      const response = await getDocuments(knowledgeBase.id, { keyword });
       setDocuments(response.data || []);
+      setActiveKeyword(keyword);
     } catch (error) {
       console.error('Failed to fetch documents:', error);
       setError('Failed to fetch documents. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [knowledgeBase.id]);
+
+  useEffect(() => {
+    setSearchTerm('');
+    fetchDocuments('');
+  }, [knowledgeBase.id, fetchDocuments]);
 
   const handleSearch = () => {
-    fetchDocuments();
+    fetchDocuments(searchTerm);
   };
 
   const handleDelete = async (document: Document) => {
-    if (!confirm(`Are you sure you want to delete "${document.name}"?`)) return;
-    
+    if (!confirm(`Are you sure you want to delete “${document.name}”?`)) return;
+
     try {
       await deleteDocument(knowledgeBase.id, document.id);
-      fetchDocuments();
+      fetchDocuments(activeKeyword);
     } catch (error) {
       console.error('Failed to delete document:', error);
       alert('Failed to delete document. Please try again.');
@@ -73,7 +76,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ knowledgeBase, 
           </button>
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">
-              Documents in "{knowledgeBase.name}"
+              Documents in “{knowledgeBase.name}”
             </h1>
             <p className="text-gray-600 mt-1">
               Manage documents and their content
@@ -187,7 +190,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ knowledgeBase, 
               </tbody>
             </table>
           </div>
-          
+
           {documents.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-500">
@@ -222,11 +225,11 @@ interface CreateDocumentModalProps {
   onSuccess: () => void;
 }
 
-const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({ 
-  knowledgeBaseId, 
-  isOpen, 
-  onClose, 
-  onSuccess 
+const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
+  knowledgeBaseId,
+  isOpen,
+  onClose,
+  onSuccess
 }) => {
   const [activeTab, setActiveTab] = useState<'text' | 'file'>('text');
   const [formData, setFormData] = useState({
@@ -238,7 +241,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const supportedFileTypes = [
-    'txt', 'markdown', 'mdx', 'pdf', 'html', 'xlsx', 'xls', 
+    'txt', 'markdown', 'mdx', 'pdf', 'html', 'xlsx', 'xls',
     'docx', 'csv', 'vtt', 'properties', 'md', 'htm'
   ];
 
@@ -266,7 +269,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (activeTab === 'text') {
       if (!formData.name.trim() || !formData.text.trim()) return;
     } else {
@@ -276,7 +279,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     try {
       setLoading(true);
       setError(null);
-      
+
       if (activeTab === 'text') {
         await createDocumentFromText(knowledgeBaseId, formData);
       } else {
@@ -285,7 +288,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           file: selectedFile!
         });
       }
-      
+
       onSuccess();
     } catch (error) {
       console.error('Failed to create document:', error);

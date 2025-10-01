@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface SettingsProps {
@@ -70,7 +71,7 @@ const Settings: React.FC<SettingsProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span>Voice Input</span>
-              <div 
+              <div
                 className={`relative w-12 h-6 transition duration-200 ease-linear rounded-full ${
                   enableVoice ? 'bg-green-400' : 'bg-gray-300'
                 }`}
@@ -83,10 +84,10 @@ const Settings: React.FC<SettingsProps> = ({
                 ></div>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <span>Conversation History</span>
-              <div 
+              <div
                 className={`relative w-12 h-6 transition duration-200 ease-linear rounded-full ${
                   enableHistory ? 'bg-green-400' : 'bg-gray-300'
                 }`}
@@ -124,11 +125,14 @@ const Settings: React.FC<SettingsProps> = ({
           <h3 className="text-lg font-medium mb-2">Custom Logo</h3>
           <div className="flex items-center space-x-2">
             {customLogo && (
-              <div className="w-10 h-10 bg-gray-100 rounded">
-                <img
+              <div className="w-10 h-10 bg-gray-100 rounded relative">
+                <Image
                   src={customLogo}
                   alt="Logo"
-                  className="w-full h-full object-contain"
+                  fill
+                  sizes="40px"
+                  className="object-contain"
+                  unoptimized
                 />
               </div>
             )}
@@ -146,11 +150,14 @@ const Settings: React.FC<SettingsProps> = ({
         <div>
           <h3 className="text-lg font-medium mb-2">Assistant Avatar</h3>
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gray-100 rounded">
-              <img
+            <div className="w-10 h-10 bg-gray-100 rounded relative">
+              <Image
                 src={avatarSrc}
                 alt="Avatar"
-                className="w-full h-full object-contain rounded-full"
+                fill
+                sizes="40px"
+                className="object-contain rounded-full"
+                unoptimized
               />
             </div>
             <input
