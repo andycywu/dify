@@ -76,6 +76,22 @@ docker compose up -d
 
 After running, you can access the Dify dashboard in your browser at [http://localhost/install](http://localhost/install) and start the initialization process.
 
+> **📌 Custom Frontend Setup (dify-next-frontend)**
+>
+> This repository includes a custom Next.js frontend (`dify-next-frontend`) that runs on port 3001. To set it up:
+> 
+> ```bash
+> cd docker
+> ./init-volumes.sh  # Initialize environment and volumes
+> docker-compose build dify-next-frontend
+> docker-compose up -d
+> ```
+>
+> - Access at: [http://localhost:3001](http://localhost:3001)
+> - Default login: `admin@example.com` / `dify12345`
+> - **Troubleshooting 401 errors?** See [QUICK_FIX_401.md](QUICK_FIX_401.md)
+> - **Full setup guide:** [docker/DOCKER_SETUP.md](docker/DOCKER_SETUP.md)
+
 #### Seeking help
 
 Please refer to our [FAQ](https://docs.dify.ai/getting-started/install-self-hosted/faqs) if you encounter problems setting up Dify. Reach out to [the community and us](#community--contact) if you are still having issues.
