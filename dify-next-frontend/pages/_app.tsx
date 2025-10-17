@@ -8,12 +8,18 @@ import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 import { AuthProvider } from '../contexts/AuthContext';
 import ProtectedPage from '../components/Auth/ProtectedPage';
+
 const PUBLIC_ROUTES = ['/', '/login', '/signup', '/forgot-password'];
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   const router = useRouter();
   const isPublicRoute = PUBLIC_ROUTES.includes(router.pathname);
   return (
-    <SessionProvider session={session}>
+    <SessionProvider
+      session={session}
+      basePath={basePath ? `${basePath}/api/auth` : '/api/auth'}
+    >
       <AuthProvider>
         <div className="flex flex-col min-h-screen">
           <Header />

@@ -1,11 +1,10 @@
-# Dify Next Frontend Dockerfile - Production Optimized
+# Dify Next Frontend Dockerfile - Production Optimized with PostgreSQL
 FROM node:18-alpine AS deps
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
-COPY prisma/dev.db ./prisma/dev.db
 RUN \
   if [ -f package-lock.json ]; then npm ci; \
   else echo "Lockfile not found." && exit 1; \
@@ -29,12 +28,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Generate Prisma client for the target platform
 RUN npx prisma generate
-
-# Ensure dev.db exists (create if missing)
-RUN if [ ! -f prisma/dev.db ]; then \
-      echo "dev.db not found, creating initial database..."; \
-      npx prisma db push; \
-    fi
 
 # Build the application
 ENV NODE_ENV=production
@@ -69,9 +62,7 @@ COPY --from=builder /app/prisma ./prisma
 # Copy i18n files (fix path)
 COPY --from=builder /app/locales ./locales
 COPY --from=builder /app/lib ./lib
-
-# Copy database file to working directory
-COPY --from=builder /app/prisma/dev.db ./dev.db
+COPY --from=builder /app/pages ./pages
 
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
@@ -80,16 +71,7 @@ RUN adduser --system --uid 1001 nextjs
 # 在切換用戶之前完成所有需要 root 權限的操作
 RUN mkdir -p /app/data && \
     chown -R nextjs:nodejs /app && \
-    chmod 755 /app && \
-    chmod 755 /app/prisma && \
-    chmod 666 /app/dev.db && \
-    if [ ! -f /app/dev.db ]; then \
-      touch /app/dev.db && chown nextjs:nodejs /app/dev.db && chmod 666 /app/dev.db; \
-    fi
-
-# 重新生成 Prisma Client 以確保在正確的 runtime 環境下生成
-RUN npx prisma generate && \
-    chown -R nextjs:nodejs /app/node_modules/.prisma
+    chmod 755 /app
 
 # 現在才切換到非 root 用戶
 USER nextjs

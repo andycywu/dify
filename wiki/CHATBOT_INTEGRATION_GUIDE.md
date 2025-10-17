@@ -11,7 +11,19 @@
 - ✅ 聊天機器人腳本已創建並可訪問 (/_assets/js/chatbot-widget.js)
 - ✅ 靜態資源路徑已正確配置
 - ✅ Docker 單文件掛載配置已修復
-- ⏳ 等待管理員配置和激活
+- ⏳ ### 組別選擇器功能
+
+- 聊天機器人會自動檢測用戶的組別權限
+- 用戶可以在聊天界面中切換可用的組別：
+  - **administrators**: 管理員知識庫
+  - **Guests**: 訪客知識庫
+  - **EE**: 電機工程部門知識庫
+  - **ME_LCM**: 機械工程部門知識庫
+  - **PWR**: 電源部門知識庫
+  - **SW**: 軟體部門知識庫
+  - **PJM**: 專案管理部門知識庫
+- 管理員可以訪問所有組別的數據集
+- 自動優先選擇最適合的知識庫置和激活
 
 ## 🚀 快速演示聊天機器人
 
@@ -188,7 +200,110 @@ curl http://localhost:3002/_assets/js/chatbot-widget.js
 3. **擴展功能**：添加文件上傳、多語言支持
 4. **性能優化**：實現對話緩存和負載均衡
 
-## 📞 支持
+## � 組別數據集功能（新功能）
+
+### 功能概述
+
+聊天機器人現在支持基於用戶組別的數據集訪問控制。不同部門的用戶只能訪問他們有權限的知識庫內容。
+
+### 支持的組別
+
+- **administrators**: 管理員組別，訪問所有數據集
+- **Guests**: 訪客組別，訪問公開資訊
+- **EE**: 電機工程部門，訪問電機工程相關知識庫
+- **ME_LCM**: 機械工程部門，訪問機械工程和生命週期管理知識庫
+- **PWR**: 電源部門，訪問電源系統和電力相關知識庫
+- **SW**: 軟體部門，訪問軟體開發和技術文檔知識庫
+- **PJM**: 專案管理部門，訪問專案管理和協調相關知識庫
+
+### 配置步驟
+
+#### 1. 設置組別 API Key
+
+編輯 `docker/.env.dify` 文件，為每個組別設置對應的 Dify API Key：
+
+```bash
+# Dify API Configuration for Group-based Datasets
+# Each group can have its own Dify API key and dataset
+
+# Dify API Base URL
+DIFY_API_URL=http://api:5001
+
+# Administrators Group Dataset
+DIFY_ADMINISTRATORS_API_KEY=your_administrators_api_key_here
+
+# Guests Group Dataset
+DIFY_GUESTS_API_KEY=your_guests_api_key_here
+
+# EE (Electrical Engineering) Department Dataset
+DIFY_EE_API_KEY=your_ee_api_key_here
+
+# ME_LCM Department Dataset
+DIFY_ME_LCM_API_KEY=your_me_lcm_api_key_here
+
+# PWR Department Dataset
+DIFY_PWR_API_KEY=your_pwr_api_key_here
+
+# SW (Software) Department Dataset
+DIFY_SW_API_KEY=your_sw_api_key_here
+
+# PJM Department Dataset
+DIFY_PJM_API_KEY=your_pjm_api_key_here
+
+# Legacy support (maps to administrators if not set)
+DIFY_API_KEY=${DIFY_ADMINISTRATORS_API_KEY}
+```
+
+#### 2. 在 Dify 中創建對應的數據集
+
+為每個組別創建單獨的 Dify 應用和數據集：
+
+1. 訪問 Dify 控制台：http://localhost:80
+2. 為每個組別創建新的應用：
+   - **administrators**: 管理員應用
+   - **Guests**: 訪客應用
+   - **EE**: 電機工程應用
+   - **ME_LCM**: 機械工程應用
+   - **PWR**: 電源應用
+   - **SW**: 軟體應用
+   - **PJM**: 專案管理應用
+3. 上傳對應組別的知識庫文檔
+4. 生成每個應用的 API Key
+5. 在 `.env.dify` 中設置對應的 API Key
+
+#### 3. 配置用戶組別權限
+
+在 Wiki.js 中為用戶分配組別：
+
+1. 訪問 Wiki.js 管理界面：http://localhost:3002/admin
+2. 進入 **用戶管理**
+3. 編輯用戶，設置組別屬性
+4. 組別名稱應與 `.env.dify` 中的變數名稱匹配
+
+#### 4. 重啟服務
+
+```bash
+cd /Users/andycyw/dify/docker
+docker-compose down
+docker-compose up -d
+```
+
+### 組別選擇器功能
+
+- 聊天機器人會自動檢測用戶的組別權限
+- 用戶可以在聊天界面中切換可用的組別
+- 每個組別對應不同的知識庫和 AI 模型
+- 管理員可以訪問所有組別的數據集
+
+### 測試組別功能
+
+1. 以不同組別的用戶身份登入 Wiki.js
+2. 打開聊天機器人
+3. 檢查組別選擇器是否顯示正確的選項
+4. 測試向不同組別的知識庫提問
+5. 驗證權限控制是否正常工作
+
+## �📞 支持
 
 如果您在集成過程中遇到問題，可以：
 

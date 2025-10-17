@@ -13,6 +13,40 @@
         CHAT_TITLE: 'AI 助手'
     };
     
+    // Global state for group management
+    let currentUser = null;
+    let availableDatasets = {};
+    let selectedGroup = 'default';
+    let conversationHistory = {};
+    
+    // Fetch user info and available datasets
+    async function fetchUserData() {
+        try {
+            const response = await fetch('/api/dify/datasets', {
+                credentials: 'same-origin'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                availableDatasets = {};
+                data.datasets.forEach(ds => {
+                    availableDatasets[ds.id] = ds;
+                });
+                currentUser = { groups: data.user_groups };
+                
+                // Auto-select best group
+                const priorityOrder = ['administrators', 'EE', 'ME_LCM', 'PWR', 'SW', 'PJM', 'Guests'];
+                selectedGroup = priorityOrder.find(group => data.user_groups.includes(group)) || 'Guests';
+                
+                console.log('✅ 用戶數據加載成功:', data.user_groups);
+                return true;
+            }
+        } catch (error) {
+            console.warn('無法獲取用戶數據，使用默認設置:', error);
+        }
+        return false;
+    }
+    
     // Create chatbot widget HTML
     const widgetHTML = `
         <div id="dify-chatbot-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 10000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
@@ -63,6 +97,28 @@
                     <span id="close-chat" style="cursor: pointer; font-size: 18px;">✕</span>
                 </div>
                 
+                <!-- Group Selector -->
+                <div id="group-selector" style="
+                    padding: 12px 16px;
+                    background: #f8f9fa;
+                    border-bottom: 1px solid #e9ecef;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                ">
+                    <span style="font-size: 12px; color: #666; white-space: nowrap;">知識庫:</span>
+                    <select id="group-select" style="
+                        flex: 1;
+                        padding: 4px 8px;
+                        border: 1px solid #ddd;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        background: white;
+                    ">
+                        <option value="Guests">訪客知識庫</option>
+                    </select>
+                </div>
+                
                 <!-- Messages Container -->
                 <div id="chat-messages" style="
                     flex: 1; 
@@ -79,8 +135,8 @@
                         font-size: 14px;
                         line-height: 1.4;
                     ">
-                        🤖 您好！我是 Wiki.js 的 AI 助手。我可以幫您回答關於此頁面內容的問題。<br><br>
-                        <small style="color: #666;">💡 提示：完整的 AI 功能需要配置 Dify API Key</small>
+                        🤖 您好！我是 AI 助手。我可以根據您的權限訪問對應部門的知識庫來回答問題。<br><br>
+                        <small style="color: #666;">💡 請選擇您要查詢的知識庫類型</small>
                     </div>
                 </div>
                 
@@ -215,24 +271,42 @@
             }
         });
         
-        // Toggle chatbot window
-        function toggleChatbot() {
-            const window = document.getElementById('chatbot-window');
-            const trigger = document.getElementById('chatbot-trigger');
+        // Initialize group selector and fetch user data
+        fetchUserData().then(() => {
+            updateGroupSelector();
+        });
+        
+        // Group selector change handler
+        document.getElementById('group-select').addEventListener('change', function(e) {
+            selectedGroup = e.target.value;
+            console.log('切換到知識庫:', selectedGroup);
             
-            if (window.style.display === 'none' || window.style.display === '') {
-                window.style.display = 'flex';
-                trigger.style.transform = 'scale(0.9)';
-            } else {
-                window.style.display = 'none';
-                trigger.style.transform = 'scale(1)';
-            }
+            // Clear conversation history when switching groups
+            conversationHistory[selectedGroup] = conversationHistory[selectedGroup] || [];
+            
+            // Add system message about group change
+            const groupName = availableDatasets[selectedGroup]?.name || '未知知識庫';
+            addMessage(`已切換到 ${groupName}`, 'bot');
+        });
+        
+        function updateGroupSelector() {
+            const select = document.getElementById('group-select');
+            select.innerHTML = '';
+            
+            Object.entries(availableDatasets).forEach(([id, dataset]) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = dataset.name;
+                if (id === selectedGroup) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
         }
         
         // Send message function
-        function sendMessage() {
+        async function sendMessage() {
             const input = document.getElementById('chat-input');
-            const messagesContainer = document.getElementById('chat-messages');
             const message = input.value.trim();
             
             if (!message) return;
@@ -244,21 +318,59 @@
             // Show typing indicator
             addTypingIndicator();
             
-            // Simulate AI response with demo responses
-            setTimeout(() => {
+            try {
+                // Call Dify API with selected group
+                const response = await fetch('/graphql', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        query: `
+                            mutation($message: String!, $groupId: String!) {
+                                difyChatWithGroup(message: $message, groupId: $groupId) {
+                                    success
+                                    answer
+                                    error
+                                    selectedGroup
+                                    groupName
+                                    availableGroups
+                                }
+                            }
+                        `,
+                        variables: {
+                            message: message,
+                            groupId: selectedGroup
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                const data = result.data?.difyChatWithGroup;
+                
                 removeTypingIndicator();
                 
-                const demoResponses = [
-                    `關於"${message}"這個問題，根據當前頁面的內容，我建議您查看相關的文檔部分。`,
-                    `您提到的"${message}"是一個很好的問題！在 Wiki 中搜索相關關鍵詞可以找到更多信息。`,
-                    `我理解您對"${message}"的疑問。建議您瀏覽相關的頁面章節來獲得詳細答案。`,
-                    `關於"${message}"這個主題很有趣！您可以在左側導航中找到相關主題的更多信息。`,
-                    `針對您的問題"${message}"，我推薦您查看 Wiki 中的相關教程和指南。`
-                ];
+                if (data?.success) {
+                    const groupInfo = data.groupName ? ` (${data.groupName})` : '';
+                    addMessage(`${data.answer}<br><br><small style="color: #666;">📚 來自${groupInfo}</small>`, 'bot');
+                } else {
+                    const errorMsg = data?.error || '服務暫時不可用';
+                    addMessage(`抱歉，${errorMsg}。請稍後再試。`, 'bot');
+                    
+                    if (data?.availableGroups && data.availableGroups.length > 0) {
+                        const availableGroupsText = data.availableGroups
+                            .map(group => availableDatasets[group]?.name || group)
+                            .join('、');
+                        addMessage(`您可以訪問的知識庫：${availableGroupsText}`, 'bot');
+                    }
+                }
                 
-                const response = demoResponses[Math.floor(Math.random() * demoResponses.length)];
-                addMessage(`${response}<br><br><small style="color: #666;">ℹ️ 這是一個演示回應。配置 Dify API Key 後可獲得真實的 AI 回答。</small>`, 'bot');
-            }, 1000 + Math.random() * 1000);
+            } catch (error) {
+                console.error('API 調用失敗:', error);
+                removeTypingIndicator();
+                addMessage('抱歉，連接服務器失敗。請檢查網路連接後重試。', 'bot');
+            }
         }
         
         // Add message to chat

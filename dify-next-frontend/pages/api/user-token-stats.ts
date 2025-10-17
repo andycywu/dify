@@ -6,13 +6,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!userId || typeof userId !== 'string') {
     return res.status(400).json({ error: 'Missing userId' });
   }
+
+  const userIdNum = parseInt(userId, 10);
+  if (isNaN(userIdNum)) {
+    return res.status(400).json({ error: 'Invalid userId' });
+  }
+
   try {
     // 取得全域 token 計費費率
     const record = await prisma.general.findUnique({ where: { key: 'token_billing_rate' } });
     const rate = record ? Number(record.value) : 0.01;
     // 查詢 UserUsage 表，依日期排序
     const usages = await prisma.userUsage.findMany({
-      where: { userId },
+      where: { userId: userIdNum },
       orderBy: { date: 'asc' },
     });
     // 自動計算 billing，若有異動則同步回存

@@ -590,6 +590,8 @@ services:
     restart: always
     ports:
       - "${WIKI_PORT:-3002}:3000"
+    env_file:
+      - .env.dify
     environment:
       # Database configuration - using shared PostgreSQL
       DB_TYPE: postgres
@@ -620,6 +622,27 @@ services:
 
     networks:
       - ssrf_proxy_network
+      - default
+
+  # Wiki batch importer service
+  wiki-batch-importer:
+    build:
+      context: ../wiki/batch-import
+      dockerfile: Dockerfile
+    container_name: wiki-batch-importer
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    environment:
+      - PORT=5050
+      - WIKI_API_URL=http://wiki:3000/graphql
+      - WIKI_API_KEY=${WIKI_API_KEY:-}
+    volumes:
+      - ../wiki/batch-import/uploads:/app/uploads
+    depends_on:
+      wiki:
+        condition: service_started
+    networks:
       - default
 
   # Wiki database initialization service
@@ -1261,9 +1284,12 @@ services:
 
   # Dify Next.js frontend
   dify-next-frontend:
-    image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
+    #image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
     platform: linux/amd64
-    #build: ../dify-next-frontend
+    build: 
+      context: ../dify-next-frontend
+      args:
+        ENV_FILE: .env.docker
     restart: always
     env_file:
       - ../dify-next-frontend/.env.docker
@@ -1275,7 +1301,7 @@ services:
       NEXTAUTH_URL: ${CUSTOM_FRONTEND_EXTERNAL_ORIGIN:-http://localhost}${CUSTOM_FRONTEND_BASE_PATH:-/custom}
       NODE_ENV: production
       PORT: ${CUSTOM_FRONTEND_PORT:-3000}
-      DATABASE_URL: "file:/app/data/dev.db"
+      DATABASE_URL: "postgresql://postgres:difyai123456@db:5432/wiki"
     ports:
       - "${DIFY_NEXT_FRONTEND_PORT:-3001}:${CUSTOM_FRONTEND_PORT:-3000}"
     volumes:

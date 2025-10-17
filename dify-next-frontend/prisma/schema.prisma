@@ -1,26 +1,80 @@
+// Prisma Schema for PostgreSQL (Wiki.js Integration)
+// This schema connects to Wiki.js PostgreSQL database
+
 generator client {
   provider = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// Wiki.js users 表映射
 model User {
-  id         String      @id @default(uuid())
-  email      String      @unique
-  password   String
-  name       String?
-  role       String      @default("user")
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  tokenUsage Int         @default(0)
-  billing    Float       @default(0)
-  userUsages UserUsage[]
+  id            Int       @id @default(autoincrement())
+  email         String    @unique @db.VarChar(255)
+  name          String    @db.VarChar(255)
+  providerId    String?   @db.VarChar(255)
+  password      String    @db.VarChar(255)
+  tfaIsActive   Boolean   @default(false)
+  tfaSecret     String?   @db.VarChar(255)
+  jobTitle      String?   @db.VarChar(255)
+  location      String?   @db.VarChar(255)
+  pictureUrl    String?   @db.VarChar(255)
+  timezone      String?   @db.VarChar(255)
+  isSystem      Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  isVerified    Boolean   @default(false)
+  mustChangePwd Boolean   @default(false)
+  createdAt     String    @db.VarChar(255)
+  updatedAt     String    @db.VarChar(255)
+  providerKey   String?   @db.VarChar(255)
+  localeCode    String?   @db.VarChar(5)
+  defaultEditor String?   @db.VarChar(255)
+  lastLoginAt   String?   @db.VarChar(255)
+  dateFormat    String?   @db.VarChar(255)
+  appearance    String?   @db.VarChar(255)
+
+  // 關聯
+  userGroups    UserGroup[]
+
+  @@map("users")
 }
 
+// Wiki.js groups 表映射
+model Group {
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(255)
+  permissions     Json?
+  pageRules       Json?
+  isSystem        Boolean   @default(false)
+  createdAt       String    @db.VarChar(255)
+  updatedAt       String    @db.VarChar(255)
+  redirectOnLogin String?   @db.VarChar(255)
+
+  // 關聯
+  userGroups      UserGroup[]
+
+  @@map("groups")
+}
+
+// Wiki.js userGroups 關聯表映射
+model UserGroup {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  groupId Int
+
+  // 關聯
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@map("userGroups")
+}
+
+// dify-next-frontend 專屬設定表 (保留原有功能)
 model General {
   id        String   @id @default(uuid())
   key       String   @unique
@@ -29,15 +83,16 @@ model General {
   updatedAt DateTime @updatedAt
 }
 
+// dify-next-frontend Token 使用記錄表 (新增到 PostgreSQL)
 model UserUsage {
   id         String   @id @default(uuid())
-  userId     String
+  userId     Int      // 關聯到 Wiki.js users.id
   date       DateTime
   tokenUsage Int      @default(0)
   billing    Float    @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  user       User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, date])
+  @@map("dify_user_usage")
 }

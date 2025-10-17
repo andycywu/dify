@@ -232,3 +232,4 @@ mise.toml
 node_modules
 .history/
 docker/volumes/
+dify-next-frontend/.next/

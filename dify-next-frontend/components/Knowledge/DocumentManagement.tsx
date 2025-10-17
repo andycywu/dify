@@ -209,7 +209,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ knowledgeBase, 
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             setShowCreateModal(false);
-            fetchDocuments();
+            fetchDocuments('');
           }}
         />
       )}
