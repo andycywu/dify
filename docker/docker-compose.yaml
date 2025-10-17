@@ -684,6 +684,155 @@ services:
       ENABLE_WEBSITE_JINAREADER: ${ENABLE_WEBSITE_JINAREADER:-true}
       ENABLE_WEBSITE_FIRECRAWL: ${ENABLE_WEBSITE_FIRECRAWL:-true}
       ENABLE_WEBSITE_WATERCRAWL: ${ENABLE_WEBSITE_WATERCRAWL:-true}
+
+  # Wiki.js service with Dify integration
+  wiki:
+    image: ghcr.io/requarks/wiki:2
+    container_name: dify-wiki
+    restart: always
+    ports:
+      - "${WIKI_PORT:-3002}:3000"
+    env_file:
+      - .env.dify
+    environment:
+      # Database configuration - using shared PostgreSQL
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${WIKI_DB_NAME:-wiki}
+      DB_USER: ${WIKI_DB_USER:-wiki_app}
+      DB_PASS: ${WIKI_DB_PASSWORD:-wiki_pass}
+
+      # Wiki.js basic configuration
+      WIKI_ADMIN_EMAIL: ${WIKI_ADMIN_EMAIL:-admin@example.com}
+      WIKI_HOST: ${WIKI_HOST:-http://localhost:3002}
+
+      # Dify integration environment variables
+      DIFY_API_URL: http://api:5001
+      DIFY_API_KEY: ${DIFY_API_KEY:-}
+
+    depends_on:
+      db:
+        condition: service_healthy
+      wiki-db-init:
+        condition: service_completed_successfully
+    volumes:
+      - wiki-content:/wiki/data/content
+      - ../wiki/config:/wiki/config
+      - ../wiki/themes:/wiki/themes
+      - ../wiki/assets/js/chatbot-widget.js:/wiki/assets/js/chatbot-widget.js
+
+    networks:
+      - ssrf_proxy_network
+      - default
+
+  # Wiki batch importer service
+  wiki-batch-importer:
+    build:
+      context: ../wiki/batch-import
+      dockerfile: Dockerfile
+    container_name: wiki-batch-importer
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    environment:
+      - PORT=5050
+      - WIKI_API_URL=http://wiki:3000/graphql
+      - WIKI_API_KEY=${WIKI_API_KEY:-}
+    volumes:
+      - ../wiki/batch-import/uploads:/app/uploads
+    depends_on:
+      wiki:
+        condition: service_started
+    networks:
+      - default
+
+  # Wiki database initialization service
+  wiki-db-init:
+    image: postgres:15-alpine
+    restart: "no"
+    environment:
+      PGPASSWORD: ${DB_PASSWORD:-difyai123456}
+      DB_SUPERUSER: ${DB_USERNAME:-postgres}
+      WIKI_DB_NAME: ${WIKI_DB_NAME:-wiki}
+      WIKI_DB_USER: ${WIKI_DB_USER:-wiki_app}
+      WIKI_DB_PASSWORD: ${WIKI_DB_PASSWORD:-wiki_pass}
+    command: >
+      sh -c "
+        until pg_isready -h db -p 5432 -U ${DB_SUPERUSER:-postgres}; do
+          echo 'Waiting for database...';
+          sleep 2;
+        done;
+        psql -h db -U ${DB_SUPERUSER:-postgres} -tc \"SELECT 1 FROM pg_database WHERE datname='${WIKI_DB_NAME:-wiki}'\" | grep -q 1 || psql -h db -U ${DB_SUPERUSER:-postgres} -c 'CREATE DATABASE ${WIKI_DB_NAME:-wiki};';
+        psql -h db -U ${DB_SUPERUSER:-postgres} -tc \"SELECT 1 FROM pg_roles WHERE rolname='${WIKI_DB_USER:-wiki_app}'\" | grep -q 1 || psql -h db -U ${DB_SUPERUSER:-postgres} -c \"CREATE USER ${WIKI_DB_USER:-wiki_app} WITH PASSWORD '${WIKI_DB_PASSWORD:-wiki_pass}';\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"GRANT ALL PRIVILEGES ON DATABASE ${WIKI_DB_NAME:-wiki} TO ${WIKI_DB_USER:-wiki_app};\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"ALTER DATABASE ${WIKI_DB_NAME:-wiki} OWNER TO ${WIKI_DB_USER:-wiki_app};\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"GRANT ALL ON SCHEMA public TO ${WIKI_DB_USER:-wiki_app};\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO ${WIKI_DB_USER:-wiki_app};\";
+        psql -h db -U ${DB_SUPERUSER:-postgres} -c \"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO ${WIKI_DB_USER:-wiki_app};\";
+        echo 'Wiki database ready!'
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - default
+
+  # Dify Next.js frontend
+  dify-next-frontend:
+    #image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
+    platform: linux/amd64
+    build:
+      context: ../dify-next-frontend
+      args:
+        ENV_FILE: .env.docker
+    restart: always
+    env_file:
+      - ../dify-next-frontend/.env.docker
+    environment:
+      API_URL: ${DIFY_INTERNAL_API_ORIGIN:-http://api:5001}
+      NEXT_PUBLIC_API_URL: ${CUSTOM_FRONTEND_BASE_PATH:-/custom}/api
+      NEXT_PUBLIC_DIFY_API_BASE_URL: ${DIFY_PUBLIC_API_ORIGIN:-http://localhost/api/v1}
+      NEXT_PUBLIC_BASE_PATH: ${CUSTOM_FRONTEND_BASE_PATH:-/custom}
+      NEXTAUTH_URL: ${CUSTOM_FRONTEND_EXTERNAL_ORIGIN:-http://localhost}${CUSTOM_FRONTEND_BASE_PATH:-/custom}
+      NODE_ENV: production
+      PORT: ${CUSTOM_FRONTEND_PORT:-3000}
+      DATABASE_URL: "postgresql://postgres:difyai123456@db:5432/wiki"
+    ports:
+      - "${DIFY_NEXT_FRONTEND_PORT:-3001}:${CUSTOM_FRONTEND_PORT:-3000}"
+    volumes:
+      - ./volumes/dify-next-frontend:/app/data
+    depends_on:
+      - api
+    networks:
+      - default
+
+  # rest-to-soap-proxy service
+  rest-to-soap-proxy:
+    image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
+    platform: linux/amd64
+    # build: ../rest-to-soap-proxy
+    restart: always
+    env_file:
+      - ../rest-to-soap-proxy/.env
+    ports:
+      - "${REST_TO_SOAP_PROXY_PORT:-5100}:5001"
+    networks:
+      - default
+
+  # Ollama AI model service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: dify-ollama
+    restart: always
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ./volumes/ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - default
   # The postgres database.
   db:
     image: postgres:15-alpine
@@ -907,6 +1056,7 @@ services:
     depends_on:
       - api
       - web
+      - dify-next-frontend
     ports:
       - "${EXPOSE_NGINX_PORT:-80}:${NGINX_PORT:-80}"
       - "${EXPOSE_NGINX_SSL_PORT:-443}:${NGINX_SSL_PORT:-443}"
@@ -1358,3 +1508,5 @@ networks:
 volumes:
   oradata:
   dify_es01_data:
+  wiki-content:
+    driver: local
