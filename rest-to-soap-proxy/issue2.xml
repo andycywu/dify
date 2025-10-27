@@ -1,0 +1,1125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://tempuri.org/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" targetNamespace="http://tempuri.org/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://tempuri.org/">
+      <s:element name="CreateIssueNewVerMail">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="projectID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="creatorName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="title" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="initialStateName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="assigneeName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="fieldsXML" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="suspendIssue" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="parentIssueID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="coworkUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="relatedUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="emailNotifyUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="smsNotifyUsers" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CreateIssueNewVerMailResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="CreateIssueNewVerMailResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CreateIssueMail">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="projectID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="creatorName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="title" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="initialStateName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="assigneeName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="fieldsXML" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="suspendIssue" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="parentIssueID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="coworkUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="relatedUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="emailNotifyUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="smsNotifyUsers" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CreateIssueMailResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="CreateIssueMailResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CreateIssueNewVer">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="projectID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="creatorName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="title" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="initialStateName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="assigneeName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="fieldsXML" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="suspendIssue" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="parentIssueID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="coworkUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="relatedUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="emailNotifyUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="smsNotifyUsers" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CreateIssueNewVerResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="CreateIssueNewVerResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CreateIssue">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="projectID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="creatorName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="title" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="initialStateName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="assigneeName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="fieldsXML" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="suspendIssue" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="parentIssueID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="coworkUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="relatedUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="emailNotifyUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="smsNotifyUsers" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="CreateIssueResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="CreateIssueResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="UpdateIssueById">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="issueID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="updateUserName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="fieldsXML" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="note" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="emailNotifyUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="smsNotifyUsers" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="UpdateIssueByIdResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="UpdateIssueByIdResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AddComment">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="issueID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="creatorName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="content" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="emailNotifyUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="smsNotifyUsers" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AddCommentResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="AddCommentResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetIssueInfo">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="issueID" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="includeFields" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="includeAttachments" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="includeRecords" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetIssueInfoResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetIssueInfoResult" type="tns:IssueInfo" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="IssueInfo">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="IssueID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="IssueCode" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Title" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="CreateUserName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateUserID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateTime" type="s:dateTime" />
+          <s:element minOccurs="1" maxOccurs="1" name="IsClosed" type="s:boolean" />
+          <s:element minOccurs="1" maxOccurs="1" name="CloseTime" nillable="true" type="s:dateTime" />
+          <s:element minOccurs="1" maxOccurs="1" name="IsActive" type="s:boolean" />
+          <s:element minOccurs="1" maxOccurs="1" name="ProjectID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="ProjectName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CurrentStateID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="CurrentStateName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CurrentAssigneeID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="CurrentAssigneeName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="LastUpdateTime" type="s:dateTime" />
+          <s:element minOccurs="0" maxOccurs="1" name="LastUpdateUserName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="LastUpdateUserID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Fields" type="tns:ArrayOfFieldItem" />
+          <s:element minOccurs="0" maxOccurs="1" name="Attachments" type="tns:ArrayOfAttachmentItem" />
+          <s:element minOccurs="0" maxOccurs="1" name="Records" type="tns:ArrayOfIssueRecord" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfFieldItem">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="FieldItem" nillable="true" type="tns:FieldItem" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="FieldItem">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="FieldTitle" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="FieldDbColumn" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Value" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfAttachmentItem">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="AttachmentItem" nillable="true" type="tns:AttachmentItem" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="AttachmentItem">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="OriginName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="SaveName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="FileSize" type="s:long" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateUserID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="CreateUserName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateTime" type="s:dateTime" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfIssueRecord">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="IssueRecord" nillable="true" type="tns:IssueRecord" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="IssueRecord">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="RecordID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="ParentRecordID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="RecordClass" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="RecordClassName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="RecordTime" type="s:dateTime" />
+          <s:element minOccurs="0" maxOccurs="1" name="Title" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Content" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateUserID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="CreateUserName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="SrcUserID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="SrcStateID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="DstUserID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="DstStateID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="StepName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="RealTimeCost" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Attachments" type="tns:ArrayOfAttachmentItem" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetIssueInfobyIssueCode">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="IssueCode" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="includeFields" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="includeAttachments" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="includeRecords" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetIssueInfobyIssueCodeResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetIssueInfobyIssueCodeResult" type="tns:IssueInfo" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetIssueExtInfo">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="issueID" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="includeFields" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="includeAttachments" type="s:boolean" />
+            <s:element minOccurs="1" maxOccurs="1" name="includeRecords" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetIssueExtInfoResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetIssueExtInfoResult" type="tns:IssueExtInfo" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="IssueExtInfo">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="IssueID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="IssueCode" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Title" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="CreateUserName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateUserID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateTime" type="s:dateTime" />
+          <s:element minOccurs="1" maxOccurs="1" name="IsClosed" type="s:boolean" />
+          <s:element minOccurs="1" maxOccurs="1" name="CloseTime" nillable="true" type="s:dateTime" />
+          <s:element minOccurs="1" maxOccurs="1" name="IsActive" type="s:boolean" />
+          <s:element minOccurs="1" maxOccurs="1" name="ProjectID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="ProjectName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CurrentStateID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="CurrentStateName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CurrentAssigneeID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="CurrentAssigneeName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="LastUpdateTime" type="s:dateTime" />
+          <s:element minOccurs="0" maxOccurs="1" name="LastUpdateUserName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="LastUpdateUserID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Fields" type="tns:ArrayOfFieldExtItem" />
+          <s:element minOccurs="0" maxOccurs="1" name="Attachments" type="tns:ArrayOfAttachmentExtItem" />
+          <s:element minOccurs="0" maxOccurs="1" name="Records" type="tns:ArrayOfIssueExtRecord" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfFieldExtItem">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="FieldExtItem" nillable="true" type="tns:FieldExtItem" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="FieldExtItem">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="FieldTitle" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="FieldDbColumn" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Value" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfAttachmentExtItem">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="AttachmentExtItem" nillable="true" type="tns:AttachmentExtItem" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="AttachmentExtItem">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="AttachID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="OriginName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="FileSize" type="s:long" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateUserID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="CreateUserName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateTime" type="s:dateTime" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfIssueExtRecord">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="IssueExtRecord" nillable="true" type="tns:IssueExtRecord" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="IssueExtRecord">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="RecordID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="ParentRecordID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="RecordClass" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="RecordClassName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="RecordTime" type="s:dateTime" />
+          <s:element minOccurs="0" maxOccurs="1" name="Title" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Content" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="CreateUserID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="CreateUserName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="SrcUserID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="SrcStateID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="DstUserID" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="DstStateID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="StepName" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="RealTimeCost" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="HistoryID" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="HistoryContent" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Attachments" type="tns:ArrayOfAttachmentExtItem" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetManagerListbyState">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="projectID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="state" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetManagerListbyStateResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetManagerListbyStateResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ChangeAssigneeMail">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="issueID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="newState" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="newAssignee" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="coworkers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="note" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="updateUserName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="emailNotifyUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="smsNotifyUsers" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ChangeAssigneeMailResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="ChangeAssigneeMailResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ChangeAssignee">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="issueID" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="newState" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="newAssignee" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="coworkers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="note" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="updateUserName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="emailNotifyUsers" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="smsNotifyUsers" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ChangeAssigneeResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="ChangeAssigneeResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="UploadFile">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="attachCreator" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="issueId" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="fileName" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="description" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="fileContent" type="s:base64Binary" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="UploadFileResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="UploadFileResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="DownloadFile">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="issueId" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="recordId" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="attachId" type="s:int" />
+            <s:element minOccurs="0" maxOccurs="1" name="fileName" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="DownloadFileResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="DownloadFileResult" type="tns:DownloadFileInfo" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="DownloadFileInfo">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="MSG" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="FileName" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="FileContent" type="s:base64Binary" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetProjectPRList">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="projectID" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="newRecordOnly" type="s:boolean" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetProjectPRListResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetProjectPRListResult" type="tns:IssueList" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="IssueList">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="IssueID" type="tns:ArrayOfInt" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfInt">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="int" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetProjectPRListByUpdatedTime">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="project_id" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="period_time_of_updated_issue" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetProjectPRListByUpdatedTimeResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetProjectPRListByUpdatedTimeResult" type="tns:IssueList" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetProjectPRListCountByUpdatedTime">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="appID" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="project_id" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="period_time_of_updated_issue" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetProjectPRListCountByUpdatedTimeResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetProjectPRListCountByUpdatedTimeResult" type="tns:IssueListnCount" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="IssueListnCount">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="issueList" type="tns:IssueList" />
+          <s:element minOccurs="1" maxOccurs="1" name="IssueCount" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="GetURTTaskList">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="len" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="LoginAD" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetURTTaskListResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetURTTaskListResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetURTTaskCount">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="apiPwd" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="len" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="LoginAD" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetURTTaskCountResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetURTTaskCountResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="CreateIssueNewVerMailSoapIn">
+    <wsdl:part name="parameters" element="tns:CreateIssueNewVerMail" />
+  </wsdl:message>
+  <wsdl:message name="CreateIssueNewVerMailSoapOut">
+    <wsdl:part name="parameters" element="tns:CreateIssueNewVerMailResponse" />
+  </wsdl:message>
+  <wsdl:message name="CreateIssueMailSoapIn">
+    <wsdl:part name="parameters" element="tns:CreateIssueMail" />
+  </wsdl:message>
+  <wsdl:message name="CreateIssueMailSoapOut">
+    <wsdl:part name="parameters" element="tns:CreateIssueMailResponse" />
+  </wsdl:message>
+  <wsdl:message name="CreateIssueNewVerSoapIn">
+    <wsdl:part name="parameters" element="tns:CreateIssueNewVer" />
+  </wsdl:message>
+  <wsdl:message name="CreateIssueNewVerSoapOut">
+    <wsdl:part name="parameters" element="tns:CreateIssueNewVerResponse" />
+  </wsdl:message>
+  <wsdl:message name="CreateIssueSoapIn">
+    <wsdl:part name="parameters" element="tns:CreateIssue" />
+  </wsdl:message>
+  <wsdl:message name="CreateIssueSoapOut">
+    <wsdl:part name="parameters" element="tns:CreateIssueResponse" />
+  </wsdl:message>
+  <wsdl:message name="UpdateIssueByIdSoapIn">
+    <wsdl:part name="parameters" element="tns:UpdateIssueById" />
+  </wsdl:message>
+  <wsdl:message name="UpdateIssueByIdSoapOut">
+    <wsdl:part name="parameters" element="tns:UpdateIssueByIdResponse" />
+  </wsdl:message>
+  <wsdl:message name="AddCommentSoapIn">
+    <wsdl:part name="parameters" element="tns:AddComment" />
+  </wsdl:message>
+  <wsdl:message name="AddCommentSoapOut">
+    <wsdl:part name="parameters" element="tns:AddCommentResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetIssueInfoSoapIn">
+    <wsdl:part name="parameters" element="tns:GetIssueInfo" />
+  </wsdl:message>
+  <wsdl:message name="GetIssueInfoSoapOut">
+    <wsdl:part name="parameters" element="tns:GetIssueInfoResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetIssueInfobyIssueCodeSoapIn">
+    <wsdl:part name="parameters" element="tns:GetIssueInfobyIssueCode" />
+  </wsdl:message>
+  <wsdl:message name="GetIssueInfobyIssueCodeSoapOut">
+    <wsdl:part name="parameters" element="tns:GetIssueInfobyIssueCodeResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetIssueExtInfoSoapIn">
+    <wsdl:part name="parameters" element="tns:GetIssueExtInfo" />
+  </wsdl:message>
+  <wsdl:message name="GetIssueExtInfoSoapOut">
+    <wsdl:part name="parameters" element="tns:GetIssueExtInfoResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetManagerListbyStateSoapIn">
+    <wsdl:part name="parameters" element="tns:GetManagerListbyState" />
+  </wsdl:message>
+  <wsdl:message name="GetManagerListbyStateSoapOut">
+    <wsdl:part name="parameters" element="tns:GetManagerListbyStateResponse" />
+  </wsdl:message>
+  <wsdl:message name="ChangeAssigneeMailSoapIn">
+    <wsdl:part name="parameters" element="tns:ChangeAssigneeMail" />
+  </wsdl:message>
+  <wsdl:message name="ChangeAssigneeMailSoapOut">
+    <wsdl:part name="parameters" element="tns:ChangeAssigneeMailResponse" />
+  </wsdl:message>
+  <wsdl:message name="ChangeAssigneeSoapIn">
+    <wsdl:part name="parameters" element="tns:ChangeAssignee" />
+  </wsdl:message>
+  <wsdl:message name="ChangeAssigneeSoapOut">
+    <wsdl:part name="parameters" element="tns:ChangeAssigneeResponse" />
+  </wsdl:message>
+  <wsdl:message name="UploadFileSoapIn">
+    <wsdl:part name="parameters" element="tns:UploadFile" />
+  </wsdl:message>
+  <wsdl:message name="UploadFileSoapOut">
+    <wsdl:part name="parameters" element="tns:UploadFileResponse" />
+  </wsdl:message>
+  <wsdl:message name="DownloadFileSoapIn">
+    <wsdl:part name="parameters" element="tns:DownloadFile" />
+  </wsdl:message>
+  <wsdl:message name="DownloadFileSoapOut">
+    <wsdl:part name="parameters" element="tns:DownloadFileResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetProjectPRListSoapIn">
+    <wsdl:part name="parameters" element="tns:GetProjectPRList" />
+  </wsdl:message>
+  <wsdl:message name="GetProjectPRListSoapOut">
+    <wsdl:part name="parameters" element="tns:GetProjectPRListResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetProjectPRListByUpdatedTimeSoapIn">
+    <wsdl:part name="parameters" element="tns:GetProjectPRListByUpdatedTime" />
+  </wsdl:message>
+  <wsdl:message name="GetProjectPRListByUpdatedTimeSoapOut">
+    <wsdl:part name="parameters" element="tns:GetProjectPRListByUpdatedTimeResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetProjectPRListCountByUpdatedTimeSoapIn">
+    <wsdl:part name="parameters" element="tns:GetProjectPRListCountByUpdatedTime" />
+  </wsdl:message>
+  <wsdl:message name="GetProjectPRListCountByUpdatedTimeSoapOut">
+    <wsdl:part name="parameters" element="tns:GetProjectPRListCountByUpdatedTimeResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetURTTaskListSoapIn">
+    <wsdl:part name="parameters" element="tns:GetURTTaskList" />
+  </wsdl:message>
+  <wsdl:message name="GetURTTaskListSoapOut">
+    <wsdl:part name="parameters" element="tns:GetURTTaskListResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetURTTaskCountSoapIn">
+    <wsdl:part name="parameters" element="tns:GetURTTaskCount" />
+  </wsdl:message>
+  <wsdl:message name="GetURTTaskCountSoapOut">
+    <wsdl:part name="parameters" element="tns:GetURTTaskCountResponse" />
+  </wsdl:message>
+  <wsdl:portType name="IssueSoap">
+    <wsdl:operation name="CreateIssueNewVerMail">
+      <wsdl:input message="tns:CreateIssueNewVerMailSoapIn" />
+      <wsdl:output message="tns:CreateIssueNewVerMailSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="CreateIssueMail">
+      <wsdl:input message="tns:CreateIssueMailSoapIn" />
+      <wsdl:output message="tns:CreateIssueMailSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="CreateIssueNewVer">
+      <wsdl:input message="tns:CreateIssueNewVerSoapIn" />
+      <wsdl:output message="tns:CreateIssueNewVerSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="CreateIssue">
+      <wsdl:input message="tns:CreateIssueSoapIn" />
+      <wsdl:output message="tns:CreateIssueSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="UpdateIssueById">
+      <wsdl:input message="tns:UpdateIssueByIdSoapIn" />
+      <wsdl:output message="tns:UpdateIssueByIdSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="AddComment">
+      <wsdl:input message="tns:AddCommentSoapIn" />
+      <wsdl:output message="tns:AddCommentSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetIssueInfo">
+      <wsdl:input message="tns:GetIssueInfoSoapIn" />
+      <wsdl:output message="tns:GetIssueInfoSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetIssueInfobyIssueCode">
+      <wsdl:input message="tns:GetIssueInfobyIssueCodeSoapIn" />
+      <wsdl:output message="tns:GetIssueInfobyIssueCodeSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetIssueExtInfo">
+      <wsdl:input message="tns:GetIssueExtInfoSoapIn" />
+      <wsdl:output message="tns:GetIssueExtInfoSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetManagerListbyState">
+      <wsdl:input message="tns:GetManagerListbyStateSoapIn" />
+      <wsdl:output message="tns:GetManagerListbyStateSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="ChangeAssigneeMail">
+      <wsdl:input message="tns:ChangeAssigneeMailSoapIn" />
+      <wsdl:output message="tns:ChangeAssigneeMailSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="ChangeAssignee">
+      <wsdl:input message="tns:ChangeAssigneeSoapIn" />
+      <wsdl:output message="tns:ChangeAssigneeSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="UploadFile">
+      <wsdl:input message="tns:UploadFileSoapIn" />
+      <wsdl:output message="tns:UploadFileSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="DownloadFile">
+      <wsdl:input message="tns:DownloadFileSoapIn" />
+      <wsdl:output message="tns:DownloadFileSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectPRList">
+      <wsdl:input message="tns:GetProjectPRListSoapIn" />
+      <wsdl:output message="tns:GetProjectPRListSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectPRListByUpdatedTime">
+      <wsdl:input message="tns:GetProjectPRListByUpdatedTimeSoapIn" />
+      <wsdl:output message="tns:GetProjectPRListByUpdatedTimeSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectPRListCountByUpdatedTime">
+      <wsdl:input message="tns:GetProjectPRListCountByUpdatedTimeSoapIn" />
+      <wsdl:output message="tns:GetProjectPRListCountByUpdatedTimeSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetURTTaskList">
+      <wsdl:input message="tns:GetURTTaskListSoapIn" />
+      <wsdl:output message="tns:GetURTTaskListSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetURTTaskCount">
+      <wsdl:input message="tns:GetURTTaskCountSoapIn" />
+      <wsdl:output message="tns:GetURTTaskCountSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="IssueSoap" type="tns:IssueSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="CreateIssueNewVerMail">
+      <soap:operation soapAction="http://tempuri.org/CreateIssueNewVerMail" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CreateIssueMail">
+      <soap:operation soapAction="http://tempuri.org/CreateIssueMail" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CreateIssueNewVer">
+      <soap:operation soapAction="http://tempuri.org/CreateIssueNewVer" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CreateIssue">
+      <soap:operation soapAction="http://tempuri.org/CreateIssue" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateIssueById">
+      <soap:operation soapAction="http://tempuri.org/UpdateIssueById" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddComment">
+      <soap:operation soapAction="http://tempuri.org/AddComment" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetIssueInfo">
+      <soap:operation soapAction="http://tempuri.org/GetIssueInfo" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetIssueInfobyIssueCode">
+      <soap:operation soapAction="http://tempuri.org/GetIssueInfobyIssueCode" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetIssueExtInfo">
+      <soap:operation soapAction="http://tempuri.org/GetIssueExtInfo" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetManagerListbyState">
+      <soap:operation soapAction="http://tempuri.org/GetManagerListbyState" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeAssigneeMail">
+      <soap:operation soapAction="http://tempuri.org/ChangeAssigneeMail" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeAssignee">
+      <soap:operation soapAction="http://tempuri.org/ChangeAssignee" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UploadFile">
+      <soap:operation soapAction="http://tempuri.org/UploadFile" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DownloadFile">
+      <soap:operation soapAction="http://tempuri.org/DownloadFile" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectPRList">
+      <soap:operation soapAction="http://tempuri.org/GetProjectPRList" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectPRListByUpdatedTime">
+      <soap:operation soapAction="http://tempuri.org/GetProjectPRListByUpdatedTime" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectPRListCountByUpdatedTime">
+      <soap:operation soapAction="http://tempuri.org/GetProjectPRListCountByUpdatedTime" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetURTTaskList">
+      <soap:operation soapAction="http://tempuri.org/GetURTTaskList" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetURTTaskCount">
+      <soap:operation soapAction="http://tempuri.org/GetURTTaskCount" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="IssueSoap12" type="tns:IssueSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="CreateIssueNewVerMail">
+      <soap12:operation soapAction="http://tempuri.org/CreateIssueNewVerMail" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CreateIssueMail">
+      <soap12:operation soapAction="http://tempuri.org/CreateIssueMail" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CreateIssueNewVer">
+      <soap12:operation soapAction="http://tempuri.org/CreateIssueNewVer" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CreateIssue">
+      <soap12:operation soapAction="http://tempuri.org/CreateIssue" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UpdateIssueById">
+      <soap12:operation soapAction="http://tempuri.org/UpdateIssueById" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddComment">
+      <soap12:operation soapAction="http://tempuri.org/AddComment" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetIssueInfo">
+      <soap12:operation soapAction="http://tempuri.org/GetIssueInfo" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetIssueInfobyIssueCode">
+      <soap12:operation soapAction="http://tempuri.org/GetIssueInfobyIssueCode" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetIssueExtInfo">
+      <soap12:operation soapAction="http://tempuri.org/GetIssueExtInfo" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetManagerListbyState">
+      <soap12:operation soapAction="http://tempuri.org/GetManagerListbyState" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeAssigneeMail">
+      <soap12:operation soapAction="http://tempuri.org/ChangeAssigneeMail" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeAssignee">
+      <soap12:operation soapAction="http://tempuri.org/ChangeAssignee" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="UploadFile">
+      <soap12:operation soapAction="http://tempuri.org/UploadFile" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DownloadFile">
+      <soap12:operation soapAction="http://tempuri.org/DownloadFile" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectPRList">
+      <soap12:operation soapAction="http://tempuri.org/GetProjectPRList" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectPRListByUpdatedTime">
+      <soap12:operation soapAction="http://tempuri.org/GetProjectPRListByUpdatedTime" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetProjectPRListCountByUpdatedTime">
+      <soap12:operation soapAction="http://tempuri.org/GetProjectPRListCountByUpdatedTime" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetURTTaskList">
+      <soap12:operation soapAction="http://tempuri.org/GetURTTaskList" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetURTTaskCount">
+      <soap12:operation soapAction="http://tempuri.org/GetURTTaskCount" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="Issue">
+    <wsdl:port name="IssueSoap" binding="tns:IssueSoap">
+      <soap:address location="https://fwtrack.tpv-tech.com/api/issue.asmx" />
+    </wsdl:port>
+    <wsdl:port name="IssueSoap12" binding="tns:IssueSoap12">
+      <soap12:address location="https://fwtrack.tpv-tech.com/api/issue.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

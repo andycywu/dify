@@ -1,0 +1,45 @@
+{
+  "title": "管理員介面",
+  "system_management": "系統管理中心",
+  "no_permission": "您沒有管理員權限瀏覽此頁面",
+  "loading": "載入中...",
+  "overview": "總覽",
+  "rest_to_soap_proxy": "REST-to-SOAP 代理",
+  "wiki_import": "Wiki 批次匯入",
+  "system_status": {
+    "title": "系統狀態",
+    "description": "監控整體系統運行狀況",
+    "dify_api": "Dify API",
+    "postgresql": "PostgreSQL",
+    "redis": "Redis",
+    "running": "運行中",
+    "stopped": "已停止",
+    "error": "錯誤"
+  },
+  "rest_to_soap": {
+    "title": "REST-to-SOAP",
+    "description": "API 代理服務狀態",
+    "manage_service": "管理服務"
+  },
+  "wiki_batch_import": {
+    "title": "Wiki 批次匯入",
+    "description": "文檔批量處理服務",
+    "manage_import": "管理匯入"
+  },
+  "user_statistics": {
+    "title": "用戶統計",
+    "description": "Wiki.js 用戶管理統計",
+    "active_users": "活躍用戶",
+    "administrators": "管理員"
+  },
+  "knowledge_management": {
+    "title": "知識庫管理",
+    "description": "Dify 知識庫配置",
+    "manage_kb": "管理知識庫"
+  },
+  "system_logs": {
+    "title": "系統日志",
+    "description": "查看系統運行日志",
+    "view_logs": "查看日志"
+  }
+}

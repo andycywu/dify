@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiki.js AI 聊天機器人演示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .demo-chat {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .bot-message {
+            background: #e3f2fd;
+            color: #1565c0;
+            align-self: flex-start;
+        }
+        
+        .user-message {
+            background: #1976d2;
+            color: white;
+            align-self: flex-end;
+        }
+        
+        .chat-input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+        }
+        
+        .chat-input:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+        }
+        
+        .send-button {
+            padding: 10px 20px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .send-button:hover {
+            background: #1565c0;
+        }
+        
+        .integration-steps {
+            margin-top: 30px;
+        }
+        
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #1976d2;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        
+        .step h3 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+        
+        .code-block {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            margin-right: 8px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Wiki.js AI 聊天機器人</h1>
+            <p>具有 Dify 後端的智能知識助手</p>
+        </div>
+        
+        <div class="content">
+            <div class="warning">
+                <strong>⚠️ 注意：</strong> 這是一個聊天機器人的演示界面。要獲得完整的 AI 功能，需要配置 Dify API Key。
+            </div>
+            
+            <div class="demo-chat">
+                <div class="chat-header">
+                    <div class="status-indicator"></div>
+                    <span>AI 助手</span>
+                    <span style="font-size: 12px; color: #666; margin-left: auto;">線上</span>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot-message">
+                        🤖 您好！我是 Wiki.js 的 AI 助手。我可以幫您：<br>
+                        • 回答關於 Wiki 內容的問題<br>
+                        • 搜索相關文檔<br>
+                        • 提供使用指導<br>
+                        • 解釋技術概念
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="輸入您的問題..." />
+                    <button class="send-button" onclick="sendDemoMessage()">發送</button>
+                </div>
+            </div>
+            
+            <div class="integration-steps">
+                <h2>集成狀態</h2>
+                
+                <div class="step">
+                    <h3>✅ 1. Wiki.js 服務</h3>
+                    <p>Wiki.js 運行在端口 3002，狀態正常</p>
+                </div>
+                
+                <div class="step">
+                    <h3>✅ 2. Dify API 服務</h3>
+                    <p>Dify API 運行在端口 5001，狀態正常</p>
+                </div>
+                
+                <div class="step">
+                    <h3>⏳ 3. API Key 配置</h3>
+                    <p>需要配置有效的 Dify API Key 才能使用完整的 AI 功能</p>
+                    <div class="code-block">
+# 在 .env 文件中設置：
+DIFY_API_KEY=your-actual-api-key-here
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h3>⏳ 4. 聊天機器人集成</h3>
+                    <p>要在 Wiki.js 中顯示聊天機器人，需要添加自定義腳本：</p>
+                    <div class="code-block">
+// 在 Wiki.js 管理面板中：
+// 設置 → 主題 → 代碼注入 → 頁腳代碼
+&lt;script src="/chatbot-widget.js"&gt;&lt;/script&gt;
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; text-align: center; color: #666;">
+                <p>🔗 集成完成後，聊天機器人將出現在所有 Wiki 頁面的右下角</p>
+                <p><strong>訪問地址：</strong></p>
+                <p>Wiki.js: <a href="http://localhost:3002" target="_blank">http://localhost:3002</a></p>
+                <p>Dify Web: <a href="http://localhost:80" target="_blank">http://localhost:80</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const demoResponses = [
+            "這是一個很棒的問題！根據 Wiki 的內容，我建議您查看相關的文檔章節。",
+            "感謝您的提問！您可以在搜索功能中查找相關關鍵詞來獲得更多信息。",
+            "我理解您的疑問。Wiki 中有詳細的說明，您可以瀏覽相關頁面。",
+            "這個主題很有趣！建議您查看左側導航中的相關分類。",
+            "根據您的問題，我推薦您閱讀相關的教程和指南。",
+            "這是一個常見問題，Wiki 中有專門的 FAQ 部分可以參考。"
+        ];
+
+        function sendDemoMessage() {
+            const input = document.getElementById('chatInput');
+            const messages = document.getElementById('chatMessages');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user-message';
+            userMessage.textContent = message;
+            messages.appendChild(userMessage);
+            
+            // Clear input
+            input.value = '';
+            
+            // Simulate AI response
+            setTimeout(() => {
+                const botMessage = document.createElement('div');
+                botMessage.className = 'message bot-message';
+                const response = demoResponses[Math.floor(Math.random() * demoResponses.length)];
+                botMessage.innerHTML = `🤖 ${response}<br><small style="opacity: 0.7;">(這是一個演示回應，完整 AI 功能需要配置 Dify API Key)</small>`;
+                messages.appendChild(botMessage);
+                messages.scrollTop = messages.scrollHeight;
+            }, 1000);
+            
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Allow Enter key to send message
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendDemoMessage();
+            }
+        });
+        
+        // Auto-scroll to bottom
+        window.addEventListener('load', function() {
+            const messages = document.getElementById('chatMessages');
+            messages.scrollTop = messages.scrollHeight;
+        });
+    </script>
+</body>
+</html>

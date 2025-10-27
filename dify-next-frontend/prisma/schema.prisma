@@ -1,0 +1,403 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                           Int            @id @default(autoincrement())
+  email                        String         @db.VarChar(255)
+  name                         String         @db.VarChar(255)
+  providerId                   String?        @db.VarChar(255)
+  password                     String?        @db.VarChar(255)
+  tfaIsActive                  Boolean        @default(false)
+  tfaSecret                    String?        @db.VarChar(255)
+  jobTitle                     String?        @default("") @db.VarChar(255)
+  location                     String?        @default("") @db.VarChar(255)
+  pictureUrl                   String?        @db.VarChar(255)
+  timezone                     String         @default("America/New_York") @db.VarChar(255)
+  isSystem                     Boolean        @default(false)
+  isActive                     Boolean        @default(false)
+  isVerified                   Boolean        @default(false)
+  mustChangePwd                Boolean        @default(false)
+  createdAt                    String         @db.VarChar(255)
+  updatedAt                    String         @db.VarChar(255)
+  providerKey                  String         @default("local") @db.VarChar(255)
+  localeCode                   String         @default("en") @db.VarChar(5)
+  defaultEditor                String         @default("markdown") @db.VarChar(255)
+  lastLoginAt                  String?        @db.VarChar(255)
+  dateFormat                   String         @default("") @db.VarChar(255)
+  appearance                   String         @default("") @db.VarChar(255)
+  assets                       assets[]
+  comments                     comments[]
+  dify_user_usage              UserUsage[]
+  pageHistory                  pageHistory[]
+  pages_pages_authorIdTousers  pages[]        @relation("pages_authorIdTousers")
+  pages_pages_creatorIdTousers pages[]        @relation("pages_creatorIdTousers")
+  userGroups                   UserGroup[]
+  userKeys                     userKeys[]
+  editors                      editors        @relation(fields: [defaultEditor], references: [key], onDelete: NoAction, onUpdate: NoAction, map: "users_defaulteditor_foreign")
+  locales                      locales        @relation(fields: [localeCode], references: [code], onDelete: NoAction, onUpdate: NoAction, map: "users_localecode_foreign")
+  authentication               authentication @relation(fields: [providerKey], references: [key], onDelete: NoAction, onUpdate: NoAction, map: "users_providerkey_foreign")
+
+  @@unique([providerKey, email], map: "users_providerkey_email_unique")
+  @@map("users")
+}
+
+model Group {
+  id              Int         @id @default(autoincrement())
+  name            String      @db.VarChar(255)
+  permissions     Json        @db.Json
+  pageRules       Json        @db.Json
+  isSystem        Boolean     @default(false)
+  createdAt       String      @db.VarChar(255)
+  updatedAt       String      @db.VarChar(255)
+  redirectOnLogin String      @default("/") @db.VarChar(255)
+  userGroups      UserGroup[]
+
+  @@map("groups")
+}
+
+model UserGroup {
+  id      Int    @id @default(autoincrement())
+  userId  Int?
+  groupId Int?
+  group   Group? @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "usergroups_groupid_foreign")
+  user    User?  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "usergroups_userid_foreign")
+
+  @@map("userGroups")
+}
+
+model UserUsage {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     Int
+  date       DateTime  @db.Timestamp(6)
+  tokenUsage Int?      @default(0)
+  billing    Float?    @default(0)
+  createdAt  DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+  users      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, date])
+  @@index([date], map: "idx_dify_user_usage_date")
+  @@index([userId], map: "idx_dify_user_usage_userid")
+  @@map("dify_user_usage")
+}
+
+model analytics {
+  key       String  @id @db.VarChar(255)
+  isEnabled Boolean @default(false)
+  config    Json    @db.Json
+}
+
+model apiKeys {
+  id         Int     @id @default(autoincrement())
+  name       String  @db.VarChar(255)
+  key        String
+  expiration String  @db.VarChar(255)
+  isRevoked  Boolean @default(false)
+  createdAt  String  @db.VarChar(255)
+  updatedAt  String  @db.VarChar(255)
+}
+
+model assetData {
+  id   Int   @id
+  data Bytes
+}
+
+model assetFolders {
+  id                 Int            @id @default(autoincrement())
+  name               String         @db.VarChar(255)
+  slug               String         @db.VarChar(255)
+  parentId           Int?
+  assetFolders       assetFolders?  @relation("assetFoldersToassetFolders", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "assetfolders_parentid_foreign")
+  other_assetFolders assetFolders[] @relation("assetFoldersToassetFolders")
+  assets             assets[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model assets {
+  id           Int           @id @default(autoincrement())
+  filename     String        @db.VarChar(255)
+  hash         String        @db.VarChar(255)
+  ext          String        @db.VarChar(255)
+  kind         String        @default("binary")
+  mime         String        @default("application/octet-stream") @db.VarChar(255)
+  fileSize     Int?
+  metadata     Json?         @db.Json
+  createdAt    String        @db.VarChar(255)
+  updatedAt    String        @db.VarChar(255)
+  folderId     Int?
+  authorId     Int?
+  users        User?         @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "assets_authorid_foreign")
+  assetFolders assetFolders? @relation(fields: [folderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "assets_folderid_foreign")
+}
+
+model authentication {
+  key              String  @id @db.VarChar(255)
+  isEnabled        Boolean @default(false)
+  config           Json    @db.Json
+  selfRegistration Boolean @default(false)
+  domainWhitelist  Json    @db.Json
+  autoEnrollGroups Json    @db.Json
+  order            Int     @default(0)
+  strategyKey      String  @default("") @db.VarChar(255)
+  displayName      String  @default("") @db.VarChar(255)
+  users            User[]
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model brute {
+  key          String? @db.VarChar(255)
+  firstRequest BigInt?
+  lastRequest  BigInt?
+  lifetime     BigInt?
+  count        Int?
+
+  @@ignore
+}
+
+model commentProviders {
+  key       String  @id @db.VarChar(255)
+  isEnabled Boolean @default(false)
+  config    Json    @db.Json
+}
+
+model comments {
+  id        Int    @id @default(autoincrement())
+  content   String
+  createdAt String @db.VarChar(255)
+  updatedAt String @db.VarChar(255)
+  pageId    Int?
+  authorId  Int?
+  render    String @default("")
+  name      String @default("") @db.VarChar(255)
+  email     String @default("") @db.VarChar(255)
+  ip        String @default("") @db.VarChar(255)
+  replyTo   Int    @default(0)
+  users     User?  @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "comments_authorid_foreign")
+  pages     pages? @relation(fields: [pageId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "comments_pageid_foreign")
+}
+
+model dify_general {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key       String    @unique @db.VarChar(255)
+  value     String?
+  createdAt DateTime? @default(now()) @db.Timestamp(6)
+  updatedAt DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model editors {
+  key         String        @id @db.VarChar(255)
+  isEnabled   Boolean       @default(false)
+  config      Json          @db.Json
+  pageHistory pageHistory[]
+  pages       pages[]
+  users       User[]
+}
+
+model locales {
+  code         String        @id @db.VarChar(5)
+  strings      Json?         @db.Json
+  isRTL        Boolean       @default(false)
+  name         String        @db.VarChar(255)
+  nativeName   String        @db.VarChar(255)
+  availability Int           @default(0)
+  createdAt    String        @db.VarChar(255)
+  updatedAt    String        @db.VarChar(255)
+  pageHistory  pageHistory[]
+  pageTree     pageTree[]
+  pages        pages[]
+  users        User[]
+}
+
+model loggers {
+  key       String  @id @db.VarChar(255)
+  isEnabled Boolean @default(false)
+  level     String  @default("warn") @db.VarChar(255)
+  config    Json?   @db.Json
+}
+
+model migrations {
+  id             Int       @id @default(autoincrement())
+  name           String?   @db.VarChar(255)
+  batch          Int?
+  migration_time DateTime? @db.Timestamptz(6)
+}
+
+model migrations_lock {
+  index     Int  @id @default(autoincrement())
+  is_locked Int?
+}
+
+model navigation {
+  key    String @id @db.VarChar(255)
+  config Json?  @db.Json
+}
+
+model pageHistory {
+  id               Int               @id @default(autoincrement())
+  path             String            @db.VarChar(255)
+  hash             String            @db.VarChar(255)
+  title            String            @db.VarChar(255)
+  description      String?           @db.VarChar(255)
+  isPrivate        Boolean           @default(false)
+  isPublished      Boolean           @default(false)
+  publishStartDate String?           @db.VarChar(255)
+  publishEndDate   String?           @db.VarChar(255)
+  action           String?           @default("updated") @db.VarChar(255)
+  pageId           Int?
+  content          String?
+  contentType      String            @db.VarChar(255)
+  createdAt        String            @db.VarChar(255)
+  editorKey        String?           @db.VarChar(255)
+  localeCode       String?           @db.VarChar(5)
+  authorId         Int?
+  versionDate      String            @default("") @db.VarChar(255)
+  extra            Json              @default("{}") @db.Json
+  users            User?             @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pagehistory_authorid_foreign")
+  editors          editors?          @relation(fields: [editorKey], references: [key], onDelete: NoAction, onUpdate: NoAction, map: "pagehistory_editorkey_foreign")
+  locales          locales?          @relation(fields: [localeCode], references: [code], onDelete: NoAction, onUpdate: NoAction, map: "pagehistory_localecode_foreign")
+  pageHistoryTags  pageHistoryTags[]
+}
+
+model pageHistoryTags {
+  id          Int          @id @default(autoincrement())
+  pageId      Int?
+  tagId       Int?
+  pageHistory pageHistory? @relation(fields: [pageId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagehistorytags_pageid_foreign")
+  tags        tags?        @relation(fields: [tagId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagehistorytags_tagid_foreign")
+}
+
+model pageLinks {
+  id         Int    @id @default(autoincrement())
+  path       String @db.VarChar(255)
+  localeCode String @db.VarChar(5)
+  pageId     Int?
+  pages      pages? @relation(fields: [pageId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagelinks_pageid_foreign")
+
+  @@index([path, localeCode], map: "pagelinks_path_localecode_index")
+}
+
+model pageTags {
+  id     Int    @id @default(autoincrement())
+  pageId Int?
+  tagId  Int?
+  pages  pages? @relation(fields: [pageId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagetags_pageid_foreign")
+  tags   tags?  @relation(fields: [tagId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagetags_tagid_foreign")
+}
+
+model pageTree {
+  id             Int        @id
+  path           String     @db.VarChar(255)
+  depth          Int
+  title          String     @db.VarChar(255)
+  isPrivate      Boolean    @default(false)
+  isFolder       Boolean    @default(false)
+  privateNS      String?    @db.VarChar(255)
+  parent         Int?
+  pageId         Int?
+  localeCode     String?    @db.VarChar(5)
+  ancestors      Json?      @db.Json
+  locales        locales?   @relation(fields: [localeCode], references: [code], onDelete: NoAction, onUpdate: NoAction, map: "pagetree_localecode_foreign")
+  pages          pages?     @relation(fields: [pageId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagetree_pageid_foreign")
+  pageTree       pageTree?  @relation("pageTreeTopageTree", fields: [parent], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "pagetree_parent_foreign")
+  other_pageTree pageTree[] @relation("pageTreeTopageTree")
+}
+
+model pages {
+  id                           Int         @id @default(autoincrement())
+  path                         String      @db.VarChar(255)
+  hash                         String      @db.VarChar(255)
+  title                        String      @db.VarChar(255)
+  description                  String?     @db.VarChar(255)
+  isPrivate                    Boolean     @default(false)
+  isPublished                  Boolean     @default(false)
+  privateNS                    String?     @db.VarChar(255)
+  publishStartDate             String?     @db.VarChar(255)
+  publishEndDate               String?     @db.VarChar(255)
+  content                      String?
+  render                       String?
+  toc                          Json?       @db.Json
+  contentType                  String      @db.VarChar(255)
+  createdAt                    String      @db.VarChar(255)
+  updatedAt                    String      @db.VarChar(255)
+  editorKey                    String?     @db.VarChar(255)
+  localeCode                   String?     @db.VarChar(5)
+  authorId                     Int?
+  creatorId                    Int?
+  extra                        Json        @default("{}") @db.Json
+  comments                     comments[]
+  pageLinks                    pageLinks[]
+  pageTags                     pageTags[]
+  pageTree                     pageTree[]
+  users_pages_authorIdTousers  User?       @relation("pages_authorIdTousers", fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pages_authorid_foreign")
+  users_pages_creatorIdTousers User?       @relation("pages_creatorIdTousers", fields: [creatorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pages_creatorid_foreign")
+  editors                      editors?    @relation(fields: [editorKey], references: [key], onDelete: NoAction, onUpdate: NoAction, map: "pages_editorkey_foreign")
+  locales                      locales?    @relation(fields: [localeCode], references: [code], onDelete: NoAction, onUpdate: NoAction, map: "pages_localecode_foreign")
+}
+
+model renderers {
+  key       String  @id @db.VarChar(255)
+  isEnabled Boolean @default(false)
+  config    Json?   @db.Json
+}
+
+model searchEngines {
+  key       String  @id @db.VarChar(255)
+  isEnabled Boolean @default(false)
+  config    Json?   @db.Json
+}
+
+model sessions {
+  sid     String   @id @db.VarChar(255)
+  sess    Json     @db.Json
+  expired DateTime @db.Timestamptz(6)
+
+  @@index([expired], map: "sessions_expired_index")
+}
+
+model settings {
+  key       String @id @db.VarChar(255)
+  value     Json?  @db.Json
+  updatedAt String @db.VarChar(255)
+}
+
+model storage {
+  key          String  @id @db.VarChar(255)
+  isEnabled    Boolean @default(false)
+  mode         String  @default("push") @db.VarChar(255)
+  config       Json?   @db.Json
+  syncInterval String? @db.VarChar(255)
+  state        Json?   @db.Json
+}
+
+model tags {
+  id              Int               @id @default(autoincrement())
+  tag             String            @unique(map: "tags_tag_unique") @db.VarChar(255)
+  title           String?           @db.VarChar(255)
+  createdAt       String            @db.VarChar(255)
+  updatedAt       String            @db.VarChar(255)
+  pageHistoryTags pageHistoryTags[]
+  pageTags        pageTags[]
+}
+
+model userAvatars {
+  id   Int   @id
+  data Bytes
+}
+
+model userKeys {
+  id         Int    @id @default(autoincrement())
+  kind       String @db.VarChar(255)
+  token      String @db.VarChar(255)
+  createdAt  String @db.VarChar(255)
+  validUntil String @db.VarChar(255)
+  userId     Int?
+  users      User?  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "userkeys_userid_foreign")
+}

@@ -1,0 +1,45 @@
+{
+  "title": "Admin Panel",
+  "system_management": "System Management Center",
+  "no_permission": "You don't have admin permission to view this page",
+  "loading": "Loading...",
+  "overview": "Overview",
+  "rest_to_soap_proxy": "REST-to-SOAP Proxy",
+  "wiki_import": "Wiki Batch Import",
+  "system_status": {
+    "title": "System Status",
+    "description": "Monitor overall system operation",
+    "dify_api": "Dify API",
+    "postgresql": "PostgreSQL",
+    "redis": "Redis",
+    "running": "Running",
+    "stopped": "Stopped",
+    "error": "Error"
+  },
+  "rest_to_soap": {
+    "title": "REST-to-SOAP",
+    "description": "API proxy service status",
+    "manage_service": "Manage Service"
+  },
+  "wiki_batch_import": {
+    "title": "Wiki Batch Import",
+    "description": "Document batch processing service",
+    "manage_import": "Manage Import"
+  },
+  "user_statistics": {
+    "title": "User Statistics",
+    "description": "Wiki.js user management stats",
+    "active_users": "Active Users",
+    "administrators": "Administrators"
+  },
+  "knowledge_management": {
+    "title": "Knowledge Management",
+    "description": "Dify knowledge base configuration",
+    "manage_kb": "Manage Knowledge Base"
+  },
+  "system_logs": {
+    "title": "System Logs",
+    "description": "View system operation logs",
+    "view_logs": "View Logs"
+  }
+}

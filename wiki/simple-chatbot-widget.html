@@ -1,0 +1,271 @@
+<!-- 簡化版 Wiki.js AI 聊天機器人 + 批量導入 -->
+<div id="dify-chatbot" style="position:fixed;bottom:20px;left:20px;z-index:9999;font-family:Arial,sans-serif">
+  <div id="chat-btn" onclick="toggleChat()" style="width:60px;height:60px;background:#1976d2;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;font-size:24px;box-shadow:0 4px 12px rgba(0,0,0,0.3)">💬</div>
+  <div id="chat-box" style="position:absolute;bottom:70px;left:0;width:320px;height:450px;background:white;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.3);display:none;flex-direction:column">
+    <div style="background:#1976d2;color:white;padding:15px;border-radius:12px 12px 0 0;font-weight:bold;display:flex;justify-content:space-between;align-items:center">
+      <span>AI 助手</span>
+      <div style="display:flex;gap:8px">
+        <span onclick="toggleBatchImport()" style="cursor:pointer;font-size:18px;padding:4px" title="批量導入文檔">📚</span>
+        <span onclick="toggleChat()" style="cursor:pointer">✕</span>
+      </div>
+    </div>
+    <div id="messages" style="flex:1;padding:15px;overflow-y:auto;background:#f5f5f5">
+      <div style="background:white;padding:10px;border-radius:12px;margin-bottom:10px;font-size:14px">🤖 您好！我是 AI 助手，可以回答關於 Wiki 的問題。點擊 📚 圖標可以批量導入文檔。</div>
+    </div>
+    
+    <!-- 批量導入界面 -->
+    <div id="batch-import" style="flex:1;padding:15px;overflow-y:auto;background:#f5f5f5;display:none">
+      <div style="text-align:center;margin-bottom:15px">
+        <h3 style="margin:0;color:#333">📚 批量文檔導入</h3>
+        <p style="margin:5px 0;font-size:12px;color:#666">支援 PDF、PPT、Excel、Word 等格式</p>
+      </div>
+      
+      <div id="upload-area" style="border:2px dashed #ddd;border-radius:8px;padding:20px;text-align:center;background:white;margin-bottom:15px;cursor:pointer" onclick="document.getElementById('file-input').click()">
+        <div style="font-size:24px;margin-bottom:8px">📁</div>
+        <div style="font-size:12px;color:#666">點擊或拖拽文件到此處</div>
+        <input type="file" id="file-input" multiple accept=".pdf,.ppt,.pptx,.xls,.xlsx,.doc,.docx,.txt,.md,.csv" style="display:none">
+      </div>
+      
+      <div id="file-list" style="max-height:100px;overflow-y:auto;margin-bottom:15px"></div>
+      
+      <div style="display:flex;gap:8px">
+        <button id="import-btn" onclick="startImport()" style="flex:1;padding:8px;background:#1976d2;color:white;border:none;border-radius:6px;font-size:12px" disabled>開始導入</button>
+        <button onclick="clearFiles()" style="padding:8px 12px;background:#666;color:white;border:none;border-radius:6px;font-size:12px">清空</button>
+      </div>
+      
+      <div id="import-progress" style="display:none;margin-top:15px">
+        <div style="background:#ddd;border-radius:10px;height:6px;overflow:hidden">
+          <div id="progress-bar" style="background:#1976d2;height:100%;width:0%;transition:width 0.3s"></div>
+        </div>
+        <div id="progress-text" style="text-align:center;font-size:11px;color:#666;margin-top:5px">準備中...</div>
+      </div>
+    </div>
+    <div style="padding:15px;background:white;border-top:1px solid #eee;display:flex;gap:8px">
+      <input id="msg-input" type="text" placeholder="輸入問題..." style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:20px;outline:none" onkeypress="if(event.key==='Enter')sendMsg()">
+      <button onclick="sendMsg()" style="padding:8px 15px;background:#1976d2;color:white;border:none;border-radius:20px;cursor:pointer">發送</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedFiles = [];
+let isImporting = false;
+
+function toggleChat(){
+  const box = document.getElementById('chat-box');
+  box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+  // 默認顯示聊天界面
+  showChatInterface();
+}
+
+function toggleBatchImport(){
+  const messages = document.getElementById('messages');
+  const batchImport = document.getElementById('batch-import');
+  
+  if (batchImport.style.display === 'none') {
+    messages.style.display = 'none';
+    batchImport.style.display = 'flex';
+  } else {
+    messages.style.display = 'flex';
+    batchImport.style.display = 'none';
+  }
+}
+
+function showChatInterface() {
+  document.getElementById('messages').style.display = 'flex';
+  document.getElementById('batch-import').style.display = 'none';
+}
+
+function sendMsg(){
+  const input = document.getElementById('msg-input');
+  const messages = document.getElementById('messages');
+  const msg = input.value.trim();
+  if(!msg) return;
+  
+  // 添加用戶消息
+  messages.innerHTML += '<div style="background:#1976d2;color:white;padding:8px 12px;border-radius:12px;margin:5px 0;margin-left:auto;max-width:80%;text-align:right">' + msg + '</div>';
+  
+  input.value = '';
+  messages.scrollTop = messages.scrollHeight;
+  
+  // 模擬AI回復
+  setTimeout(() => {
+    const responses = [
+      '根據您的問題"' + msg + '"，建議查看相關文檔章節獲取詳細信息。',
+      '這是個好問題！您可以在 Wiki 中搜索相關關鍵詞來找到答案。',
+      '關於"' + msg + '"，建議瀏覽左側導航菜單查找相關主題。',
+      '我理解您的疑問。您也可以使用批量導入功能將相關文檔導入到 Wiki 中。'
+    ];
+    const reply = responses[Math.floor(Math.random() * responses.length)];
+    messages.innerHTML += '<div style="background:white;padding:10px;border-radius:12px;margin:10px 0;font-size:14px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">🤖 ' + reply + '<br><small style="color:#666;margin-top:5px;display:block">💡 點擊 📚 圖標可以批量導入文檔到 Wiki</small></div>';
+    messages.scrollTop = messages.scrollHeight;
+  }, 1000);
+}
+
+// 批量導入相關功能
+document.addEventListener('DOMContentLoaded', function() {
+  const fileInput = document.getElementById('file-input');
+  const uploadArea = document.getElementById('upload-area');
+  
+  // 文件選擇事件
+  fileInput.addEventListener('change', function(e) {
+    handleFiles(e.target.files);
+  });
+  
+  // 拖拽事件
+  uploadArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#1976d2';
+    uploadArea.style.background = '#f0f8ff';
+  });
+  
+  uploadArea.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#ddd';
+    uploadArea.style.background = 'white';
+  });
+  
+  uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#ddd';
+    uploadArea.style.background = 'white';
+    handleFiles(e.dataTransfer.files);
+  });
+});
+
+function handleFiles(files) {
+  const validExtensions = ['.pdf', '.ppt', '.pptx', '.xls', '.xlsx', '.doc', '.docx', '.txt', '.md', '.csv'];
+  
+  for (let file of files) {
+    const fileName = file.name.toLowerCase();
+    const isValid = validExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (isValid && !selectedFiles.find(f => f.name === file.name)) {
+      selectedFiles.push(file);
+    }
+  }
+  
+  updateFileList();
+  updateImportButton();
+}
+
+function updateFileList() {
+  const fileList = document.getElementById('file-list');
+  
+  if (selectedFiles.length === 0) {
+    fileList.innerHTML = '';
+    return;
+  }
+  
+  let html = '';
+  selectedFiles.forEach((file, index) => {
+    const icon = getFileIcon(file.name);
+    const size = formatFileSize(file.size);
+    html += `
+      <div style="display:flex;align-items:center;padding:5px;background:white;border-radius:4px;margin-bottom:3px;font-size:11px">
+        <span style="margin-right:8px">${icon}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${file.name}</span>
+        <span style="color:#666;margin-right:8px">${size}</span>
+        <span onclick="removeFile(${index})" style="cursor:pointer;color:#dc3545">✕</span>
+      </div>
+    `;
+  });
+  
+  fileList.innerHTML = html;
+}
+
+function getFileIcon(filename) {
+  const ext = filename.toLowerCase().split('.').pop();
+  const icons = {
+    'pdf': '📄', 'ppt': '📊', 'pptx': '📊', 'xls': '📈', 'xlsx': '📈',
+    'doc': '📝', 'docx': '📝', 'txt': '📃', 'md': '📋', 'csv': '📊'
+  };
+  return icons[ext] || '📄';
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + sizes[i];
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  updateFileList();
+  updateImportButton();
+}
+
+function clearFiles() {
+  selectedFiles = [];
+  updateFileList();
+  updateImportButton();
+  document.getElementById('file-input').value = '';
+}
+
+function updateImportButton() {
+  const importBtn = document.getElementById('import-btn');
+  importBtn.disabled = selectedFiles.length === 0 || isImporting;
+}
+
+async function startImport() {
+  if (selectedFiles.length === 0 || isImporting) return;
+  
+  isImporting = true;
+  updateImportButton();
+  
+  const progress = document.getElementById('import-progress');
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  
+  progress.style.display = 'block';
+  
+  let completed = 0;
+  const total = selectedFiles.length;
+  
+  for (let i = 0; i < selectedFiles.length; i++) {
+    const file = selectedFiles[i];
+    progressText.textContent = `正在處理: ${file.name}`;
+    
+    try {
+      // 模擬處理過程
+      await processFile(file);
+      completed++;
+      
+      const percentage = (completed / total) * 100;
+      progressBar.style.width = percentage + '%';
+      
+    } catch (error) {
+      console.error('處理文件失敗:', error);
+    }
+  }
+  
+  progressText.textContent = '導入完成！';
+  
+  setTimeout(() => {
+    progress.style.display = 'none';
+    selectedFiles = [];
+    updateFileList();
+    isImporting = false;
+    updateImportButton();
+    
+    // 顯示成功消息
+    const messages = document.getElementById('messages');
+    messages.innerHTML += '<div style="background:#d4edda;color:#155724;padding:10px;border-radius:12px;margin:10px 0;font-size:14px;border:1px solid #c3e6cb">✅ 成功導入 ' + total + ' 個文檔到 Wiki！<br><small>您可以在 Wiki 的 /imported 目錄下找到這些頁面。</small></div>';
+    showChatInterface();
+  }, 1000);
+}
+
+async function processFile(file) {
+  // 這裡實際會調用後端API處理文件
+  // 現在是模擬實現
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // 模擬創建 Wiki 頁面
+      console.log(`處理文件: ${file.name}`);
+      resolve();
+    }, 1000 + Math.random() * 1000);
+  });
+}
+</script>

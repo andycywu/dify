@@ -1,0 +1,40 @@
+import React from 'react';
+import Head from 'next/head';
+import MainLayout from '../components/Layout/MainLayout';
+import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
+
+export default function Dashboard() {
+  const { t } = useTranslation('auth');
+  
+  return (
+    <MainLayout title={t('dashboard') || 'Dashboard'}>
+      <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-blue-50 rounded-lg p-6 shadow flex flex-col items-center">
+          <span className="text-4xl mb-2">👤</span>
+          <h2 className="text-xl font-semibold mb-1">{t('dashboard_cards.profile.title')}</h2>
+          <p className="text-gray-600 mb-2 text-center">{t('dashboard_cards.profile.description')}</p>
+          <Link href="/profile" className="text-blue-600 hover:underline">{t('dashboard_cards.profile.go')}</Link>
+        </div>
+        <div className="bg-green-50 rounded-lg p-6 shadow flex flex-col items-center">
+          <span className="text-4xl mb-2">⚙️</span>
+          <h2 className="text-xl font-semibold mb-1">{t('dashboard_cards.settings.title')}</h2>
+          <p className="text-gray-600 mb-2 text-center">{t('dashboard_cards.settings.description')}</p>
+          <Link href="/settings" className="text-green-600 hover:underline">{t('dashboard_cards.settings.go')}</Link>
+        </div>
+        <div className="bg-yellow-50 rounded-lg p-6 shadow flex flex-col items-center">
+          <span className="text-4xl mb-2">🤖</span>
+          <h2 className="text-xl font-semibold mb-1">{t('dashboard_cards.chatbot.title')}</h2>
+          <p className="text-gray-600 mb-2 text-center">{t('dashboard_cards.chatbot.description')}</p>
+          <Link href="/test-agentic" className="text-yellow-600 hover:underline">{t('dashboard_cards.chatbot.go')}</Link>
+        </div>
+        <div className="bg-purple-50 rounded-lg p-6 shadow flex flex-col items-center">
+          <span className="text-4xl mb-2">📊</span>
+          <h2 className="text-xl font-semibold mb-1">{t('dashboard_cards.reports.title')}</h2>
+          <p className="text-gray-600 mb-2 text-center">{t('dashboard_cards.reports.description')}</p>
+          <Link href="/usage" className="text-purple-600 hover:underline">{t('dashboard_cards.reports.go')}</Link>
+        </div>
+      </div>
+    </MainLayout>
+  );
+}

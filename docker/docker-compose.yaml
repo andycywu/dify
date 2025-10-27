@@ -790,16 +790,31 @@ services:
     env_file:
       - ../dify-next-frontend/.env.docker
     environment:
-      API_URL: ${DIFY_INTERNAL_API_ORIGIN:-http://api:5001}
-      NEXT_PUBLIC_API_URL: ${CUSTOM_FRONTEND_BASE_PATH:-/custom}/api
-      NEXT_PUBLIC_DIFY_API_BASE_URL: ${DIFY_PUBLIC_API_ORIGIN:-http://localhost/api/v1}
-      NEXT_PUBLIC_BASE_PATH: ${CUSTOM_FRONTEND_BASE_PATH:-/custom}
-      NEXTAUTH_URL: ${CUSTOM_FRONTEND_EXTERNAL_ORIGIN:-http://localhost}${CUSTOM_FRONTEND_BASE_PATH:-/custom}
-      NODE_ENV: production
-      PORT: ${CUSTOM_FRONTEND_PORT:-3000}
+      # === 容器間內部通信 ===
+      API_URL: http://api:5001
       DATABASE_URL: "postgresql://postgres:difyai123456@db:5432/wiki"
+      WIKI_GRAPHQL_URL: http://wiki:3000/graphql
+      
+      # === 外部服務（本地 Ollama）===
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      
+      # === 瀏覽器端外部訪問（通過 Next.js API 代理避免 CORS）===
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      NEXT_PUBLIC_DIFY_API_BASE_URL: http://localhost:3001/api/dify
+      NEXTAUTH_URL: ${DIFY_PUBLIC_API_ORIGIN:-http://localhost}
+      
+      # === 運行配置 ===
+      NODE_ENV: development
+      PORT: 3000
+      
+      # === 認證密鑰 ===
+      NEXTAUTH_SECRET: "dev-nextauth-secret-key-change-in-production"
+      JWT_SECRET: "dify-wiki-integration-dev-secret"
+      SECRET_KEY: "dev-secret-key-change-in-production"
+      WIKI_API_KEY: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGkiOjQsImdycCI6MSwiaWF0IjoxNzYxMDMwODc4LCJleHAiOjE4NTU3MDM2NzgsImF1ZCI6InVybjp3aWtpLmpzIiwiaXNzIjoidXJuOndpa2kuanMifQ.FDRKftn_cSbcGNgAK6AMlRg-vd5bBxThMtJma0RE2rHfvlwCIT-9ueTyS940_iyGxG6T7bsdU0N7F3hJ5-PVaVXB-Bamf_nQ66rAsr8DFSFxCd7nWMxyx8CaChFPHOudnpi0E1arFjLPcwCUqvxrhZsqsjLlbielufWlS3z4J4s_WatUUewzdEbTz6hIH4dFbLJJ07aELFrdW4kIoq6VlwrWdDSKXZ29BuuKs3N8C2dx6wbhZgujaUzVsW3SLuXN0mZbY2uQAhybni_n7nqN_FyKsBLP6kXuB7m8YgqV2w32v230iGjIvVLixFAs5fj4Xu4a28jCoB7g7V43tQm1BQ"
+      NEXT_PUBLIC_DIFY_API_KEY: "app-PxzkiLjnjcU2w2ARj5qeflQq"
     ports:
-      - "${DIFY_NEXT_FRONTEND_PORT:-3001}:${CUSTOM_FRONTEND_PORT:-3000}"
+      - "${DIFY_NEXT_FRONTEND_PORT:-3001}:3000"
     volumes:
       - ./volumes/dify-next-frontend:/app/data
     depends_on:
@@ -820,19 +835,6 @@ services:
     networks:
       - default
 
-  # Ollama AI model service
-  ollama:
-    image: ollama/ollama:latest
-    container_name: dify-ollama
-    restart: always
-    ports:
-      - "${OLLAMA_PORT:-11434}:11434"
-    volumes:
-      - ./volumes/ollama:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    networks:
-      - default
   # The postgres database.
   db:
     image: postgres:15-alpine
@@ -884,29 +886,30 @@ services:
           "redis-cli -a ${REDIS_PASSWORD:-difyai123456} ping | grep -q PONG",
         ]
 
-  # The DifySandbox
-  sandbox:
-    image: langgenius/dify-sandbox:0.2.12
-    restart: always
-    environment:
-      # The DifySandbox configurations
-      # Make sure you are changing this key for your deployment with a strong key.
-      # You can generate a strong key using `openssl rand -base64 42`.
-      API_KEY: ${SANDBOX_API_KEY:-dify-sandbox}
-      GIN_MODE: ${SANDBOX_GIN_MODE:-release}
-      WORKER_TIMEOUT: ${SANDBOX_WORKER_TIMEOUT:-15}
-      ENABLE_NETWORK: ${SANDBOX_ENABLE_NETWORK:-true}
-      HTTP_PROXY: ${SANDBOX_HTTP_PROXY:-http://ssrf_proxy:3128}
-      HTTPS_PROXY: ${SANDBOX_HTTPS_PROXY:-http://ssrf_proxy:3128}
-      SANDBOX_PORT: ${SANDBOX_PORT:-8194}
-      PIP_MIRROR_URL: ${PIP_MIRROR_URL:-}
-    volumes:
-      - ./volumes/sandbox/dependencies:/dependencies
-      - ./volumes/sandbox/conf:/conf
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8194/health"]
-    networks:
-      - ssrf_proxy_network
+  # The DifySandbox (TEMPORARILY DISABLED - Docker Hub connectivity issues)
+  # Uncomment when Docker Hub service is restored
+  # sandbox:
+  #   image: langgenius/dify-sandbox:0.2.12
+  #   restart: always
+  #   environment:
+  #     # The DifySandbox configurations
+  #     # Make sure you are changing this key for your deployment with a strong key.
+  #     # You can generate a strong key using `openssl rand -base64 42`.
+  #     API_KEY: ${SANDBOX_API_KEY:-dify-sandbox}
+  #     GIN_MODE: ${SANDBOX_GIN_MODE:-release}
+  #     WORKER_TIMEOUT: ${SANDBOX_WORKER_TIMEOUT:-15}
+  #     ENABLE_NETWORK: ${SANDBOX_ENABLE_NETWORK:-true}
+  #     HTTP_PROXY: ${SANDBOX_HTTP_PROXY:-http://ssrf_proxy:3128}
+  #     HTTPS_PROXY: ${SANDBOX_HTTPS_PROXY:-http://ssrf_proxy:3128}
+  #     SANDBOX_PORT: ${SANDBOX_PORT:-8194}
+  #     PIP_MIRROR_URL: ${PIP_MIRROR_URL:-}
+  #   volumes:
+  #     - ./volumes/sandbox/dependencies:/dependencies
+  #     - ./volumes/sandbox/conf:/conf
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8194/health"]
+  #   networks:
+  #     - ssrf_proxy_network
 
   # plugin daemon
   plugin_daemon:
