@@ -113,6 +113,11 @@ env.bak/
 venv.bak/
 .conda/
 
+# Allow environment example files
+!**/.env.example
+!**/.env.docker.example
+!**/.env.production.template
+
 # Spyder project settings
 .spyderproject
 .spyproject
