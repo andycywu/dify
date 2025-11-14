@@ -1,11 +1,58 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from './auth/[...nextauth]';
 import prisma from '../../lib/prisma';
+import { Pool } from 'pg';
 
 interface DepartmentApiKey {
   department: string;
   apiKey: string;
+}
+
+const wikiPool = new Pool({
+  host: process.env.POSTGRES_HOST || 'db',
+  port: parseInt(process.env.POSTGRES_PORT || '5432'),
+  database: 'wiki',
+  user: process.env.POSTGRES_USER || 'postgres',
+  password: process.env.POSTGRES_PASSWORD || 'difyai123456',
+});
+
+// 驗證用戶是否為管理員
+async function isUserAdmin(req: NextApiRequest): Promise<boolean> {
+  try {
+    const sessionToken = req.cookies['wiki.sid'];
+    
+    if (!sessionToken) {
+      return false;
+    }
+
+    const sessionResult = await wikiPool.query(
+      'SELECT sess FROM sessions WHERE sid = $1 AND expire > NOW()',
+      [sessionToken]
+    );
+
+    if (sessionResult.rows.length === 0) {
+      return false;
+    }
+
+    const sessionData = sessionResult.rows[0].sess;
+    const userId = sessionData?.passport?.user;
+
+    if (!userId) {
+      return false;
+    }
+
+    // 檢查用戶是否在 administrators 組
+    const groupResult = await wikiPool.query(
+      `SELECT g.name FROM "userGroups" ug 
+       JOIN groups g ON ug."groupId" = g.id 
+       WHERE ug."userId" = $1 AND g.name = 'administrators'`,
+      [userId]
+    );
+
+    return groupResult.rows.length > 0;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
 }
 
 export default async function handler(
@@ -13,9 +60,9 @@ export default async function handler(
   res: NextApiResponse
 ) {
   // 驗證用戶權限
-  const session = await getServerSession(req, res, authOptions);
+  const isAdmin = await isUserAdmin(req);
   
-  if (!session || session.user?.role !== 'admin') {
+  if (!isAdmin) {
     return res.status(403).json({ error: 'Unauthorized: Admin access required' });
   }
 

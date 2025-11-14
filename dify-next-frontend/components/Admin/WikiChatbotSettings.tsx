@@ -29,11 +29,7 @@ export default function WikiChatbotSettings() {
   const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
+  const loadSettings = React.useCallback(async () => {
     try {
       const response = await fetch('/api/chatbot-settings');
       if (response.ok) {
@@ -48,7 +44,11 @@ export default function WikiChatbotSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   const handleSave = async (department: string) => {
     const apiKey = apiKeyInput[department];
