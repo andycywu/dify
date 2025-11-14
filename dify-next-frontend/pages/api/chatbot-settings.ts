@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '../../lib/prisma';
 import { Pool } from 'pg';
+import { getToken } from 'next-auth/jwt';
 
 interface DepartmentApiKey {
   department: string;
@@ -18,39 +19,45 @@ const wikiPool = new Pool({
 // 驗證用戶是否為管理員
 async function isUserAdmin(req: NextApiRequest): Promise<boolean> {
   try {
-    const sessionToken = req.cookies['wiki.sid'];
-    
     console.log('[chatbot-settings] Checking admin status...');
-    console.log('[chatbot-settings] Session token:', sessionToken ? 'exists' : 'missing');
     
-    if (!sessionToken) {
-      console.log('[chatbot-settings] No session token found');
+    // 使用 NextAuth JWT token
+    const token = await getToken({ 
+      req, 
+      secret: process.env.NEXTAUTH_SECRET 
+    });
+    
+    console.log('[chatbot-settings] NextAuth token:', token ? 'exists' : 'missing');
+    
+    if (!token || !token.email) {
+      console.log('[chatbot-settings] No token or email found');
       return false;
     }
-
-    const sessionResult = await wikiPool.query(
-      'SELECT sess FROM sessions WHERE sid = $1 AND expire > NOW()',
-      [sessionToken]
+    
+    console.log('[chatbot-settings] User email:', token.email);
+    console.log('[chatbot-settings] User role from token:', token.role);
+    
+    // 如果 token 中已經有 role，直接檢查
+    if (token.role === 'admin') {
+      console.log('[chatbot-settings] User is admin (from token)');
+      return true;
+    }
+    
+    // 否則從資料庫查詢用戶組別
+    const userResult = await wikiPool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [token.email]
     );
-
-    console.log('[chatbot-settings] Session query result:', sessionResult.rows.length);
-
-    if (sessionResult.rows.length === 0) {
-      console.log('[chatbot-settings] Session not found or expired');
+    
+    if (userResult.rows.length === 0) {
+      console.log('[chatbot-settings] User not found in Wiki.js');
       return false;
     }
+    
+    const userId = userResult.rows[0].id;
+    console.log('[chatbot-settings] User ID:', userId);
 
-    const sessionData = sessionResult.rows[0].sess;
-    const userId = sessionData?.passport?.user;
-
-    console.log('[chatbot-settings] User ID from session:', userId);
-
-    if (!userId) {
-      console.log('[chatbot-settings] No user ID in session');
-      return false;
-    }
-
-    // 檢查用戶是否在 administrators 組
+    // 檢查用戶是否在 Administrators 組
     const groupResult = await wikiPool.query(
       `SELECT g.name FROM "userGroups" ug 
        JOIN groups g ON ug."groupId" = g.id 
@@ -59,9 +66,10 @@ async function isUserAdmin(req: NextApiRequest): Promise<boolean> {
     );
 
     console.log('[chatbot-settings] Admin group check result:', groupResult.rows.length);
-    console.log('[chatbot-settings] Is admin:', groupResult.rows.length > 0);
+    const isAdmin = groupResult.rows.length > 0;
+    console.log('[chatbot-settings] Is admin:', isAdmin);
 
-    return groupResult.rows.length > 0;
+    return isAdmin;
   } catch (error) {
     console.error('[chatbot-settings] Error checking admin status:', error);
     return false;
