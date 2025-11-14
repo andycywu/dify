@@ -401,3 +401,13 @@ model userKeys {
   userId     Int?
   users      User?  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "userkeys_userid_foreign")
 }
+
+model ChatbotSetting {
+  id         Int      @id @default(autoincrement())
+  department String   @unique @db.VarChar(100)
+  apiKey     String   @db.VarChar(500)
+  createdAt  DateTime @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("chatbot_settings")
+}

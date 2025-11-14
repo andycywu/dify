@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
+import prisma from '../../../lib/prisma';
 
 interface DatasetInfo {
   id: string;
@@ -17,51 +18,103 @@ const wikiPool = new Pool({
   password: process.env.POSTGRES_PASSWORD || 'difyai123456',
 });
 
-// 部門到 Dify API Key 的映射
-const DEPARTMENT_DATASETS: Record<string, DatasetInfo> = {
+// 部門資訊配置
+const DEPARTMENT_INFO: Record<string, { name: string; description: string }> = {
   'administrators': {
-    id: 'administrators',
     name: '管理員知識庫',
     description: '系統管理相關知識和文檔',
-    apiKey: process.env.DIFY_ADMINISTRATORS_API_KEY,
   },
   'Guests': {
-    id: 'Guests',
     name: '訪客知識庫',
     description: '公開資訊和常見問題',
-    apiKey: process.env.DIFY_GUESTS_API_KEY,
   },
   'EE': {
-    id: 'EE',
     name: '電機工程部門知識庫',
     description: '電機工程相關技術文檔和規範',
-    apiKey: process.env.DIFY_EE_API_KEY,
   },
   'ME_LCM': {
-    id: 'ME_LCM',
     name: '機械工程部門知識庫',
     description: '機械工程和生命週期管理相關文檔',
-    apiKey: process.env.DIFY_ME_LCM_API_KEY,
   },
   'PWR': {
-    id: 'PWR',
     name: '電源部門知識庫',
     description: '電源系統和電力相關技術文檔',
-    apiKey: process.env.DIFY_PWR_API_KEY,
   },
   'SW': {
-    id: 'SW',
     name: '軟體部門知識庫',
     description: '軟體開發、架構和技術文檔',
-    apiKey: process.env.DIFY_SW_API_KEY,
   },
   'PJM': {
-    id: 'PJM',
     name: '專案管理部門知識庫',
     description: '專案管理和協調相關文檔',
-    apiKey: process.env.DIFY_PJM_API_KEY,
   },
 };
+
+// 從資料庫獲取所有部門 API 密鑰
+async function getDepartmentDatasets(): Promise<Record<string, DatasetInfo>> {
+  try {
+    const settings = await prisma.chatbotSetting.findMany();
+    const datasets: Record<string, DatasetInfo> = {};
+    
+    // 從資料庫構建資料集
+    for (const setting of settings) {
+      const info = DEPARTMENT_INFO[setting.department];
+      if (info) {
+        datasets[setting.department] = {
+          id: setting.department,
+          name: info.name,
+          description: info.description,
+          apiKey: setting.apiKey,
+        };
+      }
+    }
+    
+    // 降級：從環境變數補充缺失的配置
+    for (const [dept, info] of Object.entries(DEPARTMENT_INFO)) {
+      if (!datasets[dept]) {
+        const envKeys: Record<string, string | undefined> = {
+          'administrators': process.env.DIFY_ADMINISTRATORS_API_KEY,
+          'Guests': process.env.DIFY_GUESTS_API_KEY,
+          'EE': process.env.DIFY_EE_API_KEY,
+          'ME_LCM': process.env.DIFY_ME_LCM_API_KEY,
+          'PWR': process.env.DIFY_PWR_API_KEY,
+          'SW': process.env.DIFY_SW_API_KEY,
+          'PJM': process.env.DIFY_PJM_API_KEY,
+        };
+        datasets[dept] = {
+          id: dept,
+          name: info.name,
+          description: info.description,
+          apiKey: envKeys[dept],
+        };
+      }
+    }
+    
+    return datasets;
+  } catch (error) {
+    console.error('Error fetching department datasets:', error);
+    // 完全降級到環境變數
+    const datasets: Record<string, DatasetInfo> = {};
+    for (const [dept, info] of Object.entries(DEPARTMENT_INFO)) {
+      const envKeys: Record<string, string | undefined> = {
+        'administrators': process.env.DIFY_ADMINISTRATORS_API_KEY,
+        'Guests': process.env.DIFY_GUESTS_API_KEY,
+        'EE': process.env.DIFY_EE_API_KEY,
+        'ME_LCM': process.env.DIFY_ME_LCM_API_KEY,
+        'PWR': process.env.DIFY_PWR_API_KEY,
+        'SW': process.env.DIFY_SW_API_KEY,
+        'PJM': process.env.DIFY_PJM_API_KEY,
+      };
+      datasets[dept] = {
+        id: dept,
+        name: info.name,
+        description: info.description,
+        apiKey: envKeys[dept],
+      };
+    }
+    return datasets;
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -72,6 +125,9 @@ export default async function handler(
   }
 
   try {
+    // 從資料庫獲取部門資料集
+    const DEPARTMENT_DATASETS = await getDepartmentDatasets();
+    
     // 從 cookie 中獲取用戶 session
     const sessionToken = req.cookies['wiki.sid'];
 

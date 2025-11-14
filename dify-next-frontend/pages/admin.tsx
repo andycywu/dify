@@ -5,11 +5,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import RestToSoapManager from '../components/Admin/RestToSoapManager';
 import WikiImportManager from '../components/Admin/WikiImportManager';
+import WikiChatbotSettings from '../components/Admin/WikiChatbotSettings';
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation(['admin', 'auth']);
-  const [activeTab, setActiveTab] = useState<'overview' | 'rest-to-soap' | 'wiki-import'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'rest-to-soap' | 'wiki-import' | 'chatbot-settings'>('overview');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,9 +52,9 @@ export default function Admin() {
           <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">{t('admin:system_management')}</h1>
 
           {/* Navigation tabs */}
-          <div className="flex mb-6 border-b">
+          <div className="flex mb-6 border-b overflow-x-auto">
             <button
-              className={`px-6 py-3 font-medium ${
+              className={`px-6 py-3 font-medium whitespace-nowrap ${
                 activeTab === 'overview'
                   ? 'border-b-2 border-blue-500 text-blue-600'
                   : 'text-gray-600 hover:text-blue-600'
@@ -63,7 +64,17 @@ export default function Admin() {
               {t('admin:overview')}
             </button>
             <button
-              className={`px-6 py-3 font-medium ${
+              className={`px-6 py-3 font-medium whitespace-nowrap ${
+                activeTab === 'chatbot-settings'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-blue-600'
+              }`}
+              onClick={() => setActiveTab('chatbot-settings')}
+            >
+              Wiki.js Chatbot Settings
+            </button>
+            <button
+              className={`px-6 py-3 font-medium whitespace-nowrap ${
                 activeTab === 'rest-to-soap'
                   ? 'border-b-2 border-blue-500 text-blue-600'
                   : 'text-gray-600 hover:text-blue-600'
@@ -73,7 +84,7 @@ export default function Admin() {
               {t('admin:rest_to_soap_proxy')}
             </button>
             <button
-              className={`px-6 py-3 font-medium ${
+              className={`px-6 py-3 font-medium whitespace-nowrap ${
                 activeTab === 'wiki-import'
                   ? 'border-b-2 border-blue-500 text-blue-600'
                   : 'text-gray-600 hover:text-blue-600'
@@ -194,6 +205,10 @@ export default function Admin() {
 
           {activeTab === 'wiki-import' && (
             <WikiImportManager />
+          )}
+
+          {activeTab === 'chatbot-settings' && (
+            <WikiChatbotSettings />
           )}
         </div>
       </div>

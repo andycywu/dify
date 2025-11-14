@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
 import fetch from 'node-fetch';
+import prisma from '../../../lib/prisma';
 
 interface DifyChatResponse {
   answer: string;
@@ -17,15 +18,28 @@ const wikiPool = new Pool({
   password: process.env.POSTGRES_PASSWORD || 'difyai123456',
 });
 
-const DEPARTMENT_API_KEYS: Record<string, string | undefined> = {
-  'administrators': process.env.DIFY_ADMINISTRATORS_API_KEY,
-  'Guests': process.env.DIFY_GUESTS_API_KEY,
-  'EE': process.env.DIFY_EE_API_KEY,
-  'ME_LCM': process.env.DIFY_ME_LCM_API_KEY,
-  'PWR': process.env.DIFY_PWR_API_KEY,
-  'SW': process.env.DIFY_SW_API_KEY,
-  'PJM': process.env.DIFY_PJM_API_KEY,
-};
+// 從資料庫獲取部門 API 密鑰
+async function getDepartmentApiKey(department: string): Promise<string | null> {
+  try {
+    const setting = await prisma.chatbotSetting.findUnique({
+      where: { department },
+    });
+    return setting?.apiKey || null;
+  } catch (error) {
+    console.error('Error fetching department API key:', error);
+    // 降級到環境變數
+    const envKeys: Record<string, string | undefined> = {
+      'administrators': process.env.DIFY_ADMINISTRATORS_API_KEY,
+      'Guests': process.env.DIFY_GUESTS_API_KEY,
+      'EE': process.env.DIFY_EE_API_KEY,
+      'ME_LCM': process.env.DIFY_ME_LCM_API_KEY,
+      'PWR': process.env.DIFY_PWR_API_KEY,
+      'SW': process.env.DIFY_SW_API_KEY,
+      'PJM': process.env.DIFY_PJM_API_KEY,
+    };
+    return envKeys[department] || null;
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -42,13 +56,12 @@ export default async function handler(
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    // 獲取對應的 API Key
-    const apiKey = DEPARTMENT_API_KEYS[group_id as string];
+    // 從資料庫獲取對應的 API Key
+    const apiKey = await getDepartmentApiKey(group_id as string);
 
     if (!apiKey) {
       return res.status(400).json({
-        error: `Invalid group_id: ${group_id}`,
-        available_groups: Object.keys(DEPARTMENT_API_KEYS)
+        error: `Invalid group_id or API key not configured: ${group_id}`
       });
     }
 
