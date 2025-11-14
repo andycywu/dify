@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
-import prisma from '../../../lib/prisma';
+import { prisma } from '../../../lib/prisma';
 
 interface DatasetInfo {
   id: string;

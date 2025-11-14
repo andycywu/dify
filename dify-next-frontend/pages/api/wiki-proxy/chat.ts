@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
 import fetch from 'node-fetch';
-import prisma from '../../../lib/prisma';
+import { prisma } from '../../../lib/prisma';
 
 interface DifyChatResponse {
   answer: string;
