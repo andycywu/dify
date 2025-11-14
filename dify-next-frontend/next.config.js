@@ -1,5 +1,3 @@
-const { i18n } = require('./next-i18next.config');
-
 const normalizeBasePath = (input = '') => {
   if (!input) return '';
   const prefixed = input.startsWith('/') ? input : `/${input}`;
@@ -21,7 +19,8 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || (basePath ? `${basePath}/api` : '/api'),
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
-  i18n,
+  // Temporarily disable i18n to avoid SSR issues
+  // i18n,
   webpack: (config) => {
     config.module.rules.push({
       test: /\.svg$/,

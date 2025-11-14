@@ -1,0 +1,18 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: dify-dev
+nodes:
+- role: control-plane
+  extraPortMappings:
+  # Kubernetes API server (keep this)
+  - containerPort: 6443
+    hostPort: 60058
+    protocol: TCP
+  # HTTP ingress (use different ports)
+  - containerPort: 80
+    hostPort: 8888
+    protocol: TCP
+  # HTTPS ingress (use different ports) 
+  - containerPort: 443
+    hostPort: 8889
+    protocol: TCP

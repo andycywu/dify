@@ -1,3 +1,4 @@
+import os
 import time
 from collections.abc import Callable
 from datetime import timedelta
@@ -19,8 +20,11 @@ from libs.datetime_utils import naive_utc_now
 from libs.login import _get_user
 from models.account import Account, Tenant, TenantAccountJoin, TenantStatus
 from models.dataset import Dataset, RateLimitLog
-from models.model import ApiToken, App, EndUser
+from models.model import App, EndUser
+
+# from services.wiki_user_sync_service import WikiUserSyncService  # 注释掉不存在的服務
 from services.feature_service import FeatureService
+from services.wiki_user_mapping_service import WikiUserMappingService
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -269,10 +273,37 @@ def validate_and_get_api_token(scope: str | None = None):
 def create_or_update_end_user_for_user_id(app_model: App, user_id: Optional[str] = None) -> EndUser:
     """
     Create or update session terminal based on user ID.
+    處理 Wiki.js 使用者的 UUID 映射
     """
     if not user_id:
         user_id = "DEFAULT-USER"
 
+    # 檢查是否為 Wiki.js 使用者 (數字 ID)
+    if user_id != "DEFAULT-USER" and user_id.isdigit():
+        try:
+            wiki_user_id = int(user_id)
+            
+            # 嘗試使用 Wiki.js 同步服務（如果配置了的話）
+            wiki_graphql_url = os.getenv('WIKI_GRAPHQL_URL')
+            wiki_api_key = os.getenv('WIKI_API_KEY')
+            
+            # Wiki.js GraphQL 同步功能暫時停用，直接使用映射服務
+            # if wiki_graphql_url and wiki_api_key:
+            #     try:
+            #         sync_service = WikiUserSyncService(wiki_graphql_url, wiki_api_key)
+            #         return sync_service.ensure_wiki_user_exists_in_dify(app_model, wiki_user_id)
+            #     except Exception as e:
+            #         print(f"⚠️ Wiki.js 同步服務失敗，使用回退機制: {e}")
+            
+            # 回退機制：使用簡化的映射服務
+            return WikiUserMappingService.create_or_get_end_user_for_wiki_user_id(
+                app_model.id, wiki_user_id
+            )
+        except ValueError:
+            # 如果轉換失敗，繼續使用原邏輯
+            pass
+
+    # 原有邏輯：處理非 Wiki.js 使用者
     with Session(db.engine, expire_on_commit=False) as session:
         end_user = (
             session.query(EndUser)

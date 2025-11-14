@@ -22,28 +22,84 @@
     // Fetch user info and available datasets
     async function fetchUserData() {
         try {
-            const response = await fetch('/api/dify/datasets', {
-                credentials: 'same-origin'
+            console.log('🔍 正在獲取用戶數據和可用知識庫...');
+            // 使用 dify-next-frontend 的代理 API
+            const apiUrl = 'http://localhost:3001/api/wiki-proxy/datasets';
+            console.log('📡 API 端點:', apiUrl);
+            
+            const response = await fetch(apiUrl, {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json'
+                }
             });
             
             if (response.ok) {
                 const data = await response.json();
+                console.log('📦 API 返回數據:', data);
+                
+                // 清空並重新填充可用數據集
                 availableDatasets = {};
-                data.datasets.forEach(ds => {
-                    availableDatasets[ds.id] = ds;
-                });
-                currentUser = { groups: data.user_groups };
+                if (data.datasets && Array.isArray(data.datasets)) {
+                    data.datasets.forEach(ds => {
+                        availableDatasets[ds.id] = {
+                            id: ds.id,
+                            name: ds.name,
+                            description: ds.description,
+                            available: ds.available
+                        };
+                    });
+                    console.log('✅ 可用知識庫:', Object.keys(availableDatasets));
+                }
                 
-                // Auto-select best group
-                const priorityOrder = ['administrators', 'EE', 'ME_LCM', 'PWR', 'SW', 'PJM', 'Guests'];
-                selectedGroup = priorityOrder.find(group => data.user_groups.includes(group)) || 'Guests';
+                // 設置用戶組別
+                if (data.user_groups && Array.isArray(data.user_groups)) {
+                    currentUser = { groups: data.user_groups };
+                    console.log('👤 用戶所屬組別:', data.user_groups);
+                    
+                    // Auto-select best group based on priority
+                    const priorityOrder = ['administrators', 'EE', 'ME_LCM', 'PWR', 'SW', 'PJM', 'Guests'];
+                    selectedGroup = priorityOrder.find(group => data.user_groups.includes(group));
+                    
+                    // 如果沒有匹配到優先組別，選擇第一個可用的
+                    if (!selectedGroup && data.user_groups.length > 0) {
+                        selectedGroup = data.user_groups[0];
+                    }
+                    
+                    // 最後的保險：默認為 Guests
+                    if (!selectedGroup) {
+                        selectedGroup = 'Guests';
+                    }
+                    
+                    console.log('🎯 自動選擇知識庫:', selectedGroup);
+                } else {
+                    console.warn('⚠️ 未獲取到用戶組別信息');
+                    currentUser = { groups: ['Guests'] };
+                    selectedGroup = 'Guests';
+                }
                 
-                console.log('✅ 用戶數據加載成功:', data.user_groups);
                 return true;
+            } else {
+                console.error('❌ API 請求失敗:', response.status, response.statusText);
+                const errorText = await response.text();
+                console.error('錯誤詳情:', errorText);
             }
         } catch (error) {
-            console.warn('無法獲取用戶數據，使用默認設置:', error);
+            console.error('❌ 獲取用戶數據失敗:', error);
         }
+        
+        // 使用默認設置
+        console.log('⚠️ 使用默認設置（訪客模式）');
+        availableDatasets = {
+            'Guests': {
+                id: 'Guests',
+                name: '訪客知識庫',
+                description: '公開資訊',
+                available: true
+            }
+        };
+        currentUser = { groups: ['Guests'] };
+        selectedGroup = 'Guests';
         return false;
     }
     
@@ -192,6 +248,18 @@
         // Insert the widget into the page
         document.body.insertAdjacentHTML('beforeend', widgetHTML);
         
+        // Toggle chatbot window visibility
+        function toggleChatbot() {
+            const chatWindow = document.getElementById('chatbot-window');
+            if (chatWindow.style.display === 'none' || chatWindow.style.display === '') {
+                chatWindow.style.display = 'flex';
+                console.log('💬 聊天機器人已開啟');
+            } else {
+                chatWindow.style.display = 'none';
+                console.log('💬 聊天機器人已關閉');
+            }
+        }
+        
         // Add drag functionality
         let isDragging = false;
         let dragStartY = 0;
@@ -291,17 +359,53 @@
         
         function updateGroupSelector() {
             const select = document.getElementById('group-select');
+            if (!select) {
+                console.error('❌ 找不到 group-select 元素');
+                return;
+            }
+            
             select.innerHTML = '';
             
-            Object.entries(availableDatasets).forEach(([id, dataset]) => {
+            console.log('🔄 更新知識庫選單，可用數據集:', Object.keys(availableDatasets));
+            
+            if (Object.keys(availableDatasets).length === 0) {
+                // 沒有可用的數據集，顯示默認選項
+                const option = document.createElement('option');
+                option.value = 'Guests';
+                option.textContent = '訪客知識庫';
+                select.appendChild(option);
+                console.log('⚠️ 沒有可用數據集，顯示默認選項');
+                return;
+            }
+            
+            // 按照優先順序排序
+            const priorityOrder = ['administrators', 'EE', 'ME_LCM', 'PWR', 'SW', 'PJM', 'Guests'];
+            const sortedDatasets = Object.entries(availableDatasets).sort((a, b) => {
+                const indexA = priorityOrder.indexOf(a[0]);
+                const indexB = priorityOrder.indexOf(b[0]);
+                return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+            });
+            
+            sortedDatasets.forEach(([id, dataset]) => {
                 const option = document.createElement('option');
                 option.value = id;
                 option.textContent = dataset.name;
+                
                 if (id === selectedGroup) {
                     option.selected = true;
+                    console.log('✅ 已選擇知識庫:', dataset.name);
                 }
+                
+                // 添加禁用標記（如果不可用）
+                if (dataset.available === false) {
+                    option.disabled = true;
+                    option.textContent += ' (暫不可用)';
+                }
+                
                 select.appendChild(option);
             });
+            
+            console.log('✅ 知識庫選單更新完成，共', sortedDatasets.length, '個選項');
         }
         
         // Send message function
@@ -311,6 +415,10 @@
             
             if (!message) return;
             
+            console.log('📤 發送訊息:', message);
+            console.log('📚 當前選擇的知識庫:', selectedGroup);
+            console.log('👤 用戶組別:', currentUser?.groups);
+            
             // Add user message to chat
             addMessage(message, 'user');
             input.value = '';
@@ -319,55 +427,59 @@
             addTypingIndicator();
             
             try {
-                // Call Dify API with selected group
-                const response = await fetch('/graphql', {
+                // 獲取當前對話的 conversation_id
+                const conversationId = conversationHistory[selectedGroup] || null;
+                console.log('💬 當前對話 ID:', conversationId);
+                
+                // 使用 dify-next-frontend 的代理 API
+                const apiUrl = 'http://localhost:3001/api/wiki-proxy/chat';
+                console.log('🔄 正在呼叫 Chat API...', apiUrl);
+                
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
-                    credentials: 'same-origin',
+                    credentials: 'include',
                     body: JSON.stringify({
-                        query: `
-                            mutation($message: String!, $groupId: String!) {
-                                difyChatWithGroup(message: $message, groupId: $groupId) {
-                                    success
-                                    answer
-                                    error
-                                    selectedGroup
-                                    groupName
-                                    availableGroups
-                                }
-                            }
-                        `,
-                        variables: {
-                            message: message,
-                            groupId: selectedGroup
-                        }
+                        message: message,
+                        group_id: selectedGroup,
+                        conversation_id: conversationId
                     })
                 });
                 
+                console.log('📥 API 響應狀態:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API 請求失敗:', response.status, errorText);
+                    throw new Error(`API 請求失敗: ${response.status}`);
+                }
+                
                 const result = await response.json();
-                const data = result.data?.difyChatWithGroup;
+                console.log('📦 API 返回結果:', result);
                 
                 removeTypingIndicator();
                 
-                if (data?.success) {
-                    const groupInfo = data.groupName ? ` (${data.groupName})` : '';
-                    addMessage(`${data.answer}<br><br><small style="color: #666;">📚 來自${groupInfo}</small>`, 'bot');
-                } else {
-                    const errorMsg = data?.error || '服務暫時不可用';
-                    addMessage(`抱歉，${errorMsg}。請稍後再試。`, 'bot');
-                    
-                    if (data?.availableGroups && data.availableGroups.length > 0) {
-                        const availableGroupsText = data.availableGroups
-                            .map(group => availableDatasets[group]?.name || group)
-                            .join('、');
-                        addMessage(`您可以訪問的知識庫：${availableGroupsText}`, 'bot');
+                if (result.success) {
+                    // 保存 conversation_id 以便後續對話
+                    if (result.conversation_id) {
+                        conversationHistory[selectedGroup] = result.conversation_id;
+                        console.log('💾 已保存對話 ID:', result.conversation_id);
                     }
+                    
+                    const datasetInfo = availableDatasets[selectedGroup]?.name || selectedGroup;
+                    addMessage(`${result.answer}<br><br><small style="color: #666;">📚 來自 ${datasetInfo}</small>`, 'bot');
+                    console.log('✅ 訊息發送成功，使用知識庫:', datasetInfo);
+                } else {
+                    const errorMsg = result.error || result.details || '服務暫時不可用';
+                    console.error('❌ Dify API 錯誤:', errorMsg);
+                    addMessage(`抱歉，${errorMsg}。請稍後再試。`, 'bot');
                 }
                 
             } catch (error) {
-                console.error('API 調用失敗:', error);
+                console.error('❌ API 調用失敗:', error);
                 removeTypingIndicator();
                 addMessage('抱歉，連接服務器失敗。請檢查網路連接後重試。', 'bot');
             }

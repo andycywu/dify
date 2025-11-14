@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import MainLayout from '../components/Layout/MainLayout';
 import UsageCostTable from '../components/Usage/UsageCostTable';
 import { useAuth } from '../contexts/AuthContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../lib/mockTranslation';
 import axios from 'axios';
 
 function sumByDate(usageData: any, type = 'day') {
@@ -22,27 +22,74 @@ function sumByDate(usageData: any, type = 'day') {
   return Object.entries(grouped).map(([date, v]) => ({ date, ...v }));
 }
 
+interface AppStats {
+  totalMessages: number;
+  totalTokens: number;
+  totalCost: number;
+  uniqueUsers: number;
+  avgMessagesPerUser: number;
+  avgTokensPerMessage: number;
+  avgCostPerMessage: number;
+  totalConversations: number;
+  avgMessagesPerConversation: number;
+  activeUsersLast7Days: number;
+  activeUsersLast30Days: number;
+}
+
 function UsageStats() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation('auth');
   const [usageData, setUsageData] = React.useState<any[]>([]);
+  const [appStats, setAppStats] = React.useState<AppStats | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
     if (authLoading) return;
     if (!user) return;
+    
     setLoading(true);
-    axios.get(`/api/user-token-stats?email=${user.email}`)
-      .then(res => {
-        setUsageData(res.data.dailyUsage.map((d: any) => ({
+    
+    const fetchData = async () => {
+      try {
+        // 首先獲取個人統計數據（必需）
+        console.log('Fetching user stats for userId:', user.id);
+        const userStatsResponse = await axios.get(`/api/user-token-stats?userId=${user.id}`);
+        
+        setUsageData(userStatsResponse.data.dailyUsage.map((d: any) => ({
+          id: `${user.id}-${d.date}`,
           date: d.date.slice(0, 10),
           usage: d.tokenUsage,
           cost: d.billing,
+          messages: d.messages || 0,
+          source: d.source || 'wiki-db',
+          difyUserId: user.id,
+          userId: user.id
         })));
-      })
-      .catch(e => setError(e.message || 'Failed to fetch usage data'))
-      .finally(() => setLoading(false));
+
+        // 如果是 admin 用戶，嘗試獲取應用級統計（可選）
+        if (user.role === 'admin') {
+          try {
+            console.log('Fetching app stats for admin user');
+            const appStatsResponse = await axios.get('/api/app-stats');
+            setAppStats(appStatsResponse.data);
+            console.log('App stats loaded successfully:', appStatsResponse.data);
+          } catch (appStatsError: any) {
+            console.warn('Failed to load app stats (non-critical):', appStatsError.response?.data || appStatsError.message);
+            // 應用級統計失敗不影響頁面顯示，只記錄警告
+            setAppStats(null);
+          }
+        }
+
+      } catch (e: any) {
+        console.error('Error loading data:', e.response?.data || e.message);
+        setError(e.response?.data?.error || e.message || 'Failed to fetch data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [user, authLoading]);
 
   const monthStats = useMemo(() => sumByDate(usageData, 'month'), [usageData]);
@@ -70,7 +117,7 @@ function UsageStats() {
           <div className="text-gray-700">{thisMonthStat ? thisMonthStat.usage : 0} tokens<br/>${thisMonthStat ? thisMonthStat.cost.toFixed(4) : '0.0000'}</div>
         </div>
       </div>
-      <UsageCostTable usageData={usageData} />
+      <UsageCostTable usageData={usageData} appStats={appStats} />
     </>
   );
 }

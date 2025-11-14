@@ -2,7 +2,7 @@ import React from 'react';
 import Head from 'next/head';
 import MainLayout from '../components/Layout/MainLayout';
 import Link from 'next/link';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../lib/mockTranslation';
 
 export default function Dashboard() {
   const { t } = useTranslation('auth');

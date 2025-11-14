@@ -26,6 +26,12 @@ const Login: React.FC<LoginProps> = ({
   const router = useRouter();
   const { t } = useTranslation('auth');
 
+  // 添加除錯資訊
+  React.useEffect(() => {
+    console.log('Login component mounted, current URL:', window.location.href);
+    console.log('Router query:', router.query);
+  }, [router.query]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -42,14 +48,21 @@ const Login: React.FC<LoginProps> = ({
         // 強制刷新 session
         await getSession();
         
-        if (onSuccess) onSuccess();
-        
-        // 直接跳轉，不需要延遲
-        router.push('/dashboard');
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          // 確保跳轉到正確的路徑
+          const redirectUrl = router.query.callbackUrl as string || '/dashboard';
+          console.log('Redirecting to:', redirectUrl);
+          
+          // 使用 window.location 確保強制跳轉
+          window.location.href = redirectUrl;
+        }
         return;
       }
       setError(t('login_page.login_error'));
     } catch (err) {
+      console.error('Login error:', err);
       setError(t('login_page.network_error'));
     } finally {
       setLoading(false);

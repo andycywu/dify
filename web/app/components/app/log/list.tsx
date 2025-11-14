@@ -955,7 +955,37 @@ const ConversationList: FC<IConversationList> = ({ logs, appDetail, onRefresh })
         </thead>
         <tbody className="system-sm-regular text-text-secondary">
           {logs.data.map((log: any) => {
-            const endUser = log.from_end_user_session_id || log.from_account_name
+            // 隱私保護：對使用者 ID 進行匿名化處理
+            const getRawUserId = () => {
+              if (log.from_end_user_session_id) return log.from_end_user_session_id
+              if (log.from_account_name) return log.from_account_name
+              if (log.from_end_user_id) return log.from_end_user_id
+              if (log.from_account_id) return log.from_account_id
+              return null
+            }
+            
+            const getAnonymizedUserId = (rawUserId: string | null) => {
+              if (!rawUserId) return null
+              
+              // 如果是 DEFAULT-USER，完整顯示
+              if (rawUserId === 'DEFAULT-USER') return rawUserId
+              
+              // 如果是 UUID 格式 (36 字符，包含連字符)
+              if (rawUserId.length === 36 && rawUserId.includes('-')) {
+                return `${rawUserId.slice(0, 8)}...`
+              }
+              
+              // 對於其他長格式（如 JSON），顯示前 10 字符
+              if (rawUserId.length > 10) {
+                return `${rawUserId.slice(0, 10)}...`
+              }
+              
+              // 簡短格式直接顯示
+              return rawUserId
+            }
+            
+            const rawUserId = getRawUserId()
+            const endUser = getAnonymizedUserId(rawUserId)
             const leftValue = get(log, isChatMode ? 'name' : 'message.inputs.query') || (!isChatMode ? (get(log, 'message.query') || get(log, 'message.inputs.default_input')) : '') || ''
             const rightValue = get(log, isChatMode ? 'message_count' : 'message.answer')
             return <tr

@@ -1,0 +1,75 @@
+{
+  "name": "Dify Next Frontend Development",
+  "build": {
+    "context": ".",
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "azureDnsAutoDetection": true,
+      "installDockerBuildx": true,
+      "version": "latest",
+      "dockerDashComposeVersion": "v2"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-json",
+        "GitHub.copilot",
+        "ms-vscode-remote.remote-containers",
+        "ms-vscode.vscode-jest",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "ms-vscode.vscode-js-debug"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "typescript.preferences.quoteStyle": "single",
+        "javascript.preferences.quoteStyle": "single",
+        "eslint.workingDirectories": ["."],
+        "files.associations": {
+          "*.css": "tailwindcss"
+        }
+      }
+    }
+  },
+  "forwardPorts": [3000, 3001, 5001, 9229],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js App",
+      "onAutoForward": "notify"
+    },
+    "3001": {
+      "label": "Production Server",
+      "onAutoForward": "ignore"
+    },
+    "5001": {
+      "label": "Dify API",
+      "onAutoForward": "ignore"
+    },
+    "9229": {
+      "label": "Node.js Debug",
+      "onAutoForward": "ignore"
+    }
+  },
+  "postCreateCommand": ".devcontainer/post-create.sh",
+  "postStartCommand": ".devcontainer/post-start.sh",
+  "mounts": [
+    // Use a named volume for node_modules to avoid slow bind mounts on macOS
+    "source=dify-frontend-node-modules,target=/app/node_modules,type=volume"
+  ],
+  "remoteEnv": {
+    "NODE_ENV": "development",
+    "CHOKIDAR_USEPOLLING": "true"
+  }
+}

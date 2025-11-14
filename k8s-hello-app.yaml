@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-dify
+  labels:
+    app: hello-dify
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello-dify
+  template:
+    metadata:
+      labels:
+        app: hello-dify
+    spec:
+      containers:
+      - name: hello-dify
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-dify-service
+spec:
+  selector:
+    app: hello-dify
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30080
+  type: NodePort

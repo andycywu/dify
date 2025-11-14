@@ -40,4 +40,10 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     </SessionProvider>
   );
 }
+
+// Disable static optimization for all pages to avoid SSR issues with i18next
+MyApp.getInitialProps = async () => {
+  return { pageProps: {} };
+};
+
 export default MyApp;

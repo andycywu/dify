@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../../lib/mockTranslation';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
 
 const Header: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -27,8 +27,33 @@ const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [dropdownOpen]);
 
-  const handleLogout = () => {
-    signOut({ callbackUrl: '/login' });
+  const handleLogout = async () => {
+    try {
+      console.log('Starting logout process...');
+      
+      // 關閉下拉菜單
+      setDropdownOpen(false);
+      
+      // 使用 NextAuth 的 signOut 並讓它處理重導向
+      // 使用明確的回調 URL 確保重導向到正確位置
+      const baseUrl = window.location.origin;
+      const loginUrl = `${baseUrl}/login`;
+      
+      console.log('Calling signOut with callbackUrl:', loginUrl);
+      
+      // 讓 NextAuth 處理重導向，避免多重導航
+      await signOut({ 
+        callbackUrl: loginUrl,
+        redirect: true  // 讓 NextAuth 處理重導向
+      });
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      // 只有在 signOut 失敗時才手動重導向
+      setTimeout(() => {
+        window.location.href = `${window.location.origin}/login`;
+      }, 100);
+    }
   };
 
   // 如果正在加載 session，顯示加載狀態
@@ -111,18 +136,20 @@ const Header: React.FC = () => {
         </nav>
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => i18n.changeLanguage('en')} 
-            className={`px-2 py-1 rounded border border-blue-300 hover:bg-blue-100 transition font-semibold ${
-              i18n.language === 'en' ? 'bg-blue-200 text-blue-900' : 'bg-white text-blue-900'
-            }`}
+            onClick={() => {
+              localStorage.setItem('locale', 'en');
+              window.location.reload();
+            }} 
+            className={`px-2 py-1 rounded border border-blue-300 hover:bg-blue-100 transition font-semibold bg-white text-blue-900`}
           >
             EN
           </button>
           <button 
-            onClick={() => i18n.changeLanguage('zh')} 
-            className={`px-2 py-1 rounded border border-blue-300 hover:bg-blue-100 transition font-semibold ${
-              i18n.language === 'zh' ? 'bg-blue-200 text-blue-900' : 'bg-white text-blue-900'
-            }`}
+            onClick={() => {
+              localStorage.setItem('locale', 'zh');
+              window.location.reload();
+            }} 
+            className={`px-2 py-1 rounded border border-blue-300 hover:bg-blue-100 transition font-semibold bg-white text-blue-900`}
           >
             中文
           </button>
