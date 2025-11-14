@@ -44,7 +44,7 @@ async function isUserAdmin(req: NextApiRequest): Promise<boolean> {
     const groupResult = await wikiPool.query(
       `SELECT g.name FROM "userGroups" ug 
        JOIN groups g ON ug."groupId" = g.id 
-       WHERE ug."userId" = $1 AND g.name = 'administrators'`,
+       WHERE ug."userId" = $1 AND g.name = 'Administrators'`,
       [userId]
     );
 
