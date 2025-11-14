@@ -20,7 +20,11 @@ async function isUserAdmin(req: NextApiRequest): Promise<boolean> {
   try {
     const sessionToken = req.cookies['wiki.sid'];
     
+    console.log('[chatbot-settings] Checking admin status...');
+    console.log('[chatbot-settings] Session token:', sessionToken ? 'exists' : 'missing');
+    
     if (!sessionToken) {
+      console.log('[chatbot-settings] No session token found');
       return false;
     }
 
@@ -29,14 +33,20 @@ async function isUserAdmin(req: NextApiRequest): Promise<boolean> {
       [sessionToken]
     );
 
+    console.log('[chatbot-settings] Session query result:', sessionResult.rows.length);
+
     if (sessionResult.rows.length === 0) {
+      console.log('[chatbot-settings] Session not found or expired');
       return false;
     }
 
     const sessionData = sessionResult.rows[0].sess;
     const userId = sessionData?.passport?.user;
 
+    console.log('[chatbot-settings] User ID from session:', userId);
+
     if (!userId) {
+      console.log('[chatbot-settings] No user ID in session');
       return false;
     }
 
@@ -48,9 +58,12 @@ async function isUserAdmin(req: NextApiRequest): Promise<boolean> {
       [userId]
     );
 
+    console.log('[chatbot-settings] Admin group check result:', groupResult.rows.length);
+    console.log('[chatbot-settings] Is admin:', groupResult.rows.length > 0);
+
     return groupResult.rows.length > 0;
   } catch (error) {
-    console.error('Error checking admin status:', error);
+    console.error('[chatbot-settings] Error checking admin status:', error);
     return false;
   }
 }
