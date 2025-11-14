@@ -204,9 +204,18 @@ export default async function handler(
 
   } catch (error) {
     console.error('Error fetching user datasets:', error);
+    
+    // 降級：返回 Guests 基本資訊
+    const guestsDataset = {
+      id: 'Guests',
+      name: '訪客知識庫',
+      description: '公開資訊和常見問題',
+      available: false
+    };
+    
     res.status(500).json({
       error: 'Internal server error',
-      datasets: [DEPARTMENT_DATASETS['Guests']],
+      datasets: [guestsDataset],
       user_groups: ['Guests']
     });
   }
