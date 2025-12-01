@@ -23,15 +23,35 @@
     async function fetchUserData() {
         try {
             console.log('🔍 正在獲取用戶數據和可用知識庫...');
+
+            // 從當前域名的 cookie 中取得 wiki.sid
+            const getCookie = (name) => {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+                return null;
+            };
+
+            const sessionToken = getCookie('wiki.sid');
+            console.log('🔑 Session Token:', sessionToken ? '已找到' : '未找到');
+
             // 使用 dify-next-frontend 的代理 API
             const apiUrl = 'http://localhost:3001/api/wiki-proxy/datasets';
             console.log('📡 API 端點:', apiUrl);
 
+            const headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            };
+
+            // 如果有 session token,透過自訂 header 傳遞
+            if (sessionToken) {
+                headers['X-Wiki-Session'] = sessionToken;
+            }
+
             const response = await fetch(apiUrl, {
                 credentials: 'include',
-                headers: {
-                    'Accept': 'application/json'
-                }
+                headers: headers
             });
 
             if (response.ok) {
@@ -435,12 +455,28 @@
                 const apiUrl = 'http://localhost:3001/api/wiki-proxy/chat';
                 console.log('🔄 正在呼叫 Chat API...', apiUrl);
 
+                // 從當前域名的 cookie 中取得 wiki.sid
+                const getCookie = (name) => {
+                    const value = `; ${document.cookie}`;
+                    const parts = value.split(`; ${name}=`);
+                    if (parts.length === 2) return parts.pop().split(';').shift();
+                    return null;
+                };
+
+                const sessionToken = getCookie('wiki.sid');
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                };
+
+                // 如果有 session token,透過自訂 header 傳遞
+                if (sessionToken) {
+                    headers['X-Wiki-Session'] = sessionToken;
+                }
+
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
+                    headers: headers,
                     credentials: 'include',
                     body: JSON.stringify({
                         message: message,

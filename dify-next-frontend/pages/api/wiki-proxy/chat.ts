@@ -51,7 +51,7 @@ export default async function handler(
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3002');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Wiki-Session');
 
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
@@ -78,8 +78,8 @@ export default async function handler(
       });
     }
 
-    // 從 cookie 獲取用戶信息（用於識別）
-    const sessionToken = req.cookies['wiki.sid'];
+    // 從 cookie 或自訂 header 獲取用戶信息（用於識別）
+    const sessionToken = req.cookies['wiki.sid'] || req.headers['x-wiki-session'] as string;
     let userId = 'anonymous';
 
     if (sessionToken) {

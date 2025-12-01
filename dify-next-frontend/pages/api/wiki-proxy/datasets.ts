@@ -136,7 +136,7 @@ export default async function handler(
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3002');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Wiki-Session');
 
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
@@ -151,8 +151,9 @@ export default async function handler(
     // 從資料庫獲取部門資料集
     const DEPARTMENT_DATASETS = await getDepartmentDatasets();
 
-    // 從 cookie 中獲取用戶 session
-    const sessionToken = req.cookies['wiki.sid'];
+    // 從 cookie 或自訂 header 中獲取用戶 session
+    const sessionToken = req.cookies['wiki.sid'] || req.headers['x-wiki-session'] as string;
+    console.log('[datasets] Session token source:', req.cookies['wiki.sid'] ? 'cookie' : req.headers['x-wiki-session'] ? 'header' : 'none');
 
     if (!sessionToken) {
       return res.status(401).json({
