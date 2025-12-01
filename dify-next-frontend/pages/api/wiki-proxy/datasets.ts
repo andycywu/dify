@@ -48,6 +48,14 @@ const DEPARTMENT_INFO: Record<string, { name: string; description: string }> = {
     name: '專案管理部門知識庫',
     description: '專案管理和協調相關文檔',
   },
+  'DQE': {
+    name: '品質工程部門知識庫',
+    description: '品質保證和工程相關文檔',
+  },
+  'Certi': {
+    name: '認證部門知識庫',
+    description: '產品認證和合規相關文檔',
+  },
 };
 
 // 從資料庫獲取所有部門 API 密鑰
@@ -55,7 +63,7 @@ async function getDepartmentDatasets(): Promise<Record<string, DatasetInfo>> {
   try {
     const settings = await prisma.chatbotSetting.findMany();
     const datasets: Record<string, DatasetInfo> = {};
-    
+
     // 從資料庫構建資料集
     for (const setting of settings) {
       const info = DEPARTMENT_INFO[setting.department];
@@ -68,7 +76,7 @@ async function getDepartmentDatasets(): Promise<Record<string, DatasetInfo>> {
         };
       }
     }
-    
+
     // 降級：從環境變數補充缺失的配置
     for (const [dept, info] of Object.entries(DEPARTMENT_INFO)) {
       if (!datasets[dept]) {
@@ -80,6 +88,8 @@ async function getDepartmentDatasets(): Promise<Record<string, DatasetInfo>> {
           'PWR': process.env.DIFY_PWR_API_KEY,
           'SW': process.env.DIFY_SW_API_KEY,
           'PJM': process.env.DIFY_PJM_API_KEY,
+          'DQE': process.env.DIFY_DQE_API_KEY,
+          'Certi': process.env.DIFY_CERTI_API_KEY,
         };
         datasets[dept] = {
           id: dept,
@@ -89,7 +99,7 @@ async function getDepartmentDatasets(): Promise<Record<string, DatasetInfo>> {
         };
       }
     }
-    
+
     return datasets;
   } catch (error) {
     console.error('Error fetching department datasets:', error);
@@ -104,6 +114,8 @@ async function getDepartmentDatasets(): Promise<Record<string, DatasetInfo>> {
         'PWR': process.env.DIFY_PWR_API_KEY,
         'SW': process.env.DIFY_SW_API_KEY,
         'PJM': process.env.DIFY_PJM_API_KEY,
+        'DQE': process.env.DIFY_DQE_API_KEY,
+        'Certi': process.env.DIFY_CERTI_API_KEY,
       };
       datasets[dept] = {
         id: dept,
@@ -127,7 +139,7 @@ export default async function handler(
   try {
     // 從資料庫獲取部門資料集
     const DEPARTMENT_DATASETS = await getDepartmentDatasets();
-    
+
     // 從 cookie 中獲取用戶 session
     const sessionToken = req.cookies['wiki.sid'];
 
@@ -169,8 +181,8 @@ export default async function handler(
     const userGroupsQuery = `
       SELECT g.name
       FROM users u
-      JOIN user_groups ug ON u.id = ug.user_id
-      JOIN groups g ON ug.group_id = g.id
+      JOIN "userGroups" ug ON u.id = ug."userId"
+      JOIN groups g ON ug."groupId" = g.id
       WHERE u.id = $1
     `;
 
@@ -178,6 +190,7 @@ export default async function handler(
 
     // 用戶所屬的組別
     let userGroups: string[] = groupsResult.rows.map(row => row.name);
+    console.log('[datasets] 用戶 ID:', userId, '所屬組別:', userGroups);
 
     // 確保至少有 Guests 權限
     if (!userGroups.includes('Guests')) {
@@ -197,6 +210,9 @@ export default async function handler(
         };
       });
 
+    console.log('[datasets] 可用知識庫數量:', availableDatasets.length);
+    console.log('[datasets] 知識庫列表:', availableDatasets.map(d => d.id).join(', '));
+
     res.status(200).json({
       datasets: availableDatasets,
       user_groups: userGroups
@@ -204,7 +220,7 @@ export default async function handler(
 
   } catch (error) {
     console.error('Error fetching user datasets:', error);
-    
+
     // 降級：返回 Guests 基本資訊
     const guestsDataset = {
       id: 'Guests',
@@ -212,7 +228,7 @@ export default async function handler(
       description: '公開資訊和常見問題',
       available: false
     };
-    
+
     res.status(500).json({
       error: 'Internal server error',
       datasets: [guestsDataset],

@@ -17,6 +17,8 @@ const DEPARTMENTS = [
   { id: 'PWR', name: '電源' },
   { id: 'SW', name: '軟體' },
   { id: 'PJM', name: '專案管理' },
+  { id: 'DQE', name: '品質工程' },
+  { id: 'Certi', name: '認證' },
 ];
 
 export default function WikiChatbotSettings() {
@@ -52,7 +54,7 @@ export default function WikiChatbotSettings() {
 
   const handleSave = async (department: string) => {
     const apiKey = apiKeyInput[department];
-    
+
     if (!apiKey || apiKey.trim() === '') {
       showMessage('error', 'API 密鑰不能為空');
       return;
@@ -141,8 +143,8 @@ export default function WikiChatbotSettings() {
 
       {message && (
         <div className={`rounded-lg p-4 ${
-          message.type === 'success' 
-            ? 'bg-green-50 border border-green-200 text-green-800' 
+          message.type === 'success'
+            ? 'bg-green-50 border border-green-200 text-green-800'
             : 'bg-red-50 border border-red-200 text-red-800'
         }`}>
           {message.text}

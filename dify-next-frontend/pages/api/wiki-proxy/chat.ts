@@ -36,6 +36,8 @@ async function getDepartmentApiKey(department: string): Promise<string | null> {
       'PWR': process.env.DIFY_PWR_API_KEY,
       'SW': process.env.DIFY_SW_API_KEY,
       'PJM': process.env.DIFY_PJM_API_KEY,
+      'DQE': process.env.DIFY_DQE_API_KEY,
+      'Certi': process.env.DIFY_CERTI_API_KEY,
     };
     return envKeys[department] || null;
   }
