@@ -1,6 +1,8 @@
 (function() {
     'use strict';
 
+    console.log('🚀 Chatbot Widget v2.0 - 載入中...');
+
     // 檢查是否已經加載了聊天機器人
     if (document.getElementById('dify-chatbot-widget')) {
         console.log('聊天機器人已經存在');
