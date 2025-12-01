@@ -19,6 +19,20 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || (basePath ? `${basePath}/api` : '/api'),
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
+  // Add CORS headers for Wiki.js integration
+  async headers() {
+    return [
+      {
+        source: '/api/wiki-proxy/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: 'http://localhost:3002' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+        ],
+      },
+    ];
+  },
   // Temporarily disable i18n to avoid SSR issues
   // i18n,
   webpack: (config) => {
