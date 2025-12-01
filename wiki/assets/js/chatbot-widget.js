@@ -34,6 +34,10 @@
 
             const sessionToken = getCookie('wiki.sid');
             console.log('🔑 Session Token:', sessionToken ? '已找到' : '未找到');
+            if (sessionToken) {
+                console.log('🔑 Token 前10字元:', sessionToken.substring(0, 10) + '...');
+            }
+            console.log('🍪 所有 Cookies:', document.cookie);
 
             // 使用 dify-next-frontend 的代理 API
             const apiUrl = 'http://localhost:3001/api/wiki-proxy/datasets';
@@ -47,7 +51,11 @@
             // 如果有 session token,透過自訂 header 傳遞
             if (sessionToken) {
                 headers['X-Wiki-Session'] = sessionToken;
+                console.log('✅ 已設定 X-Wiki-Session header');
+            } else {
+                console.warn('⚠️ 無法取得 session token,將以訪客身份請求');
             }
+            console.log('📤 請求 Headers:', headers);
 
             const response = await fetch(apiUrl, {
                 credentials: 'include',

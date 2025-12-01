@@ -153,7 +153,12 @@ export default async function handler(
 
     // 從 cookie 或自訂 header 中獲取用戶 session
     const sessionToken = req.cookies['wiki.sid'] || req.headers['x-wiki-session'] as string;
+    console.log('[datasets] Cookies:', Object.keys(req.cookies));
+    console.log('[datasets] X-Wiki-Session header:', req.headers['x-wiki-session'] ? 'exists' : 'missing');
     console.log('[datasets] Session token source:', req.cookies['wiki.sid'] ? 'cookie' : req.headers['x-wiki-session'] ? 'header' : 'none');
+    if (sessionToken) {
+      console.log('[datasets] Session token (first 10 chars):', sessionToken.substring(0, 10) + '...');
+    }
 
     if (!sessionToken) {
       return res.status(401).json({
