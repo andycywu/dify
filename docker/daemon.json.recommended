@@ -1,0 +1,28 @@
+{
+  "registry-mirrors": [
+    "https://docker.mirrors.ustc.edu.cn",
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com"
+  ],
+  "max-concurrent-downloads": 10,
+  "max-concurrent-uploads": 5,
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  },
+  "default-address-pools": [
+    {
+      "base": "172.80.0.0/16",
+      "size": 24
+    }
+  ],
+  "bip": "172.80.0.1/24",
+  "fixed-cidr": "172.80.0.0/24",
+  "dns": ["8.8.8.8", "8.8.4.4"],
+  "dns-search": [],
+  "storage-driver": "overlay2",
+  "userland-proxy": false,
+  "live-restore": true,
+  "ipv6": false
+}
