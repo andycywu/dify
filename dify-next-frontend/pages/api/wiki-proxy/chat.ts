@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { getToken } from 'next-auth/jwt';
 import { Pool } from 'pg';
 import fetch from 'node-fetch';
 import { prisma } from '../../../lib/prisma';
@@ -78,23 +79,65 @@ export default async function handler(
       });
     }
 
-    // 從 cookie 或自訂 header 獲取用戶信息（用於識別）
-    const sessionToken = req.cookies['wiki.sid'] || req.headers['x-wiki-session'] as string;
+    // 從 NextAuth token 或 Wiki.js session 推斷用戶身份
     let userId = 'anonymous';
 
-    if (sessionToken) {
-      try {
-        const sessionResult = await wikiPool.query(
-          'SELECT sess FROM sessions WHERE sid = $1 AND expire > NOW()',
-          [sessionToken]
-        );
+    try {
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
 
-        if (sessionResult.rows.length > 0) {
-          const sessionData = sessionResult.rows[0].sess;
-          userId = sessionData?.passport?.user?.toString() || 'anonymous';
+      if (nextAuthToken?.id) {
+        userId = String(nextAuthToken.id);
+        console.log('[chat] Authenticated via NextAuth token, user ID:', userId);
+      }
+    } catch (tokenError) {
+      console.warn('[chat] Failed to parse NextAuth token:', tokenError);
+    }
+
+    const authHeader = req.headers['authorization'];
+    let bearerToken: string | undefined;
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      bearerToken = authHeader.slice(7).trim();
+    }
+
+    if (userId === 'anonymous' && bearerToken) {
+      try {
+        const parts = bearerToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+          const rawUserId = payload?.id ?? payload?.userId;
+          if (rawUserId !== undefined && rawUserId !== null) {
+            userId = String(rawUserId);
+            console.log('[chat] Authenticated via Wiki JWT, user ID:', userId);
+          }
         }
-      } catch (error) {
-        console.error('Failed to fetch user from session:', error);
+      } catch (jwtError) {
+        console.warn('[chat] Failed to decode Wiki JWT:', jwtError);
+      }
+    }
+
+    if (userId === 'anonymous') {
+      const sessionToken = req.cookies['wiki.sid'] || (req.headers['x-wiki-session'] as string | undefined);
+      if (sessionToken) {
+        try {
+          const sessionResult = await wikiPool.query(
+            'SELECT sess FROM sessions WHERE sid = $1 AND expire > NOW()',
+            [sessionToken]
+          );
+
+          if (sessionResult.rows.length > 0) {
+            const sessionData = sessionResult.rows[0].sess;
+            const wikiUserId = sessionData?.passport?.user;
+            if (wikiUserId) {
+              userId = wikiUserId.toString();
+              console.log('[chat] Authenticated via Wiki.js session, user ID:', userId);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch user from session:', error);
+        }
       }
     }
 

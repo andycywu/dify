@@ -14,8 +14,15 @@ PRISMA_CLI_QUERY_ENGINE_TYPE=binary PRISMA_CLIENT_ENGINE_TYPE=binary npx prisma 
 
 # Run Prisma migration to ensure DB schema is up-to-date (optional)
 echo "📊 Running database migrations..."
-npx prisma migrate deploy || {
-    echo "⚠️ Database migration failed, but continuing startup..."
+# Use db push for development/prototyping to sync schema without migration files
+npx prisma db push --accept-data-loss || {
+    echo "⚠️ Binary engine db push failed, trying library engine..."
+    PRISMA_CLI_QUERY_ENGINE_TYPE=library PRISMA_CLIENT_ENGINE_TYPE=library npx prisma db push --accept-data-loss || {
+        echo "⚠️ Database push failed, trying migrate deploy..."
+        npx prisma migrate deploy || {
+            echo "⚠️ Database migration failed, but continuing startup..."
+        }
+    }
 }
 
 echo "✅ Container initialization complete"

@@ -48,7 +48,7 @@ module.exports = {
       // Get user's groups from Wiki.js user data
       getUserGroups(user) {
         if (!user || !user.groups) return ['Guests']
-        
+
         // Map Wiki.js groups to our dataset groups
         const userGroups = user.groups.map(group => {
           // Use exact group name match
@@ -58,13 +58,13 @@ module.exports = {
           // Default to Guests if group not found
           return 'Guests'
         })
-        
+
         // Remove duplicates and ensure at least Guests access
         const uniqueGroups = [...new Set(userGroups)]
         if (!uniqueGroups.includes('Guests')) {
           uniqueGroups.push('Guests') // Everyone gets guest access
         }
-        
+
         return uniqueGroups
       },
 
@@ -72,13 +72,13 @@ module.exports = {
       getAvailableDatasets(user) {
         const userGroups = this.getUserGroups(user)
         const availableDatasets = {}
-        
+
         userGroups.forEach(groupId => {
           if (this.groupDatasets[groupId]) {
             availableDatasets[groupId] = this.groupDatasets[groupId]
           }
         })
-        
+
         return availableDatasets
       },
 
@@ -86,14 +86,14 @@ module.exports = {
       async chatCompletion(message, conversationId = null, user = null, preferredGroup = null) {
         const userGroups = this.getUserGroups(user)
         let selectedGroup = preferredGroup
-        
+
         // Auto-select group if not specified
         if (!selectedGroup) {
           // Priority: administrators > EE > ME_LCM > PWR > SW > PJM > Guests
           const priorityOrder = ['administrators', 'EE', 'ME_LCM', 'PWR', 'SW', 'PJM', 'Guests']
           selectedGroup = priorityOrder.find(group => userGroups.includes(group)) || 'Guests'
         }
-        
+
         // Check if user has access to selected group
         if (!userGroups.includes(selectedGroup)) {
           return {
@@ -103,7 +103,7 @@ module.exports = {
             availableGroups: userGroups
           }
         }
-        
+
         const groupConfig = this.groupDatasets[selectedGroup]
         if (!groupConfig || !groupConfig.apiKey) {
           WIKI.logger.warn(`Dify API key not configured for group: ${selectedGroup}`)
@@ -164,11 +164,11 @@ module.exports = {
 
       async uploadFile(fileBuffer, fileName, mimeType, groupId, user) {
         const userGroups = this.getUserGroups(user)
-        
+
         if (!userGroups.includes(groupId)) {
           throw new Error('無權在此群組上傳文件')
         }
-        
+
         const groupConfig = this.groupDatasets[groupId]
         if (!groupConfig || !groupConfig.apiKey) {
           throw new Error(`${groupId} 知識庫未配置`)
@@ -204,11 +204,11 @@ module.exports = {
 
       async getConversationHistory(conversationId, groupId, user) {
         const userGroups = this.getUserGroups(user)
-        
+
         if (!userGroups.includes(groupId)) {
           return { data: [] }
         }
-        
+
         const groupConfig = this.groupDatasets[groupId]
         if (!groupConfig || !groupConfig.apiKey || !conversationId) {
           return { data: [] }
@@ -237,7 +237,7 @@ module.exports = {
         if (!groupConfig || !groupConfig.apiKey) {
           return false
         }
-        
+
         try {
           const response = await fetch(`${this.apiUrl}/health`, {
             timeout: 5000
@@ -315,7 +315,7 @@ module.exports = {
           difyHealth: async (parent, args, context) => {
             const user = context.req.user
             const availableDatasets = WIKI.dify.getAvailableDatasets(user)
-            
+
             const datasetStatuses = await Promise.all(
               Object.entries(availableDatasets).map(async ([id, config]) => ({
                 id,
@@ -324,9 +324,9 @@ module.exports = {
                 available: await WIKI.dify.checkHealth(id)
               }))
             )
-            
+
             const connected = datasetStatuses.some(ds => ds.available)
-            
+
             return {
               status: connected ? 'connected' : 'disconnected',
               connected,
@@ -338,7 +338,7 @@ module.exports = {
           difyAvailableDatasets: async (parent, args, context) => {
             const user = context.req.user
             const availableDatasets = WIKI.dify.getAvailableDatasets(user)
-            
+
             return Object.entries(availableDatasets).map(([id, config]) => ({
               id,
               name: config.datasetName,
@@ -356,10 +356,10 @@ module.exports = {
             }
 
             const result = await WIKI.dify.chatCompletion(message, conversationId, context.req.user, preferredGroup)
-            
+
             // Log chat interaction for audit
             WIKI.logger.info(`Dify chat - User: ${context.req.user.id}, Group: ${result.selectedGroup}, Message: ${message.substring(0, 100)}...`)
-            
+
             return result
           },
 
@@ -370,10 +370,10 @@ module.exports = {
             }
 
             const result = await WIKI.dify.chatCompletion(message, conversationId, context.req.user, groupId)
-            
+
             // Log chat interaction for audit
             WIKI.logger.info(`Dify chat with specific group - User: ${context.req.user.id}, Group: ${groupId}, Message: ${message.substring(0, 100)}...`)
-            
+
             return result
           },
 
@@ -386,23 +386,23 @@ module.exports = {
             const { createReadStream, filename, mimetype } = await file
             const stream = createReadStream()
             const chunks = []
-            
+
             for await (const chunk of stream) {
               chunks.push(chunk)
             }
-            
+
             const buffer = Buffer.concat(chunks)
-            
+
             // Check file size limit (10MB)
             if (buffer.length > 10 * 1024 * 1024) {
               throw new Error('File too large. Maximum size is 10MB.')
             }
-            
+
             const result = await WIKI.dify.uploadFile(buffer, filename, mimetype, groupId, context.req.user)
-            
+
             // Log file upload for audit
             WIKI.logger.info(`Dify file upload - User: ${context.req.user.id}, Group: ${groupId}, File: ${filename}, Size: ${buffer.length}`)
-            
+
             return {
               ...result,
               size: buffer.length
@@ -412,6 +412,7 @@ module.exports = {
       }
     })
 
+    // Serve favicon directly from disk to bypass corrupted asset entries
     // Add REST API endpoints
     WIKI.app.get('/api/dify/health', (req, res) => {
       const user = req.user
@@ -433,7 +434,7 @@ module.exports = {
       if (!req.user) {
         return res.status(401).json({ error: 'Unauthorized' })
       }
-      
+
       const availableDatasets = WIKI.dify.getAvailableDatasets(req.user)
       const datasets = Object.entries(availableDatasets).map(([id, config]) => ({
         id,
@@ -441,7 +442,7 @@ module.exports = {
         description: config.description,
         available: !!config.apiKey
       }))
-      
+
       res.json({
         datasets,
         user_groups: WIKI.dify.getUserGroups(req.user)

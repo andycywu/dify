@@ -39,6 +39,12 @@
             if (sessionToken) {
                 console.log('🔑 Token 前10字元:', sessionToken.substring(0, 10) + '...');
             }
+
+            // NextAuth JWT (允許多種 cookie 名稱)
+            const nextAuthToken = getCookie('next-auth.session-token')
+                || getCookie('__Secure-next-auth.session-token')
+                || getCookie('jwt');
+            console.log('🪪 NextAuth Token:', nextAuthToken ? '已找到' : '未找到');
             console.log('🍪 所有 Cookies:', document.cookie);
 
             // 使用 dify-next-frontend 的代理 API
@@ -56,6 +62,13 @@
                 console.log('✅ 已設定 X-Wiki-Session header');
             } else {
                 console.warn('⚠️ 無法取得 session token,將以訪客身份請求');
+            }
+
+            if (nextAuthToken) {
+                headers['Authorization'] = `Bearer ${nextAuthToken}`;
+                console.log('✅ 已設定 Authorization header (NextAuth JWT)');
+            } else {
+                console.warn('⚠️ 無法取得 NextAuth token，可能僅能訪問公開知識庫');
             }
             console.log('📤 請求 Headers:', headers);
 
@@ -87,21 +100,31 @@
                     currentUser = { groups: data.user_groups };
                     console.log('👤 用戶所屬組別:', data.user_groups);
 
-                    // Auto-select best group based on priority
-                    const priorityOrder = ['administrators', 'EE', 'ME_LCM', 'PWR', 'SW', 'PJM', 'DQE', 'Certi', 'Guests'];
-                    selectedGroup = priorityOrder.find(group => data.user_groups.includes(group));
+                    const canonicalDatasets = Object.keys(availableDatasets);
+                    let resolvedGroup = null;
+                    const findCanonicalGroup = (groupName) => {
+                        const lower = groupName.toLowerCase();
+                        return canonicalDatasets.find(key => key.toLowerCase() === lower);
+                    };
 
-                    // 如果沒有匹配到優先組別，選擇第一個可用的
-                    if (!selectedGroup && data.user_groups.length > 0) {
-                        selectedGroup = data.user_groups[0];
+                    for (const groupName of data.user_groups) {
+                        const matchedGroup = findCanonicalGroup(groupName);
+                        if (matchedGroup) {
+                            resolvedGroup = matchedGroup;
+                            break;
+                        }
                     }
 
-                    // 最後的保險：默認為 Guests
-                    if (!selectedGroup) {
-                        selectedGroup = 'Guests';
+                    if (!resolvedGroup && canonicalDatasets.length > 0) {
+                        resolvedGroup = canonicalDatasets[0];
                     }
 
-                    console.log('🎯 自動選擇知識庫:', selectedGroup);
+                    if (!resolvedGroup) {
+                        resolvedGroup = 'Guests';
+                    }
+
+                    selectedGroup = resolvedGroup;
+                    console.log('🎯 自動選擇知識庫 (依據用戶組別):', selectedGroup);
                 } else {
                     console.warn('⚠️ 未獲取到用戶組別信息');
                     currentUser = { groups: ['Guests'] };
@@ -474,6 +497,9 @@
                 };
 
                 const sessionToken = getCookie('wiki.sid');
+                const nextAuthToken = getCookie('next-auth.session-token')
+                    || getCookie('__Secure-next-auth.session-token')
+                    || getCookie('jwt');
                 const headers = {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
@@ -482,6 +508,10 @@
                 // 如果有 session token,透過自訂 header 傳遞
                 if (sessionToken) {
                     headers['X-Wiki-Session'] = sessionToken;
+                }
+
+                if (nextAuthToken) {
+                    headers['Authorization'] = `Bearer ${nextAuthToken}`;
                 }
 
                 const response = await fetch(apiUrl, {
