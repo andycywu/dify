@@ -234,3 +234,4 @@ api/.env.backup
 /clickzetta
 node_modules
 !dify-next-frontend/lib/
+tilt
