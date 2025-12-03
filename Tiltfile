@@ -7,7 +7,7 @@ config.define_string("profile", args=True, usage="Development profile to use (mi
 cfg = config.parse()
 profile = cfg.get("profile", "middleware")
 
-# Handle parameter parsing from command line 
+# Handle parameter parsing from command line
 # If profile contains =, extract the value after =
 if "=" in profile:
     profile = profile.split("=")[1]
@@ -32,12 +32,12 @@ print("📋 Profile: %s" % profile)
 
 if profile == "middleware":
     print("🔧 Loading middleware services (DB, Redis, Weaviate, etc.)")
-    
+
     # Use middleware compose file
     docker_compose('./docker/docker-compose.middleware.yaml')
-    
+
     # Configure resources with proper labels and dependencies
-    dc_resource('db', labels=['infrastructure'])  
+    dc_resource('db', labels=['infrastructure'])
     dc_resource('redis', labels=['infrastructure'])
     dc_resource('plugin_daemon', labels=['infrastructure'])
     dc_resource('sandbox', labels=['infrastructure'])
@@ -45,34 +45,40 @@ if profile == "middleware":
 
 elif profile == "full":
     print("🚀 Loading full application stack")
-    
+
     # Use full compose file
     docker_compose('./docker/docker-compose.yaml')
-    
+
     # Infrastructure services
     dc_resource('db', labels=['infrastructure'])
     dc_resource('redis', labels=['infrastructure'])
+    dc_resource('weaviate', labels=['infrastructure'])
     dc_resource('plugin_daemon', labels=['infrastructure'])
     dc_resource('ssrf_proxy', labels=['infrastructure'])
-    
-    # Application services  
+    dc_resource('sandbox', labels=['infrastructure'])
+
+    # Application services
     dc_resource('api', labels=['application'])
     dc_resource('worker', labels=['application'])
     dc_resource('worker_beat', labels=['application'])  # Note: underscore not hyphen
-    
+
     # Frontend services
     dc_resource('web', labels=['frontend'])
     dc_resource('dify-next-frontend', labels=['frontend'])
-    
+
+    # Proxy and Gateway services
+    dc_resource('nginx', labels=['gateway'])
+    dc_resource('certbot', labels=['gateway'])
+    dc_resource('rest-to-soap-proxy', labels=['gateway'])
+
     # Additional services
     dc_resource('wiki', labels=['additional'])
     dc_resource('wiki-db-init', labels=['additional'])
     dc_resource('wiki-batch-importer', labels=['additional'])
-    dc_resource('rest-to-soap-proxy', labels=['additional'])
 
 print("✅ Tilt configuration loaded successfully!")
 print("📊 Tilt Dashboard: http://localhost:10350")
-print("🗄️  Database (PostgreSQL): localhost:5432")  
+print("🗄️  Database (PostgreSQL): localhost:5432")
 print("🔄 Redis Cache: localhost:6379")
 print("🧠 Weaviate Vector DB: http://localhost:8080")
 
@@ -82,4 +88,6 @@ if profile == "full":
     print("🆕 Next Frontend: http://localhost:3001")
     print("📚 Wiki.js: http://localhost:3002")
     print("🔌 Plugin Daemon: http://localhost:5002")
-
+    print("🌐 Nginx Gateway: http://localhost:80 (HTTP), https://localhost:443 (HTTPS)")
+    print("📦 Sandbox: http://localhost:8194")
+    print("🔒 SSRF Proxy: http://localhost:3128")
