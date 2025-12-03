@@ -52,6 +52,7 @@ elif profile == "full":
     # Infrastructure services
     dc_resource('db', labels=['infrastructure'])
     dc_resource('redis', labels=['infrastructure'])
+    dc_resource('weaviate', labels=['infrastructure'])
     dc_resource('plugin_daemon', labels=['infrastructure'])
     dc_resource('ssrf_proxy', labels=['infrastructure'])
 
@@ -87,3 +88,5 @@ if profile == "full":
     print("🔌 Plugin Daemon: http://localhost:5002")
     print("🌐 Nginx Gateway: http://localhost:80 (HTTP)")
     print("🔒 SSRF Proxy: http://localhost:3128")
+    print("")
+    print("📦 Total Services: 15 containers")
