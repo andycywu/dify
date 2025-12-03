@@ -46,16 +46,15 @@ if profile == "middleware":
 elif profile == "full":
     print("🚀 Loading full application stack")
 
-    # Use full compose file
-    # Note: weaviate should be started separately using weaviate-standalone-docker-compose.yaml
-    docker_compose('./docker/docker-compose.yaml')
+    # Use full compose file with weaviate profile enabled
+    docker_compose('./docker/docker-compose.yaml', profiles=['weaviate'])
 
     # Infrastructure services
     dc_resource('db', labels=['infrastructure'])
     dc_resource('redis', labels=['infrastructure'])
+    dc_resource('weaviate', labels=['infrastructure'])
     dc_resource('plugin_daemon', labels=['infrastructure'])
     dc_resource('ssrf_proxy', labels=['infrastructure'])
-    # Note: weaviate runs separately via weaviate-standalone-docker-compose.yaml
 
     # Application services
     dc_resource('api', labels=['application'])
@@ -79,6 +78,7 @@ print("✅ Tilt configuration loaded successfully!")
 print("📊 Tilt Dashboard: http://localhost:10350")
 print("🗄️  Database (PostgreSQL): localhost:5432")
 print("🔄 Redis Cache: localhost:6379")
+print("🧠 Weaviate Vector DB: http://localhost:8080")
 
 if profile == "full":
     print("🔗 Dify API: http://localhost:5001")
@@ -89,8 +89,4 @@ if profile == "full":
     print("🌐 Nginx Gateway: http://localhost:80 (HTTP)")
     print("🔒 SSRF Proxy: http://localhost:3128")
     print("")
-    print("📦 Total Services: 14 containers via Tilt")
-    print("🧠 Weaviate: http://localhost:8080 (run separately via weaviate-standalone-docker-compose.yaml)")
-    print("")
-    print("ℹ️  To start Weaviate:")
-    print("   docker-compose -f weaviate-standalone-docker-compose.yaml up -d")
+    print("📦 Total Services: 15 containers (including weaviate)")

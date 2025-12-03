@@ -794,19 +794,19 @@ services:
       API_URL: http://api:5001
       DATABASE_URL: "postgresql://postgres:difyai123456@db:5432/wiki"
       WIKI_GRAPHQL_URL: http://wiki:3000/graphql
-      
+
       # === 外部服務（本地 Ollama）===
       OLLAMA_BASE_URL: http://host.docker.internal:11434
-      
+
       # === 瀏覽器端外部訪問（通過 Next.js API 代理避免 CORS）===
       NEXT_PUBLIC_API_URL: http://localhost:3001/api
       NEXT_PUBLIC_DIFY_API_BASE_URL: http://localhost:3001/api/dify
       NEXTAUTH_URL: http://localhost:3001
-      
+
       # === 運行配置 ===
       NODE_ENV: development
       PORT: 3000
-      
+
       # === 認證密鑰 ===
       NEXTAUTH_SECRET: "dev-nextauth-secret-key-change-in-production"
       JWT_SECRET: "dify-wiki-integration-dev-secret"
@@ -1071,6 +1071,8 @@ services:
       - ""
       - weaviate
     restart: always
+    ports:
+      - "8080:8080"
     volumes:
       # Mount the Weaviate data directory to the con tainer.
       - ./volumes/weaviate:/var/lib/weaviate
@@ -1087,6 +1089,8 @@ services:
       AUTHENTICATION_APIKEY_USERS: ${WEAVIATE_AUTHENTICATION_APIKEY_USERS:-hello@dify.ai}
       AUTHORIZATION_ADMINLIST_ENABLED: ${WEAVIATE_AUTHORIZATION_ADMINLIST_ENABLED:-true}
       AUTHORIZATION_ADMINLIST_USERS: ${WEAVIATE_AUTHORIZATION_ADMINLIST_USERS:-hello@dify.ai}
+    networks:
+      - default
 
   # Qdrant vector store.
   # (if used, you need to set VECTOR_STORE to qdrant in the api & worker service.)
