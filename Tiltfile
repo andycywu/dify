@@ -2,26 +2,10 @@
 # Simplified version that works with existing Docker Compose setup
 
 # Load environment configurations
-config.define_string("profile", args=True, usage="Development profile to use (middleware|full)")
+config.define_string("profile", args=False, usage="Development profile to use (middleware|full)")
 
 cfg = config.parse()
-profile = cfg.get("profile", "middleware")
-
-# Handle parameter parsing from command line
-# If profile contains =, extract the value after =
-if "=" in profile:
-    profile = profile.split("=")[1]
-
-# If middleware is the default, also accept "default" as middleware
-if profile == "default":
-    profile = "middleware"
-
-# Debug: print the final profile value
-print("🔍 Debug: final profile value = '%s'" % profile)
-
-# Map default to middleware for convenience
-if profile == "default":
-    profile = "middleware"
+profile = cfg.get("profile", "full")
 
 print("🚀 Starting Dify with Tilt.dev")
 print("📋 Profile: %s" % profile)
