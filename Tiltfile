@@ -46,8 +46,8 @@ if profile == "middleware":
 elif profile == "full":
     print("🚀 Loading full application stack")
 
-    # Use full compose file
-    docker_compose('./docker/docker-compose.yaml')
+    # Use full compose file with profiles to enable weaviate
+    docker_compose('./docker/docker-compose.yaml', profiles=['weaviate'])
 
     # Infrastructure services
     dc_resource('db', labels=['infrastructure'])
@@ -89,4 +89,4 @@ if profile == "full":
     print("🌐 Nginx Gateway: http://localhost:80 (HTTP)")
     print("🔒 SSRF Proxy: http://localhost:3128")
     print("")
-    print("📦 Total Services: 15 containers")
+    print("📦 Total Services: 15 containers (including weaviate)")
