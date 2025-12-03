@@ -52,10 +52,8 @@ elif profile == "full":
     # Infrastructure services
     dc_resource('db', labels=['infrastructure'])
     dc_resource('redis', labels=['infrastructure'])
-    dc_resource('weaviate', labels=['infrastructure'])
     dc_resource('plugin_daemon', labels=['infrastructure'])
     dc_resource('ssrf_proxy', labels=['infrastructure'])
-    dc_resource('sandbox', labels=['infrastructure'])
 
     # Application services
     dc_resource('api', labels=['application'])
@@ -68,7 +66,6 @@ elif profile == "full":
 
     # Proxy and Gateway services
     dc_resource('nginx', labels=['gateway'])
-    dc_resource('certbot', labels=['gateway'])
     dc_resource('rest-to-soap-proxy', labels=['gateway'])
 
     # Additional services
@@ -88,6 +85,5 @@ if profile == "full":
     print("🆕 Next Frontend: http://localhost:3001")
     print("📚 Wiki.js: http://localhost:3002")
     print("🔌 Plugin Daemon: http://localhost:5002")
-    print("🌐 Nginx Gateway: http://localhost:80 (HTTP), https://localhost:443 (HTTPS)")
-    print("📦 Sandbox: http://localhost:8194")
+    print("🌐 Nginx Gateway: http://localhost:80 (HTTP)")
     print("🔒 SSRF Proxy: http://localhost:3128")
