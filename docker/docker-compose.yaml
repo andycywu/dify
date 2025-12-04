@@ -1091,9 +1091,10 @@ services:
       CLUSTER_HOSTNAME: 'node1'
       CLUSTER_GOSSIP_BIND_PORT: '7946'
       CLUSTER_DATA_BIND_PORT: '7947'
-      CLUSTER_ADVERTISE_ADDR: '127.0.0.1'
+      CLUSTER_ADVERTISE_ADDR: 'weaviate'
     networks:
       - default
+    hostname: weaviate
 
   # Qdrant vector store.
   # (if used, you need to set VECTOR_STORE to qdrant in the api & worker service.)
