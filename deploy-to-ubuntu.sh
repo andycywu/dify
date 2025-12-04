@@ -20,7 +20,7 @@ DOCKER_COMPOSE_FILES="-f docker-compose.yaml -f docker-compose.wiki-auth.yml"
 echo -e "${GREEN}=== 開始 Dify + Wiki.js 自動化部署 ===${NC}"
 
 # 1. 檢查 Root 權限
-if [ "$EUID" -ne 0 ]; then 
+if [ "$EUID" -ne 0 ]; then
   echo -e "${RED}請使用 sudo 或 root 權限執行此腳本${NC}"
   exit 1
 fi
@@ -75,7 +75,7 @@ read_secret() {
     local var_name=$1
     local prompt_text=$2
     local current_val=$(grep "^${var_name}=" "$ENV_FILE" | cut -d'=' -f2-)
-    
+
     if [ -z "$current_val" ] || [ "$current_val" == "" ]; then
         echo -e "${YELLOW}${prompt_text}${NC}"
         read -p "請輸入: " input_val
