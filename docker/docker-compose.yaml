@@ -1088,7 +1088,7 @@ services:
       AUTHORIZATION_ADMINLIST_ENABLED: ${WEAVIATE_AUTHORIZATION_ADMINLIST_ENABLED:-true}
       AUTHORIZATION_ADMINLIST_USERS: ${WEAVIATE_AUTHORIZATION_ADMINLIST_USERS:-hello@dify.ai}
       # Disable clustering for single-node deployment
-      CLUSTER_ENABLED: 'false'
+      CLUSTER_HOSTNAME: 'standalone'
     networks:
       - default
 
