@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // 直接調用 Dify 原生 API（無代理層）
 const ADMIN_API_KEY = process.env.NEXT_PUBLIC_DIFY_DATASET_KEY || 'dataset-cELaA8GGeLpoeXZZXsibGqI3';
-const API_BASE_URL = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://localhost/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://172.27.197.100/v1';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -212,10 +212,10 @@ export const createDocumentFromText = async (datasetId: string, data: CreateDocu
 export const createDocumentFromFile = async (datasetId: string, data: CreateDocumentFromFileData) => {
   try {
     const formData = new FormData();
-    
+
     // Add the file using 'file' field name
     formData.append('file', data.file);
-    
+
     // Add the data configuration as JSON string in 'data' field
     const configData = {
       indexing_technique: data.indexing_technique || 'high_quality',
@@ -227,7 +227,7 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
               enabled: true
             },
             {
-              id: 'remove_urls_emails', 
+              id: 'remove_urls_emails',
               enabled: true
             }
           ],
@@ -239,7 +239,7 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
         mode: 'custom'
       }
     };
-    
+
     formData.append('data', JSON.stringify(configData));
 
     console.log('Attempting file upload to:', `/datasets/${datasetId}/document/create_by_file`);
