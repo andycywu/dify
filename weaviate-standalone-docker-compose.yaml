@@ -1,0 +1,61 @@
+# =============================================================================
+# Weaviate 獨立部署 - Docker Compose 配置
+# 用於在 Ubuntu 伺服器上單獨運行 Weaviate 向量資料庫
+# =============================================================================
+
+version: '3.8'
+
+services:
+  weaviate:
+    image: semitechnologies/weaviate:1.19.0
+    container_name: dify-weaviate
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      # 數據持久化路徑
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+
+      # 查詢默認限制
+      QUERY_DEFAULTS_LIMIT: 25
+
+      # 啟用匿名訪問 (設為 false 需要認證)
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'false'
+
+      # 默認向量化模組 (none = 不使用內建向量化)
+      DEFAULT_VECTORIZER_MODULE: 'none'
+
+      # 集群主機名
+      CLUSTER_HOSTNAME: 'node1'
+
+      # API Key 認證設置
+      AUTHENTICATION_APIKEY_ENABLED: 'true'
+      AUTHENTICATION_APIKEY_ALLOWED_KEYS: 'WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih'
+      AUTHENTICATION_APIKEY_USERS: 'hello@dify.ai'
+
+      # 授權管理員列表
+      AUTHORIZATION_ADMINLIST_ENABLED: 'true'
+      AUTHORIZATION_ADMINLIST_USERS: 'hello@dify.ai'
+
+    volumes:
+      # 掛載數據卷以持久化存儲
+      - ./volumes/weaviate:/var/lib/weaviate
+
+    networks:
+      - dify-network
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=3", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+networks:
+  dify-network:
+    name: dify-network
+    driver: bridge
+
+volumes:
+  weaviate-data:
+    driver: local

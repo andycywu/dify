@@ -58,6 +58,18 @@ brew install kind
 # 安裝 Tilt
 curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash
 
+# ⚠️ Ubuntu 常見問題：Tilt 命令衝突
+# 如果系統已安裝 ruby-tilt，可能會產生命令衝突
+# 解決方法 1：確保 PATH 優先順序正確
+echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# 解決方法 2：移除 ruby-tilt（如果不需要）
+# sudo apt remove ruby-tilt
+
+# 驗證安裝
+/usr/local/bin/tilt version  # 應顯示 v0.36.0 或更高版本
+
 # 安裝 kubectl
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 chmod +x kubectl
@@ -147,6 +159,8 @@ LOG_LEVEL=INFO
 ## 🖥️ 使用界面
 
 ### Tilt 儀表板
+
+#### 本地開發環境
 啟動後訪問：http://localhost:10350
 
 儀表板功能：
@@ -155,6 +169,46 @@ LOG_LEVEL=INFO
 - **🔄 資源重建**：手動觸發服務重建
 - **📈 資源監控**：CPU、記憶體使用情況
 - **🎯 觸發器**：手動執行特定操作
+
+#### 遠端伺服器訪問
+
+如果在遠端 Ubuntu 伺服器上運行 Tilt，有以下訪問方式：
+
+**方法 1: SSH 隧道（推薦）**
+```bash
+# 在本地電腦執行
+ssh -L 10350:localhost:10350 user@remote-server
+
+# 然後在本地瀏覽器訪問
+# http://localhost:10350
+```
+
+**方法 2: 終端模式**
+```bash
+# Tilt 啟動後，按以下鍵操作：
+# (s) - 串流日誌模式
+# (t) - 傳統終端模式
+# (space) - 嘗試打開瀏覽器（需要圖形界面）
+# (ctrl-c) - 退出
+```
+
+**方法 3: CLI 命令**
+```bash
+# 查看所有資源
+tilt get all
+
+# 查看特定服務日誌
+tilt logs <service-name>
+
+# 查看資源詳情
+tilt describe <resource-name>
+```
+
+**常見錯誤（可忽略）：**
+```
+xdg-open: no method available for opening 'http://localhost:10350/'
+```
+這是因為伺服器沒有圖形界面瀏覽器，不影響 Tilt 功能。
 
 ### 服務端點
 
@@ -303,6 +357,46 @@ chmod -R 755 api/ web/
 
 # 重啟 Tilt 以重新同步
 tilt down && tilt up
+```
+
+#### 5. Ubuntu Tilt 命令衝突
+**症狀**: 執行 `tilt up` 時出現 `template engine not found for: up`
+
+**原因**: 系統安裝了 Ruby 的 `ruby-tilt` 套件，與 Tilt.dev 命令衝突
+
+**解決方案**:
+```bash
+# 檢查當前使用的 tilt
+which tilt
+type -a tilt
+
+# 方法 1: 調整 PATH 優先順序（推薦）
+echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# 方法 2: 移除 ruby-tilt
+sudo apt remove ruby-tilt
+
+# 方法 3: 使用完整路徑
+/usr/local/bin/tilt up
+
+# 驗證修復
+tilt version  # 應顯示 Tilt.dev 版本而非 template engine 錯誤
+```
+
+#### 6. 遠端伺服器無法打開瀏覽器
+**症狀**: `xdg-open: no method available for opening 'http://localhost:10350/'`
+
+**說明**: 這是正常的，因為無頭伺服器沒有圖形界面
+
+**解決方案**:
+```bash
+# 在本地電腦建立 SSH 隧道
+ssh -L 10350:localhost:10350 user@remote-server
+
+# 或使用 Tilt 終端模式
+# 啟動後按 's' 鍵進入串流日誌模式
+# 或按 't' 鍵進入傳統終端模式
 ```
 
 ### 效能優化
