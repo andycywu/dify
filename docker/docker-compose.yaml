@@ -1066,7 +1066,7 @@ services:
 
   # The Weaviate vector store.
   weaviate:
-    image: semitechnologies/weaviate:1.19.0
+    image: semitechnologies/weaviate:1.19.6
     profiles:
       - weaviate
     restart: always
