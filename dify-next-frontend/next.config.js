@@ -19,6 +19,12 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || (basePath ? `${basePath}/api` : '/api'),
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
+  // 增加 API body size limit 以支援大檔案上傳 (15MB)
+  api: {
+    bodyParser: {
+      sizeLimit: '15mb',
+    },
+  },
   // Add CORS headers for Wiki.js integration
   async headers() {
     return [
