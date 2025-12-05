@@ -37,6 +37,11 @@ export interface NormalizedDocument {
     fileSize: number;
     processedAt: string;
     encoding?: string;
+    pdfInfo?: {
+      pages: number;
+      info: any;
+    };
+    [key: string]: any; // 允許其他自訂 metadata
   };
   sections?: DocumentSection[];
 }
