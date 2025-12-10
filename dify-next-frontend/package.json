@@ -13,7 +13,9 @@
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next node_modules/.cache",
-    "sync-wiki": "node scripts/sync-wiki-cli.js",
+    "sync-wiki": "npx tsx scripts/sync-wiki.ts",
+    "sync-wiki:legacy": "node scripts/sync-wiki-cli.js",
+    "sync-wiki:api": "node scripts/sync-wiki-api.js",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate"
   },
@@ -65,6 +67,7 @@
     "eslint-config-next": "^15.3.3",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
+    "tsx": "^4.19.2",
     "typescript": "^5.8.3"
   }
 }
