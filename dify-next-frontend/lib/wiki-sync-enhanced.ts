@@ -193,6 +193,10 @@ async function syncDepartment(department: Department, options: SyncOptions) {
     const pp = normalize(p.path);
     return pp === wikiPath || pp.startsWith(`${wikiPath}/`);
   });
+  // Debug: 篩選後的前幾筆
+  (deptPages.slice(0, 5) as any[]).forEach((p: any, i: number) => {
+    console.log(`   🔎 dept[${i}] ${p.id} ${p.path} ${p.title}`);
+  });
 
   console.log(`   Found ${deptPages.length} pages`);
   stats.total = deptPages.length;
@@ -407,6 +411,11 @@ async function fetchWikiPages() {
   `;
   const listResult = await wikiRequest(listQuery);
   const publishedPages = (listResult.pages.list as any[]).filter((p: any) => p.isPublished);
+  // Debug: 輸出列表長度與前幾筆供定位問題
+  console.log(`   🔎 Wiki list total: ${(listResult.pages.list as any[]).length}, published: ${publishedPages.length}`);
+  (publishedPages.slice(0, 5) as any[]).forEach((p: any, i: number) => {
+    console.log(`   🔎 [${i}] ${p.id} ${p.path} ${p.title}`);
+  });
 
   // 2) 逐頁以 single(id) 取得 content（部分 Wiki.js 僅支援 id，不支援 path 引數）
   const pagesWithContent = await Promise.all(
