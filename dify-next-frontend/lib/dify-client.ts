@@ -85,8 +85,10 @@ export class DifyClient {
       } catch (e: any) {
         lastError = e;
         const msg = String(e?.message || e);
-        // 404/405/Not Found 之類才嘗試下一個；其他錯誤就直接拋出
-        if (/(404|405|Not\s*Found)/i.test(msg)) {
+        // 遇到未授權/禁止時不再嘗試其他端點
+        if (/(401|403)/i.test(msg)) throw e;
+        // 下列狀況嘗試下一個端點：404/405/Not Found 以及通用 500 Internal Server Error
+        if (/(404|405|Not\s*Found|500|Internal\s*Server\s*Error)/i.test(msg)) {
           continue;
         }
         throw e;
@@ -129,7 +131,8 @@ export class DifyClient {
        } catch (e: any) {
          lastError = e;
          const msg = String(e?.message || e);
-         if (/(404|405|Not\s*Found)/i.test(msg)) continue;
+         if (/(401|403)/i.test(msg)) throw e;
+         if (/(404|405|Not\s*Found|500|Internal\s*Server\s*Error)/i.test(msg)) continue;
          throw e;
        }
      }
