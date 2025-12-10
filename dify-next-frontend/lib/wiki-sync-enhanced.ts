@@ -383,14 +383,14 @@ async function syncPage(
 // ==================== Wiki.js 頁面獲取 ====================
 
 async function fetchWikiPages() {
-  const query = `
+  // 步驟 1: 獲取頁面列表(不含 content)
+  const listQuery = `
     query {
       pages {
         list {
           id
           path
           title
-          content
           updatedAt
           isPublished
         }
@@ -398,10 +398,40 @@ async function fetchWikiPages() {
     }
   `;
 
-  const result = await wikiRequest(query);
+  const listResult = await wikiRequest(listQuery);
 
   // 只返回已發布的頁面
-  return result.pages.list.filter((p: any) => p.isPublished);
+  const publishedPages = listResult.pages.list.filter((p: any) => p.isPublished);
+
+  // 步驟 2: 為每個頁面獲取完整內容
+  const pagesWithContent = await Promise.all(
+    publishedPages.map(async (page: any) => {
+      try {
+        const contentQuery = `
+          query {
+            pages {
+              single(id: ${page.id}) {
+                id
+                path
+                title
+                content
+                updatedAt
+              }
+            }
+          }
+        `;
+
+        const contentResult = await wikiRequest(contentQuery);
+        return contentResult.pages.single;
+      } catch (error) {
+        console.warn(`⚠️  Failed to fetch content for page ${page.path}:`, error);
+        // 如果獲取內容失敗,返回沒有 content 的頁面
+        return { ...page, content: '' };
+      }
+    })
+  );
+
+  return pagesWithContent;
 }
 
 // ==================== 輔助函數 ====================
