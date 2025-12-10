@@ -1,11 +1,20 @@
 
+// Minimal Node env typing fallback to avoid TS errors when @types/node is absent
+// TODO: replace with proper types by installing devDependency @types/node
+declare const process: any;
+
 export class DifyClient {
   private baseUrl: string;
   private apiKey: string;
 
   constructor(baseUrl: string, apiKey: string) {
+    // Normalize base URL and prefer admin key for console API
     this.baseUrl = baseUrl.replace(/\/$/, '');
-    this.apiKey = apiKey;
+    const isConsoleApi = /\/console\/api$/.test(this.baseUrl);
+    const envAdminKey = process.env.DIFY_ADMIN_API_KEY;
+    const envDatasetKey = process.env.NEXT_PUBLIC_DIFY_DATASET_KEY || process.env.DIFY_DATASET_API_KEY;
+    // If using console/api, admin key is required; otherwise fall back to provided apiKey or dataset key
+    this.apiKey = isConsoleApi ? (envAdminKey || apiKey) : (apiKey || envDatasetKey || envAdminKey || '');
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
@@ -64,13 +73,18 @@ export class DifyClient {
       },
     };
 
-    // 兼容多個可能的端點路徑（不同版本/部署差異）
-    const candidates = [
-      `/datasets/${datasetId}/document/create_by_text`,
-      `/datasets/${datasetId}/document/create-by-text`,
-      `/datasets/${datasetId}/documents/create_by_text`,
-      `/datasets/${datasetId}/documents/create-by-text`,
-    ];
+    const isConsoleApi = /\/console\/api$/.test(this.baseUrl);
+    const candidates = isConsoleApi
+      ? [
+          `/datasets/${datasetId}/documents/create_by_text`,
+          `/datasets/${datasetId}/documents/create-by-text`,
+        ]
+      : [
+          `/datasets/${datasetId}/documents/create_by_text`,
+          `/datasets/${datasetId}/documents/create-by-text`,
+          `/datasets/${datasetId}/document/create_by_text`,
+          `/datasets/${datasetId}/document/create-by-text`,
+        ];
 
     let lastError: any;
     for (const ep of candidates) {
@@ -98,45 +112,51 @@ export class DifyClient {
   }
 
   async updateDocumentByText(datasetId: string, documentId: string, name: string, text: string, processRule?: any) {
-     const payload = {
-       name,
-       text,
-       process_rule: processRule ?? {
-         rules: {
-           pre_processing_rules: [
-             { id: 'remove_extra_spaces', enabled: true },
-             { id: 'remove_urls_emails', enabled: true },
-           ],
-           segmentation: {
-             separator: '###',
-             max_tokens: 500,
-           },
-         },
-         mode: 'automatic',
-       },
-     };
-     const candidates = [
-       `/datasets/${datasetId}/documents/${documentId}/update_by_text`,
-       `/datasets/${datasetId}/documents/${documentId}/update-by-text`,
-     ];
-     let lastError: any;
-     for (const ep of candidates) {
-       try {
-         // eslint-disable-next-line no-console
-         console.log(`[DifyClient] update_by_text trying: ${ep}`);
-         return await this.request(ep, {
-           method: 'POST',
-           body: JSON.stringify(payload),
-         });
-       } catch (e: any) {
-         lastError = e;
-         const msg = String(e?.message || e);
-         if (/(401|403)/i.test(msg)) throw e;
-         if (/(404|405|Not\s*Found|500|Internal\s*Server\s*Error)/i.test(msg)) continue;
-         throw e;
-       }
-     }
-     throw lastError;
+    const payload = {
+      name,
+      text,
+      process_rule: processRule ?? {
+        rules: {
+          pre_processing_rules: [
+            { id: 'remove_extra_spaces', enabled: true },
+            { id: 'remove_urls_emails', enabled: true },
+          ],
+          segmentation: {
+            separator: '###',
+            max_tokens: 500,
+          },
+        },
+        mode: 'automatic',
+      },
+    };
+    const isConsoleApi = /\/console\/api$/.test(this.baseUrl);
+    const candidates = isConsoleApi
+      ? [
+          `/datasets/${datasetId}/documents/${documentId}/update_by_text`,
+          `/datasets/${datasetId}/documents/${documentId}/update-by-text`,
+        ]
+      : [
+          `/datasets/${datasetId}/documents/${documentId}/update_by_text`,
+          `/datasets/${datasetId}/documents/${documentId}/update-by-text`,
+        ];
+    let lastError: any;
+    for (const ep of candidates) {
+      try {
+        // eslint-disable-next-line no-console
+        console.log(`[DifyClient] update_by_text trying: ${ep}`);
+        return await this.request(ep, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      } catch (e: any) {
+        lastError = e;
+        const msg = String(e?.message || e);
+        if (/(401|403)/i.test(msg)) throw e;
+        if (/(404|405|Not\s*Found|500|Internal\s*Server\s*Error)/i.test(msg)) continue;
+        throw e;
+      }
+    }
+    throw lastError;
   }
 
   async listDocuments(datasetId: string, page: number = 1, limit: number = 100, keyword: string = '') {
