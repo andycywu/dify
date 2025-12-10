@@ -407,10 +407,11 @@ async function fetchWikiPages() {
   const pagesWithContent = await Promise.all(
     publishedPages.map(async (page: any) => {
       try {
+        // 使用 path 作為參數以避免 schema 差異 (某些 Wiki.js 版本要求 path 而非 id)
         const contentQuery = `
-          query {
+          query ($path: String!) {
             pages {
-              single(id: ${page.id}) {
+              single(path: $path) {
                 id
                 path
                 title
@@ -421,7 +422,7 @@ async function fetchWikiPages() {
           }
         `;
 
-        const contentResult = await wikiRequest(contentQuery);
+        const contentResult = await wikiRequest(contentQuery, { path: page.path });
         return contentResult.pages.single;
       } catch (error) {
         console.warn(`⚠️  Failed to fetch content for page ${page.path}:`, error);
