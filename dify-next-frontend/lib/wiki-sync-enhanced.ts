@@ -186,12 +186,14 @@ async function syncDepartment(department: Department, options: SyncOptions) {
   console.log(`   📥 Fetching pages from Wiki.js path: /${wikiPath}`);
 
   const allPages = await fetchWikiPages();
-  // 有些 Wiki.js 會回傳以 '/' 開頭的 path，例如 '/common/...'
-  // 為了穩健性，這裡將 path 標準化為不含前導斜線再比對
+  // 有些 Wiki.js 會回傳以 '/' 開頭的 path，例如 '/COMMON/...'
+  // 再者部門代碼大小寫不一，這裡統一移除前導斜線並轉為小寫後比對
   const normalize = (s: string) => (s.startsWith('/') ? s.slice(1) : s);
+  const normalizeLower = (s: string) => normalize(s).toLowerCase();
+  const wikiPathLower = normalizeLower(wikiPath);
   const deptPages = allPages.filter((p: any) => {
-    const pp = normalize(p.path);
-    return pp === wikiPath || pp.startsWith(`${wikiPath}/`);
+    const ppLower = normalizeLower(p.path);
+    return ppLower === wikiPathLower || ppLower.startsWith(`${wikiPathLower}/`);
   });
   // Debug: 篩選後的前幾筆
   (deptPages.slice(0, 5) as any[]).forEach((p: any, i: number) => {
@@ -209,9 +211,9 @@ async function syncDepartment(department: Department, options: SyncOptions) {
   // 2. 如果指定了特定頁面，只處理該頁面
   const pagesToProcess = options.pagePath
     ? deptPages.filter((p: any) => {
-        const pp = normalize(p.path);
-        const target = normalize(options.pagePath as string);
-        return pp === target;
+        const ppLower = normalizeLower(p.path);
+        const targetLower = normalizeLower(options.pagePath as string);
+        return ppLower === targetLower;
       })
     : deptPages;
 
