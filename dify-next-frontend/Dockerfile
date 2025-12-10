@@ -80,6 +80,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/locales ./locales
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/pages ./pages
+COPY --from=builder /app/scripts ./scripts
 
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
