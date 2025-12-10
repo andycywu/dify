@@ -180,41 +180,15 @@ export const getDocuments = async (datasetId: string, params?: {
 
 export const createDocumentFromText = async (datasetId: string, data: CreateDocumentData) => {
   try {
-    // 依據官方文件：/v1/datasets/{dataset_id}/document/create_by_text
-    // 儘量用最小必要 payload（官方示例僅需 mode: automatic）
-    const requestData: any = {
+    // 走後端代理以避免 CORS 並使用 Admin Key
+    const response = await axios.post('/api/knowledge/create-by-text', {
+      datasetId,
       name: data.name,
       text: data.text,
       indexing_technique: data.indexing_technique || 'high_quality',
       process_rule: data.process_rule ? data.process_rule : { mode: 'automatic' },
-    };
-    // 以官方端點為優先，其他作為回退
-    const candidates = [
-      `/datasets/${datasetId}/document/create_by_text`, // official
-      `/datasets/${datasetId}/documents/create_by_text`,
-      `/datasets/${datasetId}/document/create-by-text`,
-      `/datasets/${datasetId}/documents/create-by-text`,
-    ];
-    let lastErr: any;
-    for (const ep of candidates) {
-      try {
-        // eslint-disable-next-line no-console
-        console.log('[knowledgeAdmin] create_by_text trying:', `${API_BASE_URL}${ep}`);
-        const response = await axiosInstance.post(ep, requestData);
-        return response.data;
-      } catch (err: any) {
-        lastErr = err;
-        const status = err?.response?.status;
-        const data = err?.response?.data;
-        // eslint-disable-next-line no-console
-        console.warn('[knowledgeAdmin] create_by_text failed:', { ep, status, data });
-        // 401/403 不再嘗試
-        if (status === 401 || status === 403) throw err;
-        // 404/405/500 嘗試下一個變體，其它錯誤直接拋出
-        if (![404, 405, 500].includes(status)) throw err;
-      }
-    }
-    throw lastErr;
+    })
+    return response.data
   } catch (error) {
     // 更完整的錯誤輸出
     if (error && typeof error === 'object' && 'response' in error) {
@@ -256,31 +230,11 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
     console.log('File type:', data.file.type);
     console.log('Config data:', JSON.stringify(configData));
 
-    // 以官方端點為優先（create-by-file, hyphen），其他作為回退
-    const fileCandidates = [
-      `/datasets/${datasetId}/document/create-by-file`, // official
-      `/datasets/${datasetId}/document/create_by_file`,
-      `/datasets/${datasetId}/documents/create-by-file`,
-      `/datasets/${datasetId}/documents/create_by_file`,
-    ];
-    let lastErr: any;
-    for (const ep of fileCandidates) {
-      try {
-        console.log('[knowledgeAdmin] create_by_file trying:', `${API_BASE_URL}${ep}`);
-        const response = await axiosInstance.post(ep, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        return response.data;
-      } catch (err: any) {
-        lastErr = err;
-        const status = err?.response?.status;
-        const data = err?.response?.data;
-        console.warn('[knowledgeAdmin] create_by_file failed:', { ep, status, data });
-        if (status === 401 || status === 403) throw err;
-        if (![404, 405, 500].includes(status)) throw err;
-      }
-    }
-    throw lastErr;
+    // TODO: 檔案上傳代理（避免 CORS）需以後端解析 multipart（formidable/multer），暫時仍直連
+    const response = await axiosInstance.post(`/datasets/${datasetId}/document/create-by-file`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
   } catch (error) {
     console.error('Error creating document from file:', error);
     if (error instanceof Error && 'response' in error) {
