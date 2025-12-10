@@ -383,32 +383,78 @@ async function syncPage(
 // ==================== Wiki.js 頁面獲取 ====================
 
 async function fetchWikiPages() {
-  // 步驟 1: 獲取頁面列表(不含 content)
-  const listQuery = `
-    query {
-      pages {
-        list {
-          id
-          path
-          title
-          updatedAt
-          isPublished
+  // 1) 以分頁撈取列表（若後端不支援 limit/offset，會自動退回單次 list）
+  const PAGE_SIZE = 100;
+  let offset = 0;
+  const publishedPages: any[] = [];
+  let usedPagination = false;
+
+  while (true) {
+    try {
+      const listQueryPaged = `
+        query ($limit: Int!, $offset: Int!) {
+          pages {
+            list(limit: $limit, offset: $offset) {
+              id
+              path
+              title
+              updatedAt
+              isPublished
+            }
+          }
         }
+      `;
+      const listResult = await wikiRequest(listQueryPaged, { limit: PAGE_SIZE, offset });
+      const batch = (listResult?.pages?.list ?? []) as any[];
+      publishedPages.push(...batch.filter((p: any) => p.isPublished));
+      usedPagination = true;
+      if (batch.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
+    } catch (e) {
+      // 若分頁查詢不支援，退回單次 list
+      if (!usedPagination) {
+        const listQuery = `
+          query {
+            pages {
+              list {
+                id
+                path
+                title
+                updatedAt
+                isPublished
+              }
+            }
+          }
+        `;
+        const listResult = await wikiRequest(listQuery);
+        return (listResult.pages.list as any[]).filter((p: any) => p.isPublished);
       }
+      break;
     }
-  `;
+  }
 
-  const listResult = await wikiRequest(listQuery);
-
-  // 只返回已發布的頁面
-  const publishedPages = listResult.pages.list.filter((p: any) => p.isPublished);
-
-  // 步驟 2: 為每個頁面獲取完整內容
+  // 2) 逐頁以 single 取得 content：先以 id（最穩定），失敗再以 path 備援
   const pagesWithContent = await Promise.all(
     publishedPages.map(async (page: any) => {
       try {
-        // 使用 path 作為參數以避免 schema 差異 (某些 Wiki.js 版本要求 path 而非 id)
-        const contentQuery = `
+        const byIdQuery = `
+          query ($id: Int!) {
+            pages {
+              single(id: $id) {
+                id
+                path
+                title
+                content
+                updatedAt
+              }
+            }
+          }
+        `;
+        const byIdRes = await wikiRequest(byIdQuery, { id: page.id });
+        if (byIdRes?.pages?.single) return byIdRes.pages.single;
+
+        // 備援：用 path
+        const byPathQuery = `
           query ($path: String!) {
             pages {
               single(path: $path) {
@@ -421,12 +467,10 @@ async function fetchWikiPages() {
             }
           }
         `;
-
-        const contentResult = await wikiRequest(contentQuery, { path: page.path });
-        return contentResult.pages.single;
+        const byPathRes = await wikiRequest(byPathQuery, { path: page.path });
+        return byPathRes.pages.single;
       } catch (error) {
         console.warn(`⚠️  Failed to fetch content for page ${page.path}:`, error);
-        // 如果獲取內容失敗,返回沒有 content 的頁面
         return { ...page, content: '' };
       }
     })
