@@ -26,7 +26,7 @@ const difyClient = new DifyClient(DIFY_API_URL, DIFY_ADMIN_API_KEY);
 
 // ==================== 部門與 Dataset 映射 ====================
 
-type Department = 'COMMON' | 'DQE' | 'DQE_CERTI' | 'HW' | 'PWR' | 'ME_LCM' | 'SW' | 'PJM' | 'ARCH' | 'TM';
+export type Department = 'COMMON' | 'DQE' | 'DQE_CERTI' | 'HW' | 'PWR' | 'ME_LCM' | 'SW' | 'PJM' | 'ARCH' | 'TM';
 
 const DEPARTMENT_CONFIG: Record<Department, { path: string; datasetId: string }> = {
   COMMON: {
