@@ -186,9 +186,13 @@ async function syncDepartment(department: Department, options: SyncOptions) {
   console.log(`   📥 Fetching pages from Wiki.js path: /${wikiPath}`);
 
   const allPages = await fetchWikiPages();
-  const deptPages = allPages.filter((p: any) =>
-    p.path === wikiPath || p.path.startsWith(`${wikiPath}/`)
-  );
+  // 有些 Wiki.js 會回傳以 '/' 開頭的 path，例如 '/common/...'
+  // 為了穩健性，這裡將 path 標準化為不含前導斜線再比對
+  const normalize = (s: string) => (s.startsWith('/') ? s.slice(1) : s);
+  const deptPages = allPages.filter((p: any) => {
+    const pp = normalize(p.path);
+    return pp === wikiPath || pp.startsWith(`${wikiPath}/`);
+  });
 
   console.log(`   Found ${deptPages.length} pages`);
   stats.total = deptPages.length;
@@ -200,7 +204,11 @@ async function syncDepartment(department: Department, options: SyncOptions) {
 
   // 2. 如果指定了特定頁面，只處理該頁面
   const pagesToProcess = options.pagePath
-    ? deptPages.filter((p: any) => p.path === options.pagePath)
+    ? deptPages.filter((p: any) => {
+        const pp = normalize(p.path);
+        const target = normalize(options.pagePath as string);
+        return pp === target;
+      })
     : deptPages;
 
   // 3. 獲取現有的同步狀態
