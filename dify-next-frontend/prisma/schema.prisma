@@ -412,3 +412,22 @@ model ChatbotSetting {
 
   @@map("chatbot_settings")
 }
+
+model WikiSyncStatus {
+  id             Int      @id @default(autoincrement())
+  department     String   @db.VarChar(100)
+  wikiPath       String   @db.VarChar(500)
+  wikiPageId     Int
+  wikiTitle      String   @db.VarChar(500)
+  wikiUpdatedAt  DateTime @db.Timestamp(6)
+  difyDocumentId String?  @db.VarChar(100)
+  lastSyncedAt   DateTime @default(now()) @db.Timestamp(6)
+  syncStatus     String   @default("success") @db.VarChar(50)
+  errorMessage   String?  @db.Text
+
+  @@unique([department, wikiPath], map: "wiki_sync_status_dept_path_unique")
+  @@index([department], map: "wiki_sync_status_dept_idx")
+  @@index([lastSyncedAt], map: "wiki_sync_status_synced_at_idx")
+  @@index([syncStatus], map: "wiki_sync_status_status_idx")
+  @@map("wiki_sync_status")
+}
