@@ -24,7 +24,9 @@ services:
 
       # Wiki.js GraphQL API (可選)
       - WIKI_GRAPHQL_URL=http://wiki:3000/graphql
-      - WIKI_API_KEY=${WIKI_API_KEY:-}
+  # 不要在 Compose 這層覆寫 WIKI_API_KEY，避免把容器內 /app/.env 的值蓋掉
+  # 若需要由 Compose 注入，請明確在主機環境或 .env 檔提供 WIKI_API_KEY 後再取消註解
+  # - WIKI_API_KEY=${WIKI_API_KEY}
 
     depends_on:
       - db
