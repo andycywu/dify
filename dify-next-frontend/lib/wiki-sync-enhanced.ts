@@ -12,9 +12,11 @@ import { preprocessFile } from './preprocess';
 const WIKI_GRAPHQL_URL = process.env.WIKI_GRAPHQL_URL || 'http://wiki:3000/graphql';
 const WIKI_API_KEY = process.env.WIKI_API_KEY;
 // 優先使用與前端相同的外部 API 與 Dataset Key，以確保路由/網關一致
-const DIFY_API_URL = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL
+const DIFY_API_BASE_RAW = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL
   || process.env.DIFY_API_URL
   || 'http://api:5001/v1';
+// 若環境提供的是 /v1，優先切換到 /console/api（Dify 後台資料集管理常走此前綴）
+const DIFY_API_URL = DIFY_API_BASE_RAW.replace(/\/?v1\/?$/, '/console/api');
 const DIFY_ADMIN_API_KEY = process.env.NEXT_PUBLIC_DIFY_DATASET_KEY
   || process.env.DIFY_ADMIN_API_KEY;
 
@@ -29,6 +31,9 @@ if (!DIFY_ADMIN_API_KEY) {
 const difyClient = new DifyClient(DIFY_API_URL, DIFY_ADMIN_API_KEY);
 // 調試：顯示使用的 Dify 端點（隱去金鑰）
 console.log(`   🔧 Dify API base: ${DIFY_API_URL}`);
+if (DIFY_API_BASE_RAW !== DIFY_API_URL) {
+  console.log(`   🔧 Rebased from: ${DIFY_API_BASE_RAW}`);
+}
 console.log(`   🔧 Dify key head: ${DIFY_ADMIN_API_KEY?.slice(0, 10) || 'N/A'}...`);
 
 // ==================== 部門與 Dataset 映射 ====================
