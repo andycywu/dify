@@ -6,24 +6,31 @@ declare const process: any;
 export class DifyClient {
   private baseUrl: string;
   private apiKey: string;
+  private adminKey?: string;
+  private datasetKey?: string;
 
   constructor(baseUrl: string, apiKey: string) {
-    // Normalize base URL and prefer admin key for console API
+    // Normalize base URL
     this.baseUrl = baseUrl.replace(/\/$/, '');
-    const isConsoleApi = /\/console\/api$/.test(this.baseUrl);
-    const envAdminKey = process.env.DIFY_ADMIN_API_KEY;
-    const envDatasetKey = process.env.NEXT_PUBLIC_DIFY_DATASET_KEY || process.env.DIFY_DATASET_API_KEY;
-    // If using console/api, admin key is required; otherwise fall back to provided apiKey or dataset key
-    this.apiKey = isConsoleApi ? (envAdminKey || apiKey) : (apiKey || envDatasetKey || envAdminKey || '');
+    // Capture keys from env for flexible selection
+    this.adminKey = process.env.DIFY_ADMIN_API_KEY || undefined;
+    this.datasetKey = process.env.NEXT_PUBLIC_DIFY_DATASET_KEY || process.env.DIFY_DATASET_API_KEY || undefined;
+    // Backward-compatible default apiKey (will be overridden per request)
+    this.apiKey = apiKey || this.datasetKey || this.adminKey || '';
   }
 
-  private async request(endpoint: string, options: RequestInit = {}) {
-    const url = `${this.baseUrl}${endpoint}`;
+  private async request(endpoint: string, options: RequestInit = {}, useAdmin: boolean = false, baseOverride?: string) {
+    const base = (baseOverride || this.baseUrl).replace(/\/$/, '');
+    const url = `${base}${endpoint}`;
+    const token = useAdmin
+      ? (this.adminKey || this.apiKey)
+      : (this.datasetKey || this.apiKey || this.adminKey || '');
     const headers = {
-      'Authorization': `Bearer ${this.apiKey}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
       ...options.headers,
     };
+
 
     const response = await fetch(url, { ...options, headers });
     if (!response.ok) {
@@ -50,7 +57,11 @@ export class DifyClient {
   }
 
   async listDatasets(page: number = 1, limit: number = 20) {
-    return this.request(`/datasets?page=${page}&limit=${limit}`);
+    return this.request(`/datasets?page=${page}&limit=${limit}` as any, {}, true);
+  }
+
+  async getDataset(id: string) {
+    return this.request(`/datasets/${id}`, {}, true);
   }
 
   async createDocumentByText(datasetId: string, name: string, text: string, indexingTechnique: string = 'high_quality', processRule?: any) {
@@ -73,18 +84,16 @@ export class DifyClient {
       },
     };
 
+    // Use /v1 for dataset document write operations; console/api is primarily for admin console
     const isConsoleApi = /\/console\/api$/.test(this.baseUrl);
-    const candidates = isConsoleApi
-      ? [
-          `/datasets/${datasetId}/documents/create_by_text`,
-          `/datasets/${datasetId}/documents/create-by-text`,
-        ]
-      : [
-          `/datasets/${datasetId}/documents/create_by_text`,
-          `/datasets/${datasetId}/documents/create-by-text`,
-          `/datasets/${datasetId}/document/create_by_text`,
-          `/datasets/${datasetId}/document/create-by-text`,
-        ];
+    const apiBase = isConsoleApi ? this.baseUrl.replace(/\/console\/api$/, '/v1') : this.baseUrl;
+    // Try singular first (commonly used by Dify /v1), then plural fallbacks
+    const candidates = [
+      `/datasets/${datasetId}/document/create_by_text`,
+      `/datasets/${datasetId}/document/create-by-text`,
+      `/datasets/${datasetId}/documents/create_by_text`,
+      `/datasets/${datasetId}/documents/create-by-text`,
+    ];
 
     let lastError: any;
     for (const ep of candidates) {
@@ -95,7 +104,7 @@ export class DifyClient {
         return await this.request(ep, {
           method: 'POST',
           body: JSON.stringify(payload),
-        });
+        }, false, apiBase);
       } catch (e: any) {
         lastError = e;
         const msg = String(e?.message || e);
@@ -130,15 +139,14 @@ export class DifyClient {
       },
     };
     const isConsoleApi = /\/console\/api$/.test(this.baseUrl);
-    const candidates = isConsoleApi
-      ? [
-          `/datasets/${datasetId}/documents/${documentId}/update_by_text`,
-          `/datasets/${datasetId}/documents/${documentId}/update-by-text`,
-        ]
-      : [
-          `/datasets/${datasetId}/documents/${documentId}/update_by_text`,
-          `/datasets/${datasetId}/documents/${documentId}/update-by-text`,
-        ];
+    const apiBase = isConsoleApi ? this.baseUrl.replace(/\/console\/api$/, '/v1') : this.baseUrl;
+    const candidates = [
+      `/datasets/${datasetId}/documents/${documentId}/update_by_text`,
+      `/datasets/${datasetId}/documents/${documentId}/update-by-text`,
+      // optional singular fallbacks if server expects singular for update
+      `/datasets/${datasetId}/document/${documentId}/update_by_text`,
+      `/datasets/${datasetId}/document/${documentId}/update-by-text`,
+    ];
     let lastError: any;
     for (const ep of candidates) {
       try {
@@ -147,7 +155,7 @@ export class DifyClient {
         return await this.request(ep, {
           method: 'POST',
           body: JSON.stringify(payload),
-        });
+        }, false, apiBase);
       } catch (e: any) {
         lastError = e;
         const msg = String(e?.message || e);
