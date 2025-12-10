@@ -1,5 +1,5 @@
 # Dify Next Frontend Dockerfile - Production Optimized with PostgreSQL
-FROM node:18-slim AS deps
+FROM node:20-slim AS deps
 WORKDIR /app
 
 # Install dependencies for Prisma
@@ -9,12 +9,14 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 RUN \
-  if [ -f package-lock.json ]; then npm ci; \
-  else echo "Lockfile not found." && exit 1; \
+  if [ -f package-lock.json ]; then \
+    npm ci || (echo "npm ci failed, falling back to npm install" && npm install); \
+  else \
+    echo "Lockfile not found, running npm install" && npm install; \
   fi
 
 # Rebuild the source code only if deps change
-FROM node:18-slim AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 # Install dependencies for Prisma
@@ -49,7 +51,7 @@ RUN npm run build
 
 # Production image, copy all the files and run next
 
-FROM node:18-slim AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 # Install dependencies for Prisma

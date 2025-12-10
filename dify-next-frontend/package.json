@@ -20,6 +20,7 @@
     "prisma:generate": "prisma generate"
   },
   "dependencies": {
+  "dotenv": "^16.4.5",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@prisma/client": "^6.17.1",

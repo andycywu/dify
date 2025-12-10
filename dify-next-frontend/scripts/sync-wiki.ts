@@ -10,6 +10,9 @@
  *   npx tsx scripts/sync-wiki.ts --dry-run
  */
 
+// 先載入 .env，確保後續匯入的程式碼能讀到環境變數
+import 'dotenv/config';
+
 import { syncWikiToDifyEnhanced, resetFailedSyncs, clearSyncStatus, getSyncStats } from '../lib/wiki-sync-enhanced';
 
 // 解析命令列參數

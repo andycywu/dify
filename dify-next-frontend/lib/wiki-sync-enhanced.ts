@@ -383,57 +383,24 @@ async function syncPage(
 // ==================== Wiki.js 頁面獲取 ====================
 
 async function fetchWikiPages() {
-  // 1) 以分頁撈取列表（若後端不支援 limit/offset，會自動退回單次 list）
-  const PAGE_SIZE = 100;
-  let offset = 0;
-  const publishedPages: any[] = [];
-  let usedPagination = false;
-
-  while (true) {
-    try {
-      const listQueryPaged = `
-        query ($limit: Int!, $offset: Int!) {
-          pages {
-            list(limit: $limit, offset: $offset) {
-              id
-              path
-              title
-              updatedAt
-              isPublished
-            }
-          }
+  // 1) 單次列表（部分 Wiki.js 不支援 offset 參數）
+  const listQuery = `
+    query {
+      pages {
+        list {
+          id
+          path
+          title
+          updatedAt
+          isPublished
         }
-      `;
-      const listResult = await wikiRequest(listQueryPaged, { limit: PAGE_SIZE, offset });
-      const batch = (listResult?.pages?.list ?? []) as any[];
-      publishedPages.push(...batch.filter((p: any) => p.isPublished));
-      usedPagination = true;
-      if (batch.length < PAGE_SIZE) break;
-      offset += PAGE_SIZE;
-    } catch (e) {
-      // 若分頁查詢不支援，退回單次 list
-      if (!usedPagination) {
-        const listQuery = `
-          query {
-            pages {
-              list {
-                id
-                path
-                title
-                updatedAt
-                isPublished
-              }
-            }
-          }
-        `;
-        const listResult = await wikiRequest(listQuery);
-        return (listResult.pages.list as any[]).filter((p: any) => p.isPublished);
       }
-      break;
     }
-  }
+  `;
+  const listResult = await wikiRequest(listQuery);
+  const publishedPages = (listResult.pages.list as any[]).filter((p: any) => p.isPublished);
 
-  // 2) 逐頁以 single 取得 content：先以 id（最穩定），失敗再以 path 備援
+  // 2) 逐頁以 single(id) 取得 content（部分 Wiki.js 僅支援 id，不支援 path 引數）
   const pagesWithContent = await Promise.all(
     publishedPages.map(async (page: any) => {
       try {
@@ -451,24 +418,7 @@ async function fetchWikiPages() {
           }
         `;
         const byIdRes = await wikiRequest(byIdQuery, { id: page.id });
-        if (byIdRes?.pages?.single) return byIdRes.pages.single;
-
-        // 備援：用 path
-        const byPathQuery = `
-          query ($path: String!) {
-            pages {
-              single(path: $path) {
-                id
-                path
-                title
-                content
-                updatedAt
-              }
-            }
-          }
-        `;
-        const byPathRes = await wikiRequest(byPathQuery, { path: page.path });
-        return byPathRes.pages.single;
+        return byIdRes?.pages?.single ?? { ...page, content: '' };
       } catch (error) {
         console.warn(`⚠️  Failed to fetch content for page ${page.path}:`, error);
         return { ...page, content: '' };
