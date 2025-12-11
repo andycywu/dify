@@ -25,7 +25,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return
   }
 
-  const baseRaw = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || process.env.DIFY_API_URL || 'http://api:5001/v1'
+  // Prefer internal API_URL for server-side calls to avoid loopback issues
+  // API_URL in .env.docker is usually http://api:5001 (without /v1)
+  let baseRaw = process.env.API_URL || process.env.DIFY_API_URL || process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://api:5001/v1'
+
+  // If using internal API_URL (port 5001), ensure /v1 is appended if missing
+  if (baseRaw.includes(':5001') && !baseRaw.endsWith('/v1') && !baseRaw.endsWith('/console/api')) {
+    baseRaw = `${baseRaw}/v1`
+  }
+
   const base = String(baseRaw).replace(/\/$/, '')
   const adminKey = process.env.DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_DATASET_KEY
 
@@ -33,6 +41,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ error: 'Missing Dify API key in environment' })
     return
   }
+
+  console.log(`[CreateByText] Using base: ${base}, Key: ${adminKey.substring(0, 10)}...`)
 
   const payload = {
     name,
@@ -52,8 +62,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let lastData: any = { error: 'Unknown error' }
 
   for (const ep of candidates) {
+    const url = base + ep
     try {
-      const resp = await fetch(base + ep, {
+      console.log(`[CreateByText] Trying: ${url}`)
+      const resp = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminKey}`,
@@ -64,7 +76,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const text = await resp.text()
       let data: any
       try { data = JSON.parse(text) } catch { data = text }
+
       if (!resp.ok) {
+        console.log(`[CreateByText] Failed ${ep}: ${resp.status}`, data)
         lastStatus = resp.status
         lastData = data
         // 401/403 不再嘗試
@@ -74,9 +88,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         break
       }
       // 成功
+      console.log(`[CreateByText] Success: ${ep}`)
       res.status(200).json(data)
       return
     } catch (e: any) {
+      console.error(`[CreateByText] Error calling ${url}:`, e)
       lastStatus = 500
       lastData = { error: String(e?.message || e) }
       // 繼續嘗試下一個變體

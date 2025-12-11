@@ -54,7 +54,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
      return
   }
 
-  const baseRaw = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || process.env.DIFY_API_URL || 'http://api:5001/v1'
+  // Prefer internal API_URL for server-side calls
+  let baseRaw = process.env.API_URL || process.env.DIFY_API_URL || process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://api:5001/v1'
+
+  // If using internal API_URL (port 5001), ensure /v1 is appended if missing
+  if (baseRaw.includes(':5001') && !baseRaw.endsWith('/v1') && !baseRaw.endsWith('/console/api')) {
+    baseRaw = `${baseRaw}/v1`
+  }
+
   const base = String(baseRaw).replace(/\/$/, '')
   const adminKey = process.env.DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_DATASET_KEY
 
@@ -62,6 +69,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ error: 'Missing Dify API key in environment' })
     return
   }
+
+  console.log(`[CreateByFile] Using base: ${base}, Key: ${adminKey.substring(0, 10)}...`)
 
   // Construct upstream FormData
   const upstreamFormData = new FormData()
