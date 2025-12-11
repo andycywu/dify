@@ -180,13 +180,15 @@ export const createDocumentFromText = async (datasetId: string, data: CreateDocu
   try {
     console.log(`[knowledgeAdmin] Creating text document via proxy for dataset: ${datasetId}`);
 
-    const response = await axios.post(`${API_PROXY_BASE}/create-by-text`, {
+    const payload: any = {
       datasetId,
       name: data.name,
       text: data.text,
       indexing_technique: data.indexing_technique || 'high_quality',
-      process_rule: data.process_rule || { mode: 'automatic' }
-    });
+      process_rule: data.process_rule || { mode: 'automatic' },
+    };
+
+    const response = await axios.post(`${API_PROXY_BASE}/create-by-text`, payload);
 
     return response.data;
   } catch (error: any) {
@@ -204,16 +206,12 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
     formData.append('datasetId', datasetId);
     formData.append('file', data.file);
 
-    // Pass process_rule as JSON string if needed, or let backend handle defaults
-    if (data.process_rule) {
-      formData.append('process_rule', JSON.stringify(data.process_rule));
-    } else {
-       formData.append('process_rule', JSON.stringify({ mode: 'automatic' }));
-    }
+    // Ensure defaults are sent if not provided
+    const processRule = data.process_rule || { mode: 'automatic' };
+    formData.append('process_rule', JSON.stringify(processRule));
 
-    if (data.indexing_technique) {
-        formData.append('indexing_technique', data.indexing_technique);
-    }
+    const indexingTechnique = data.indexing_technique || 'high_quality';
+    formData.append('indexing_technique', indexingTechnique);
 
     const response = await axios.post(`${API_PROXY_BASE}/create-by-file`, formData, {
       headers: {

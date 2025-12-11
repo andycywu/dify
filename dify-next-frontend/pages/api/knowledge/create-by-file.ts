@@ -58,39 +58,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const upstreamFormData = new FormData()
 
       // 1. 準備 'data' 欄位 (JSON String)
-      // 預設使用 curl 範例中的 custom 規則，如果前端沒傳 process_rule 則使用此預設值
-      const defaultProcessRule = {
-        mode: "custom",
-        rules: {
-          pre_processing_rules: [
-            { id: "remove_extra_spaces", enabled: true },
-            { id: "remove_urls_emails", enabled: true }
-          ],
-          segmentation: {
-            separator: "###",
-            max_tokens: 500
-          }
-        }
-      }
+      const dataObj: any = {}
 
-      let processRule = defaultProcessRule
       if (fields.process_rule) {
         try {
           const rawRule = Array.isArray(fields.process_rule) ? fields.process_rule[0] : fields.process_rule
           if (rawRule) {
-             processRule = JSON.parse(rawRule)
+             dataObj.process_rule = JSON.parse(rawRule)
           }
         } catch (e) {
-          console.warn('Failed to parse process_rule, using default')
+          console.warn('Failed to parse process_rule')
         }
       }
 
-      const dataPayload = JSON.stringify({
-        indexing_technique: 'high_quality',
-        process_rule: processRule
-      })
+      if (fields.indexing_technique) {
+         const rawTech = Array.isArray(fields.indexing_technique) ? fields.indexing_technique[0] : fields.indexing_technique
+         if (rawTech) {
+            dataObj.indexing_technique = rawTech
+         }
+      }
 
-      upstreamFormData.append('data', dataPayload)
+      // 只有當有內容時才 append 'data'
+      if (Object.keys(dataObj).length > 0) {
+        upstreamFormData.append('data', JSON.stringify(dataObj))
+      }
 
       // 2. 準備 'file' 欄位
       const fileBuffer = fs.readFileSync(uploadedFile.filepath)
