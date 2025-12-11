@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  
+
 
   try {
     const { datasetId, name, text, indexing_technique, process_rule } = req.body
@@ -51,6 +51,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       body.process_rule = process_rule
     }
 
+    console.log(`[Proxy] Payload:`, JSON.stringify(body, null, 2))
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -60,7 +62,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       body: JSON.stringify(body),
     })
 
-    const data = await response.json()
+    const responseText = await response.text()
+    console.log(`[Proxy] Response Status: ${response.status}`)
+    console.log(`[Proxy] Response Body: ${responseText}`)
+
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch (e) {
+      console.error('[Proxy] Failed to parse JSON response')
+      return res.status(response.status || 500).send(responseText)
+    }
 
     if (!response.ok) {
       console.error('[Proxy] Error:', response.status, data)
