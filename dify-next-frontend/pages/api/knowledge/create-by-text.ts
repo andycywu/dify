@@ -32,9 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       baseUrl += '/v1'
     }
 
-    // 嚴格按照 curl 範例：/v1/datasets/{dataset_id}/document/create-by-text
-    // 注意：這裡是單數 document 和連字號 create-by-text
-    const url = `${baseUrl}/datasets/${datasetId}/document/create-by-text`
+    // 嚴格按照 curl 範例：/v1/datasets/{dataset_id}/document/create_by_text
+    // 注意：這裡是單數 document 和底線 create_by_text
+    const url = `${baseUrl}/datasets/${datasetId}/document/create_by_text`
 
     console.log(`[Proxy] POST ${url}`)
 
@@ -43,8 +43,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       text,
       indexing_technique: indexing_technique || 'high_quality',
       process_rule: process_rule || { mode: 'automatic' },
-      doc_form: 'text_model',
-      doc_language: 'English',
     }
 
     console.log(`[Proxy] Payload:`, JSON.stringify(body, null, 2))
