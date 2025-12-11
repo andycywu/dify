@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ message: 'Missing datasetId' })
       }
 
-      const uploadedFile = Array.isArray(files.file) ? files.file[0] : (files.file as FormidableFile)
+      const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file
       if (!uploadedFile) {
         return res.status(400).json({ message: 'Missing file' })
       }
