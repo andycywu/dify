@@ -4,7 +4,7 @@ import uuid
 from typing import Any, Literal, Union
 
 from sqlalchemy import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from werkzeug.exceptions import NotFound
 
 from configs import dify_config
@@ -16,7 +16,6 @@ from constants import (
 )
 from core.file import helpers as file_helpers
 from core.rag.extractor.extract_processor import ExtractProcessor
-from extensions.ext_database import db
 from extensions.ext_storage import storage
 from libs.datetime_utils import naive_utc_now
 from libs.helper import extract_tenant_id
@@ -152,7 +151,7 @@ class FileService:
             used_at=naive_utc_now(),
         )
 
-        with Session(db.engine, expire_on_commit=False) as session:
+        with self._session_maker(expire_on_commit=False) as session:
             session.add(upload_file)
             session.commit()
 

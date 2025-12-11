@@ -606,8 +606,6 @@ services:
       redis:
         condition: service_started
     volumes:
-      # Mount the source code to apply fixes
-      - ../api:/app/api
       # Mount the storage directory to the container, for storing user files.
       - ./volumes/app/storage:/app/api/storage
     networks:
