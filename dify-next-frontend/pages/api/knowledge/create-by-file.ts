@@ -1,11 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import formidable from 'formidable'
+import { IncomingForm, File as FormidableFile } from 'formidable'
 import fs from 'fs'
 // Node 20 has global FormData and Blob.
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // 必須關閉以處理 multipart/form-data
   },
 }
 
@@ -14,136 +14,112 @@ declare const process: any
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method Not Allowed' })
-    return
+    return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  const form = formidable({})
-  let fields: formidable.Fields
-  let files: formidable.Files
+  const form = new IncomingForm()
 
-  try {
-    [fields, files] = await form.parse(req)
-  } catch (err) {
-    console.error('Form parse error:', err)
-    res.status(400).json({ error: 'Failed to parse form data' })
-    return
-  }
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      console.error('Form parse error:', err)
+      return res.status(500).json({ message: 'Error parsing form data' })
+    }
 
-  const uploadedFile = Array.isArray(files.file) ? files.file[0] : files.file
-  const dataField = Array.isArray(fields.data) ? fields.data[0] : fields.data
-
-  if (!uploadedFile) {
-    res.status(400).json({ error: 'Missing file' })
-    return
-  }
-
-  // Parse datasetId from fields or URL?
-  // The frontend sends it in the URL usually, but here we are proxying.
-  // We should probably pass datasetId in the form data or query param.
-  // Let's check how I'll call it. I'll pass it in query or body.
-  // Since it's multipart, adding a field is easy.
-  // But wait, the frontend `createDocumentFromFile` takes `datasetId` as arg.
-  // I should append it to FormData in the frontend.
-
-  // Let's assume frontend appends 'datasetId' to formData.
-  const datasetId = Array.isArray(fields.datasetId) ? fields.datasetId[0] : fields.datasetId
-
-  if (!datasetId) {
-     res.status(400).json({ error: 'Missing datasetId' })
-     return
-  }
-
-  // Prefer internal API_URL for server-side calls
-  let baseRaw = process.env.API_URL || process.env.DIFY_API_URL || process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://api:5001/v1'
-
-  // If using internal API_URL (port 5001), ensure /v1 is appended if missing
-  if (baseRaw.includes(':5001') && !baseRaw.endsWith('/v1') && !baseRaw.endsWith('/console/api')) {
-    baseRaw = `${baseRaw}/v1`
-  }
-
-  const base = String(baseRaw).replace(/\/$/, '')
-  const adminKey = process.env.DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_DATASET_KEY
-
-  if (!adminKey) {
-    res.status(500).json({ error: 'Missing Dify API key in environment' })
-    return
-  }
-
-  console.log(`[CreateByFile] Using base: ${base}, Key: ${adminKey.substring(0, 10)}...`)
-
-  // Construct upstream FormData
-  const upstreamFormData = new FormData()
-
-  // Read file
-  const fileBuffer = fs.readFileSync(uploadedFile.filepath)
-  const fileBlob = new Blob([fileBuffer], { type: uploadedFile.mimetype || 'application/octet-stream' })
-  upstreamFormData.append('file', fileBlob as any, uploadedFile.originalFilename || 'upload.txt')
-
-  // Handle 'data' field (JSON config)
-  // Ensure process_rule is set correctly if missing
-  let configData: any = {}
-  try {
-    configData = dataField ? JSON.parse(dataField) : {}
-  } catch (e) {
-    // ignore
-  }
-
-  // Force automatic mode if not present or if causing issues
-  if (!configData.process_rule) {
-    configData.process_rule = { mode: 'automatic' }
-  } else if (configData.process_rule.mode === 'custom' && !configData.process_rule.rules) {
-      // Fix the specific error user saw: "Process rule rules is required"
-      // If custom mode but no rules, switch to automatic or provide default rules?
-      // Safer to switch to automatic.
-      configData.process_rule.mode = 'automatic'
-  }
-
-  upstreamFormData.append('data', JSON.stringify(configData))
-
-  const candidates = [
-    `/datasets/${datasetId}/document/create_by_file`, // official
-    `/datasets/${datasetId}/documents/create_by_file`,
-    `/datasets/${datasetId}/document/create-by-file`,
-    `/datasets/${datasetId}/documents/create-by-file`,
-  ]
-
-  let lastStatus = 500
-  let lastData: any = { error: 'Unknown error' }
-
-  for (const ep of candidates) {
     try {
-      const resp = await fetch(base + ep, {
+      const datasetId = Array.isArray(fields.datasetId) ? fields.datasetId[0] : fields.datasetId
+      if (!datasetId) {
+        return res.status(400).json({ message: 'Missing datasetId' })
+      }
+
+      const uploadedFile = Array.isArray(files.file) ? files.file[0] : (files.file as FormidableFile)
+      if (!uploadedFile) {
+        return res.status(400).json({ message: 'Missing file' })
+      }
+
+      // 優先使用 Admin Key
+      const apiKey = process.env.DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_DATASET_KEY
+
+      if (!apiKey) {
+        return res.status(500).json({ message: 'Server configuration error: API Key is missing' })
+      }
+
+      let baseUrl = (process.env.API_URL || process.env.DIFY_API_URL || 'http://api:5001').replace(/\/$/, '')
+      if (!baseUrl.endsWith('/v1')) {
+        baseUrl += '/v1'
+      }
+
+      // 嚴格按照 curl 範例：/v1/datasets/{dataset_id}/document/create-by-file
+      // 注意：這裡是單數 document 和連字號 create-by-file
+      const url = `${baseUrl}/datasets/${datasetId}/document/create-by-file`
+
+      console.log(`[Proxy] POST File to ${url}`)
+
+      // 建構 FormData
+      const upstreamFormData = new FormData()
+
+      // 1. 準備 'data' 欄位 (JSON String)
+      // 預設使用 curl 範例中的 custom 規則，如果前端沒傳 process_rule 則使用此預設值
+      const defaultProcessRule = {
+        mode: "custom",
+        rules: {
+          pre_processing_rules: [
+            { id: "remove_extra_spaces", enabled: true },
+            { id: "remove_urls_emails", enabled: true }
+          ],
+          segmentation: {
+            separator: "###",
+            max_tokens: 500
+          }
+        }
+      }
+
+      let processRule = defaultProcessRule
+      if (fields.process_rule) {
+        try {
+          const rawRule = Array.isArray(fields.process_rule) ? fields.process_rule[0] : fields.process_rule
+          if (rawRule) {
+             processRule = JSON.parse(rawRule)
+          }
+        } catch (e) {
+          console.warn('Failed to parse process_rule, using default')
+        }
+      }
+
+      const dataPayload = JSON.stringify({
+        indexing_technique: 'high_quality',
+        process_rule: processRule
+      })
+
+      upstreamFormData.append('data', dataPayload)
+
+      // 2. 準備 'file' 欄位
+      const fileBuffer = fs.readFileSync(uploadedFile.filepath)
+      const fileBlob = new Blob([fileBuffer], { type: uploadedFile.mimetype || 'application/octet-stream' })
+
+      // 使用 as any 繞過 TS 類型檢查 (Node FormData vs DOM FormData)
+      upstreamFormData.append('file', fileBlob as any, uploadedFile.originalFilename || 'upload.txt')
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${adminKey}`,
-          // fetch with FormData automatically sets Content-Type to multipart/form-data with boundary
+          'Authorization': `Bearer ${apiKey}`,
+          // fetch 會自動設定 multipart boundary Content-Type
         },
         body: upstreamFormData,
       })
 
-      const text = await resp.text()
-      let data: any
-      try { data = JSON.parse(text) } catch { data = text }
+      const responseData = await response.json()
 
-      if (!resp.ok) {
-        lastStatus = resp.status
-        lastData = data
-        console.log(`Failed ${ep}: ${resp.status}`, data)
-
-        if (resp.status === 401 || resp.status === 403) break
-        if ([404, 405, 500].includes(resp.status)) continue
-        break
+      if (!response.ok) {
+        console.error('[Proxy] Upstream Error:', response.status, responseData)
+        return res.status(response.status).json(responseData)
       }
 
-      res.status(200).json(data)
-      return
-    } catch (e: any) {
-      lastStatus = 500
-      lastData = { error: String(e?.message || e) }
-      console.error(`Error calling ${ep}:`, e)
-    }
-  }
+      return res.status(200).json(responseData)
 
-  res.status(lastStatus).json({ error: 'Failed to create by file', detail: lastData })
+    } catch (error: any) {
+      console.error('[Proxy] Server Error:', error)
+      return res.status(500).json({ message: error.message || 'Internal Server Error' })
+    }
+  })
 }

@@ -1,103 +1,65 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-// Minimal process typing to avoid TS errors if @types/node is not present
+// Minimal process typing
 declare const process: any
-
-type CreateByTextBody = {
-  datasetId: string
-  name: string
-  text: string
-  indexing_technique?: 'high_quality' | 'economy' | string
-  process_rule?: any
-}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method Not Allowed' })
-    return
+    return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  const body = req.body as CreateByTextBody
-  const { datasetId, name, text, indexing_technique = 'high_quality', process_rule } = body || {}
+  try {
+    const { datasetId, name, text, indexing_technique, process_rule } = req.body
 
-  if (!datasetId || !name || !text) {
-    res.status(400).json({ error: 'Missing required fields: datasetId, name, text' })
-    return
-  }
-
-  // Prefer internal API_URL for server-side calls to avoid loopback issues
-  // API_URL in .env.docker is usually http://api:5001 (without /v1)
-  let baseRaw = process.env.API_URL || process.env.DIFY_API_URL || process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://api:5001/v1'
-
-  // If using internal API_URL (port 5001), ensure /v1 is appended if missing
-  if (baseRaw.includes(':5001') && !baseRaw.endsWith('/v1') && !baseRaw.endsWith('/console/api')) {
-    baseRaw = `${baseRaw}/v1`
-  }
-
-  const base = String(baseRaw).replace(/\/$/, '')
-  const adminKey = process.env.DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_DATASET_KEY
-
-  if (!adminKey) {
-    res.status(500).json({ error: 'Missing Dify API key in environment' })
-    return
-  }
-
-  console.log(`[CreateByText] Using base: ${base}, Key: ${adminKey.substring(0, 10)}...`)
-
-  const payload = {
-    name,
-    text,
-    indexing_technique,
-    process_rule: process_rule ?? { mode: 'automatic' },
-  }
-
-  const candidates = [
-    `/datasets/${datasetId}/document/create_by_text`, // official
-    `/datasets/${datasetId}/documents/create_by_text`,
-    `/datasets/${datasetId}/document/create-by-text`,
-    `/datasets/${datasetId}/documents/create-by-text`,
-  ]
-
-  let lastStatus = 500
-  let lastData: any = { error: 'Unknown error' }
-
-  for (const ep of candidates) {
-    const url = base + ep
-    try {
-      console.log(`[CreateByText] Trying: ${url}`)
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${adminKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-      const text = await resp.text()
-      let data: any
-      try { data = JSON.parse(text) } catch { data = text }
-
-      if (!resp.ok) {
-        console.log(`[CreateByText] Failed ${ep}: ${resp.status}`, data)
-        lastStatus = resp.status
-        lastData = data
-        // 401/403 不再嘗試
-        if (resp.status === 401 || resp.status === 403) break
-        // 404/405/500 嘗試下一個變體
-        if ([404, 405, 500].includes(resp.status)) continue
-        break
-      }
-      // 成功
-      console.log(`[CreateByText] Success: ${ep}`)
-      res.status(200).json(data)
-      return
-    } catch (e: any) {
-      console.error(`[CreateByText] Error calling ${url}:`, e)
-      lastStatus = 500
-      lastData = { error: String(e?.message || e) }
-      // 繼續嘗試下一個變體
+    if (!datasetId || !name || !text) {
+      return res.status(400).json({ message: 'Missing required fields: datasetId, name, text' })
     }
-  }
 
-  res.status(lastStatus).json({ error: 'Failed to create by text', detail: lastData })
+    // 優先使用 Admin Key，否則使用 Dataset Key
+    const apiKey = process.env.DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_DATASET_KEY
+
+    if (!apiKey) {
+      return res.status(500).json({ message: 'Server configuration error: API Key is missing' })
+    }
+
+    // 優先使用內部 API URL (http://api:5001)，避免 DNS 問題
+    let baseUrl = (process.env.API_URL || process.env.DIFY_API_URL || 'http://api:5001').replace(/\/$/, '')
+
+    // 確保 Base URL 包含 /v1
+    if (!baseUrl.endsWith('/v1')) {
+      baseUrl += '/v1'
+    }
+
+    // 嚴格按照 curl 範例：/v1/datasets/{dataset_id}/document/create-by-text
+    // 注意：這裡是單數 document 和連字號 create-by-text
+    const url = `${baseUrl}/datasets/${datasetId}/document/create-by-text`
+
+    console.log(`[Proxy] POST ${url}`)
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        text,
+        indexing_technique: indexing_technique || 'high_quality',
+        process_rule: process_rule || { mode: 'automatic' }
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.error('[Proxy] Error:', response.status, data)
+      return res.status(response.status).json(data)
+    }
+
+    return res.status(200).json(data)
+  } catch (error: any) {
+    console.error('[Proxy] Server Error:', error)
+    return res.status(500).json({ message: error.message || 'Internal Server Error' })
+  }
 }

@@ -1,10 +1,9 @@
-// Knowledge Base Admin API Service
 import axios from 'axios';
-// Minimal Node env typing fallback (avoid TS errors if @types/node is absent in Next build)
+
+// Minimal Node env typing fallback
 declare const process: any;
 
-// 直接調用 Dify 原生 API（無代理層）
-// 依需求：優先使用 Admin Key（前端公開變數），無則回退 Dataset Key
+// Direct API configuration (Legacy/Fallback)
 const ADMIN_API_KEY = process.env.NEXT_PUBLIC_DIFY_ADMIN_API_KEY;
 const DATASET_API_KEY = process.env.NEXT_PUBLIC_DIFY_DATASET_KEY || 'dataset-cELaA8GGeLpoeXZZXsibGqI3';
 const API_BASE_URL = (process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://172.27.197.100/v1').replace(/\/$/, '');
@@ -17,6 +16,10 @@ const axiosInstance = axios.create({
   }
 });
 
+// Proxy Base URL
+const API_PROXY_BASE = '/api/knowledge';
+
+// Interfaces
 export interface KnowledgeBase {
   id: string;
   name: string;
@@ -77,52 +80,36 @@ export interface CreateDocumentData {
   name: string;
   text: string;
   indexing_technique?: string;
-  process_rule?: {
-    rules: {
-      pre_processing_rules: Array<{
-        id: string;
-        enabled: boolean;
-      }>;
-      segmentation: {
-        separator: string;
-        max_tokens: number;
-      };
-    };
-    mode: string;
-  };
+  process_rule?: any;
 }
 
 export interface CreateDocumentFromFileData {
   name: string;
   file: File;
   indexing_technique?: string;
-  process_rule?: {
-    rules: {
-      pre_processing_rules: Array<{
-        id: string;
-        enabled: boolean;
-      }>;
-      segmentation: {
-        separator: string;
-        max_tokens: number;
-      };
-    };
-    mode: string;
-  };
+  process_rule?: any;
 }
 
-// Knowledge Base APIs
-export const getKnowledgeBases = async () => {
+// --- Knowledge Base APIs ---
+
+// Updated to use Proxy
+export const getKnowledgeBases = async (page = 1, limit = 20) => {
   try {
-    console.log('Fetching knowledge bases from:', `${API_BASE_URL}/datasets`);
-    const response = await axiosInstance.get('/datasets');
+    console.log(`[knowledgeAdmin] Fetching datasets via proxy...`);
+    const response = await axios.get(`${API_PROXY_BASE}/datasets`, {
+      params: { page, limit }
+    });
     return response.data;
-  } catch (error) {
-    console.error('Error fetching knowledge bases:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] getKnowledgeBases failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
+// Also export as fetchDatasets for newer components
+export const fetchDatasets = getKnowledgeBases;
+
+// Legacy Direct Calls
 export const createKnowledgeBase = async (data: CreateKnowledgeBaseData) => {
   try {
     const response = await axiosInstance.post('/datasets', data);
@@ -163,7 +150,8 @@ export const deleteKnowledgeBase = async (datasetId: string) => {
   }
 };
 
-// Document APIs
+// --- Document APIs ---
+
 export const getDocuments = async (datasetId: string, params?: {
   keyword?: string;
   page?: number;
@@ -178,72 +166,55 @@ export const getDocuments = async (datasetId: string, params?: {
   }
 };
 
+// Updated to use Proxy
 export const createDocumentFromText = async (datasetId: string, data: CreateDocumentData) => {
   try {
-    // 走後端代理以避免 CORS 並使用 Admin Key
-    const response = await axios.post('/api/knowledge/create-by-text', {
+    console.log(`[knowledgeAdmin] Creating text document via proxy for dataset: ${datasetId}`);
+
+    const response = await axios.post(`${API_PROXY_BASE}/create-by-text`, {
       datasetId,
       name: data.name,
       text: data.text,
       indexing_technique: data.indexing_technique || 'high_quality',
-      process_rule: data.process_rule ? data.process_rule : { mode: 'automatic' },
-    })
-    return response.data
-  } catch (error) {
-    // 更完整的錯誤輸出
-    if (error && typeof error === 'object' && 'response' in error) {
-      const err: any = error;
-      console.error('Error creating document:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        headers: err.response?.headers,
-      });
-    } else {
-      console.error('Error creating document:', error);
-    }
+      process_rule: data.process_rule || { mode: 'automatic' }
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] createDocumentFromText failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
+// Updated to use Proxy
 export const createDocumentFromFile = async (datasetId: string, data: CreateDocumentFromFileData) => {
   try {
+    console.log(`[knowledgeAdmin] Uploading file via proxy for dataset: ${datasetId}`);
+
     const formData = new FormData();
-
-    // Add the file using 'file' field name
-    formData.append('file', data.file);
-    // Add datasetId for the proxy to use
     formData.append('datasetId', datasetId);
+    formData.append('file', data.file);
 
-    // Add the data configuration as JSON string in 'data' field
-    // 依據官方文件：/v1/datasets/{dataset_id}/document/create-by-file
-    // form 欄位：
-    // - file: 檔案
-    // - data: JSON 字串，內含 indexing_technique 與 process_rule
-    // 改為預設 automatic 以避免 "rules is required" 錯誤
-    const configData: any = {
-      indexing_technique: data.indexing_technique || 'high_quality',
-      process_rule: data.process_rule ? data.process_rule : { mode: 'automatic' },
-    };
-
-    formData.append('data', JSON.stringify(configData));
-
-    console.log('Attempting file upload via proxy to:', `/api/knowledge/create-by-file`);
-    console.log('File name:', data.file.name);
-    console.log('Config data:', JSON.stringify(configData));
-
-    // 走後端代理以避免 CORS 並使用 Admin Key
-    const response = await axios.post('/api/knowledge/create-by-file', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    return response.data
-  } catch (error) {
-    console.error('Error creating document from file:', error);
-    if (error instanceof Error && 'response' in error) {
-      const axiosError = error as any;
-      console.error('Response status:', axiosError.response?.status);
-      console.error('Response data:', axiosError.response?.data);
-      console.error('Response headers:', axiosError.response?.headers);
+    // Pass process_rule as JSON string if needed, or let backend handle defaults
+    if (data.process_rule) {
+      formData.append('process_rule', JSON.stringify(data.process_rule));
+    } else {
+       formData.append('process_rule', JSON.stringify({ mode: 'automatic' }));
     }
+
+    if (data.indexing_technique) {
+        formData.append('indexing_technique', data.indexing_technique);
+    }
+
+    const response = await axios.post(`${API_PROXY_BASE}/create-by-file`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] createDocumentFromFile failed:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -305,7 +276,5 @@ export const getEmbeddingModels = async () => {
 
 // Mock function for getting apps using knowledge base
 export const getAppsUsingKnowledgeBase = async (datasetId: string) => {
-  // This would need to be implemented based on your app-dataset relationship API
-  // For now, returning mock data
   return Promise.resolve({ data: [] });
 };
