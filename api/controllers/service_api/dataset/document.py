@@ -146,6 +146,9 @@ class DocumentAddByTextApi(DatasetApiResource):
             )
         except ProviderTokenNotInitError as ex:
             raise ProviderNotInitializeError(ex.description)
+        except Exception as e:
+            import traceback
+            return {"message": str(e), "trace": traceback.format_exc()}, 500
         document = documents[0]
 
         documents_and_batch_fields = {"document": marshal(document, document_fields), "batch": batch}
