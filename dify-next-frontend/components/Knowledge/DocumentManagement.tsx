@@ -284,50 +284,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         // Text 模式：直接上傳
         await createDocumentFromText(knowledgeBaseId, formData);
       } else {
-        // File 模式：先前處理，再上傳 Markdown
-        try {
-          // 步驟 1: 呼叫前處理 API
-          const preprocessFormData = new FormData();
-          preprocessFormData.append('file', selectedFile!);
-
-          const preprocessRes = await fetch('/api/documents/preprocess', {
-            method: 'POST',
-            body: preprocessFormData
-          });
-
-          if (!preprocessRes.ok) {
-            // 前處理失敗，fallback 到原始檔案上傳
-            console.warn('Preprocessing failed, falling back to direct upload');
-            await createDocumentFromFile(knowledgeBaseId, {
-              name: formData.name,
-              file: selectedFile!
-            });
-            onSuccess();
-            return;
-          }
-
-          // 步驟 2: 取得 Markdown 結果
-          const preprocessResult = await preprocessRes.json();
-
-          if (!preprocessResult.success) {
-            throw new Error(preprocessResult.error || 'Preprocessing failed');
-          }
-
-          console.log(`Preprocessing success: ${preprocessResult.metadata.chunkCount} chunks generated`);
-
-          // 步驟 3: 使用 text 模式上傳（送 Markdown）
-          await createDocumentFromText(knowledgeBaseId, {
-            name: formData.name,
-            text: preprocessResult.markdown
-          });
-        } catch (preprocessError) {
-          console.error('Preprocessing error, attempting direct upload:', preprocessError);
-          // Fallback: 直接上傳原始檔案
-          await createDocumentFromFile(knowledgeBaseId, {
-            name: formData.name,
-            file: selectedFile!
-          });
-        }
+        // File 模式：直接上傳原始檔案 (跳過前處理)
+        await createDocumentFromFile(knowledgeBaseId, {
+          name: formData.name,
+          file: selectedFile!
+        });
       }
 
       onSuccess();

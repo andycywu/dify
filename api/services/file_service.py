@@ -120,7 +120,8 @@ class FileService:
 
         return file_size <= file_size_limit
 
-    def upload_text(self, text: str, text_name: str) -> UploadFile:
+    @staticmethod
+    def upload_text(text: str, text_name: str) -> UploadFile:
         assert isinstance(current_user, Account)
         assert current_user.current_tenant_id is not None
 
