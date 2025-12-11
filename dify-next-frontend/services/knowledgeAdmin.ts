@@ -211,27 +211,28 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
 
     // Add the file using 'file' field name
     formData.append('file', data.file);
+    // Add datasetId for the proxy to use
+    formData.append('datasetId', datasetId);
 
     // Add the data configuration as JSON string in 'data' field
     // 依據官方文件：/v1/datasets/{dataset_id}/document/create-by-file
     // form 欄位：
     // - file: 檔案
-    // - data: JSON 字串，內含 indexing_technique 與 process_rule（官方示例為 mode: custom）
+    // - data: JSON 字串，內含 indexing_technique 與 process_rule
+    // 改為預設 automatic 以避免 "rules is required" 錯誤
     const configData: any = {
       indexing_technique: data.indexing_technique || 'high_quality',
-      process_rule: data.process_rule ? data.process_rule : { mode: 'custom' },
+      process_rule: data.process_rule ? data.process_rule : { mode: 'automatic' },
     };
 
     formData.append('data', JSON.stringify(configData));
 
-    console.log('Attempting file upload to:', `/datasets/${datasetId}/document/create_by_file`);
+    console.log('Attempting file upload via proxy to:', `/api/knowledge/create-by-file`);
     console.log('File name:', data.file.name);
-    console.log('File size:', data.file.size);
-    console.log('File type:', data.file.type);
     console.log('Config data:', JSON.stringify(configData));
 
-    // TODO: 檔案上傳代理（避免 CORS）需以後端解析 multipart（formidable/multer），暫時仍直連
-    const response = await axiosInstance.post(`/datasets/${datasetId}/document/create-by-file`, formData, {
+    // 走後端代理以避免 CORS 並使用 Admin Key
+    const response = await axios.post('/api/knowledge/create-by-file', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return response.data
