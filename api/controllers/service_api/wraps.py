@@ -20,7 +20,7 @@ from libs.datetime_utils import naive_utc_now
 from libs.login import _get_user
 from models.account import Account, Tenant, TenantAccountJoin, TenantStatus
 from models.dataset import Dataset, RateLimitLog
-from models.model import App, EndUser
+from models.model import ApiToken, App, EndUser
 
 # from services.wiki_user_sync_service import WikiUserSyncService  # 注释掉不存在的服務
 from services.feature_service import FeatureService
@@ -203,7 +203,7 @@ def validate_dataset_token(view=None):
                 .where(TenantAccountJoin.tenant_id == Tenant.id)
                 .where(TenantAccountJoin.role.in_(["owner"]))
                 .where(Tenant.status == TenantStatus.NORMAL)
-                .one_or_none()
+                .first()
             )  # TODO: only owner information is required, so only one is returned.
             if tenant_account_join:
                 tenant, ta = tenant_account_join
@@ -282,11 +282,11 @@ def create_or_update_end_user_for_user_id(app_model: App, user_id: Optional[str]
     if user_id != "DEFAULT-USER" and user_id.isdigit():
         try:
             wiki_user_id = int(user_id)
-            
+
             # 嘗試使用 Wiki.js 同步服務（如果配置了的話）
             wiki_graphql_url = os.getenv('WIKI_GRAPHQL_URL')
             wiki_api_key = os.getenv('WIKI_API_KEY')
-            
+
             # Wiki.js GraphQL 同步功能暫時停用，直接使用映射服務
             # if wiki_graphql_url and wiki_api_key:
             #     try:
@@ -294,7 +294,7 @@ def create_or_update_end_user_for_user_id(app_model: App, user_id: Optional[str]
             #         return sync_service.ensure_wiki_user_exists_in_dify(app_model, wiki_user_id)
             #     except Exception as e:
             #         print(f"⚠️ Wiki.js 同步服務失敗，使用回退機制: {e}")
-            
+
             # 回退機制：使用簡化的映射服務
             return WikiUserMappingService.create_or_get_end_user_for_wiki_user_id(
                 app_model.id, wiki_user_id
