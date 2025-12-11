@@ -32,28 +32,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       baseUrl += '/v1'
     }
 
-    // 嚴格按照 curl 範例：/v1/datasets/{dataset_id}/document/create_by_text
-    // 注意：這裡是單數 document 和底線 create_by_text
-    const url = `${baseUrl}/datasets/${datasetId}/document/create_by_text`
+    // 策略調整：由於後端 create_by_text 存在 Bug (Static Method 存取 self)，且我們不修改後端程式碼
+    // 因此我們在 Proxy 層將 "文字建立" 請求轉換為 "檔案上傳" 請求，呼叫後端正常的 create-by-file 介面
+    const url = `${baseUrl}/datasets/${datasetId}/document/create-by-file`
 
-    console.log(`[Proxy] POST ${url}`)
+    console.log(`[Proxy] POST (Redirected to File API) ${url}`)
 
-    const body: any = {
-      name,
-      text,
+    const formData = new FormData()
+
+    // 1. 準備 'data' 參數
+    const dataPayload = {
       indexing_technique: indexing_technique || 'high_quality',
       process_rule: process_rule || { mode: 'automatic' },
+      doc_form: 'text_model',
+      doc_language: 'English',
     }
+    formData.append('data', JSON.stringify(dataPayload))
 
-    console.log(`[Proxy] Payload:`, JSON.stringify(body, null, 2))
+    // 2. 準備 'file' 參數 (將文字轉為 Blob)
+    const filename = name.endsWith('.txt') ? name : `${name}.txt`
+    const fileBlob = new Blob([text], { type: 'text/plain' })
+    formData.append('file', fileBlob, filename)
+
+    console.log(`[Proxy] Payload (Converted to FormData):`, JSON.stringify(dataPayload, null, 2))
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        // fetch 會自動設定 multipart boundary Content-Type
       },
-      body: JSON.stringify(body),
+      body: formData,
     })
 
     const responseText = await response.text()
