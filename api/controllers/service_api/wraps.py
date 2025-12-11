@@ -20,7 +20,7 @@ from libs.datetime_utils import naive_utc_now
 from libs.login import _get_user
 from models.account import Account, Tenant, TenantAccountJoin, TenantStatus
 from models.dataset import Dataset, RateLimitLog
-from models.model import ApiToken, App, EndUser
+from models.model import App, EndUser
 
 # from services.wiki_user_sync_service import WikiUserSyncService  # 注释掉不存在的服務
 from services.feature_service import FeatureService
@@ -203,7 +203,7 @@ def validate_dataset_token(view=None):
                 .where(TenantAccountJoin.tenant_id == Tenant.id)
                 .where(TenantAccountJoin.role.in_(["owner"]))
                 .where(Tenant.status == TenantStatus.NORMAL)
-                .first()
+                .one_or_none()
             )  # TODO: only owner information is required, so only one is returned.
             if tenant_account_join:
                 tenant, ta = tenant_account_join

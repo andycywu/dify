@@ -606,7 +606,6 @@ services:
       redis:
         condition: service_started
     volumes:
-      - ../api:/app/api
       # Mount the storage directory to the container, for storing user files.
       - ./volumes/app/storage:/app/api/storage
     networks:
@@ -634,7 +633,6 @@ services:
       redis:
         condition: service_started
     volumes:
-      - ../api:/app/api
       # Mount the storage directory to the container, for storing user files.
       - ./volumes/app/storage:/app/api/storage
     networks:
