@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import formidable from 'formidable'
 import fs from 'fs'
-import { Blob } from 'buffer' // Node 20 global Blob might work, but explicit import is safer if needed, or just use global
 // Node 20 has global FormData and Blob.
 
 export const config = {
@@ -70,7 +69,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Read file
   const fileBuffer = fs.readFileSync(uploadedFile.filepath)
   const fileBlob = new Blob([fileBuffer], { type: uploadedFile.mimetype || 'application/octet-stream' })
-  upstreamFormData.append('file', fileBlob, uploadedFile.originalFilename || 'upload.txt')
+  upstreamFormData.append('file', fileBlob as any, uploadedFile.originalFilename || 'upload.txt')
 
   // Handle 'data' field (JSON config)
   // Ensure process_rule is set correctly if missing
