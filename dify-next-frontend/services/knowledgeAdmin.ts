@@ -109,59 +109,68 @@ export const getKnowledgeBases = async (page = 1, limit = 20) => {
 // Also export as fetchDatasets for newer components
 export const fetchDatasets = getKnowledgeBases;
 
-// Legacy Direct Calls
+// Updated to use Proxy
 export const createKnowledgeBase = async (data: CreateKnowledgeBaseData) => {
   try {
-    const response = await axiosInstance.post('/datasets', data);
+    console.log(`[knowledgeAdmin] Creating dataset via proxy...`);
+    const response = await axios.post(`${API_PROXY_BASE}/datasets`, data);
     return response.data;
-  } catch (error) {
-    console.error('Error creating knowledge base:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] createKnowledgeBase failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
+// Updated to use Proxy
 export const getKnowledgeBaseById = async (datasetId: string) => {
   try {
-    const response = await axiosInstance.get(`/datasets/${datasetId}`);
+    console.log(`[knowledgeAdmin] Fetching dataset ${datasetId} via proxy...`);
+    const response = await axios.get(`${API_PROXY_BASE}/dataset/${datasetId}`);
     return response.data;
-  } catch (error) {
-    console.error('Error fetching knowledge base:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] getKnowledgeBaseById failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
+// Updated to use Proxy
 export const updateKnowledgeBase = async (datasetId: string, data: UpdateKnowledgeBaseData) => {
   try {
-    const response = await axiosInstance.patch(`/datasets/${datasetId}`, data);
+    console.log(`[knowledgeAdmin] Updating dataset ${datasetId} via proxy...`);
+    const response = await axios.patch(`${API_PROXY_BASE}/dataset/${datasetId}`, data);
     return response.data;
-  } catch (error) {
-    console.error('Error updating knowledge base:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] updateKnowledgeBase failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
+// Updated to use Proxy
 export const deleteKnowledgeBase = async (datasetId: string) => {
   try {
-    const response = await axiosInstance.delete(`/datasets/${datasetId}`);
+    console.log(`[knowledgeAdmin] Deleting dataset ${datasetId} via proxy...`);
+    const response = await axios.delete(`${API_PROXY_BASE}/dataset/${datasetId}`);
     return response.data;
-  } catch (error) {
-    console.error('Error deleting knowledge base:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] deleteKnowledgeBase failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
 // --- Document APIs ---
 
+// Updated to use Proxy
 export const getDocuments = async (datasetId: string, params?: {
   keyword?: string;
   page?: number;
   limit?: number;
 }) => {
   try {
-    const response = await axiosInstance.get(`/datasets/${datasetId}/documents`, { params });
+    console.log(`[knowledgeAdmin] Fetching documents for dataset ${datasetId} via proxy...`);
+    const response = await axios.get(`${API_PROXY_BASE}/dataset/${datasetId}/documents`, { params });
     return response.data;
-  } catch (error) {
-    console.error('Error fetching documents:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] getDocuments failed:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -219,31 +228,37 @@ export const createDocumentFromFile = async (datasetId: string, data: CreateDocu
   }
 };
 
+// Updated to use Proxy
 export const deleteDocument = async (datasetId: string, documentId: string) => {
   try {
-    const response = await axiosInstance.delete(`/datasets/${datasetId}/documents/${documentId}`);
+    console.log(`[knowledgeAdmin] Deleting document ${documentId} from dataset ${datasetId} via proxy...`);
+    const response = await axios.delete(`${API_PROXY_BASE}/dataset/${datasetId}/document/${documentId}`);
     return response.data;
-  } catch (error) {
-    console.error('Error deleting document:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] deleteDocument failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
 // Get chunks from a document
+// Updated to use Proxy
 export const getDocumentChunks = async (datasetId: string, documentId: string) => {
   try {
-    const response = await axiosInstance.get(`/datasets/${datasetId}/documents/${documentId}/segments`);
+    console.log(`[knowledgeAdmin] Fetching chunks for document ${documentId} via proxy...`);
+    const response = await axios.get(`${API_PROXY_BASE}/dataset/${datasetId}/document/${documentId}/segments`);
     return response.data;
-  } catch (error) {
-    console.error('Error fetching document chunks:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] getDocumentChunks failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
 // Retrieve chunks from knowledge base (for search)
+// Updated to use Proxy
 export const retrieveChunks = async (datasetId: string, query: string, limit = 10) => {
   try {
-    const response = await axiosInstance.post(`/datasets/${datasetId}/retrieve`, {
+    console.log(`[knowledgeAdmin] Retrieving chunks for dataset ${datasetId} via proxy...`);
+    const response = await axios.post(`${API_PROXY_BASE}/dataset/${datasetId}/retrieve`, {
       query,
       retrieval_model: {
         search_method: 'semantic_search',
@@ -257,19 +272,21 @@ export const retrieveChunks = async (datasetId: string, query: string, limit = 1
       }
     });
     return response.data;
-  } catch (error) {
-    console.error('Error retrieving chunks:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] retrieveChunks failed:', error.response?.data || error.message);
     throw error;
   }
 };
 
 // Get available embedding models
+// Updated to use Proxy
 export const getEmbeddingModels = async () => {
   try {
-    const response = await axiosInstance.get('/datasets/embedding-models');
+    console.log(`[knowledgeAdmin] Fetching embedding models via proxy...`);
+    const response = await axios.get(`${API_PROXY_BASE}/embedding-models`);
     return response.data;
-  } catch (error) {
-    console.error('Error fetching embedding models:', error);
+  } catch (error: any) {
+    console.error('[knowledgeAdmin] getEmbeddingModels failed:', error.response?.data || error.message);
     throw error;
   }
 };
