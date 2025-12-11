@@ -93,66 +93,68 @@ class DocumentAddByTextApi(DatasetApiResource):
         """Create document by text."""
         args = document_text_create_parser.parse_args()
 
-        dataset_id = str(dataset_id)
-        tenant_id = str(tenant_id)
-        dataset = db.session.query(Dataset).where(Dataset.tenant_id == tenant_id, Dataset.id == dataset_id).first()
-
-        if not dataset:
-            raise ValueError("Dataset does not exist.")
-
-        if not dataset.indexing_technique and not args["indexing_technique"]:
-            raise ValueError("indexing_technique is required.")
-
-        text = args.get("text")
-        name = args.get("name")
-        if text is None or name is None:
-            raise ValueError("Both 'text' and 'name' must be non-null values.")
-
-        if args.get("embedding_model_provider"):
-            DatasetService.check_embedding_model_setting(
-                tenant_id, args.get("embedding_model_provider"), args.get("embedding_model")
-            )
-        if (
-            args.get("retrieval_model")
-            and args.get("retrieval_model").get("reranking_model")
-            and args.get("retrieval_model").get("reranking_model").get("reranking_provider_name")
-        ):
-            DatasetService.check_reranking_model_setting(
-                tenant_id,
-                args.get("retrieval_model").get("reranking_model").get("reranking_provider_name"),
-                args.get("retrieval_model").get("reranking_model").get("reranking_model_name"),
-            )
-
-        upload_file = FileService(db.engine).upload_text(text=str(text), text_name=str(name))
-        data_source = {
-            "type": "upload_file",
-            "info_list": {"data_source_type": "upload_file", "file_info_list": {"file_ids": [upload_file.id]}},
-        }
-        args["data_source"] = data_source
-        knowledge_config = KnowledgeConfig(**args)
-        # validate args
-        DocumentService.document_create_args_validate(knowledge_config)
-
-        if not current_user:
-            raise ValueError("current_user is required")
-
         try:
-            documents, batch = DocumentService.save_document_with_dataset_id(
-                dataset=dataset,
-                knowledge_config=knowledge_config,
-                account=current_user,
-                dataset_process_rule=dataset.latest_process_rule if "process_rule" not in args else None,
-                created_from="api",
-            )
-        except ProviderTokenNotInitError as ex:
-            raise ProviderNotInitializeError(ex.description)
+            dataset_id = str(dataset_id)
+            tenant_id = str(tenant_id)
+            dataset = db.session.query(Dataset).where(Dataset.tenant_id == tenant_id, Dataset.id == dataset_id).first()
+
+            if not dataset:
+                raise ValueError("Dataset does not exist.")
+
+            if not dataset.indexing_technique and not args["indexing_technique"]:
+                raise ValueError("indexing_technique is required.")
+
+            text = args.get("text")
+            name = args.get("name")
+            if text is None or name is None:
+                raise ValueError("Both 'text' and 'name' must be non-null values.")
+
+            if args.get("embedding_model_provider"):
+                DatasetService.check_embedding_model_setting(
+                    tenant_id, args.get("embedding_model_provider"), args.get("embedding_model")
+                )
+            if (
+                args.get("retrieval_model")
+                and args.get("retrieval_model").get("reranking_model")
+                and args.get("retrieval_model").get("reranking_model").get("reranking_provider_name")
+            ):
+                DatasetService.check_reranking_model_setting(
+                    tenant_id,
+                    args.get("retrieval_model").get("reranking_model").get("reranking_provider_name"),
+                    args.get("retrieval_model").get("reranking_model").get("reranking_model_name"),
+                )
+
+            upload_file = FileService(db.engine).upload_text(text=str(text), text_name=str(name))
+            data_source = {
+                "type": "upload_file",
+                "info_list": {"data_source_type": "upload_file", "file_info_list": {"file_ids": [upload_file.id]}},
+            }
+            args["data_source"] = data_source
+            knowledge_config = KnowledgeConfig(**args)
+            # validate args
+            DocumentService.document_create_args_validate(knowledge_config)
+
+            if not current_user:
+                raise ValueError("current_user is required")
+
+            try:
+                documents, batch = DocumentService.save_document_with_dataset_id(
+                    dataset=dataset,
+                    knowledge_config=knowledge_config,
+                    account=current_user,
+                    dataset_process_rule=dataset.latest_process_rule if "process_rule" not in args else None,
+                    created_from="api",
+                )
+            except ProviderTokenNotInitError as ex:
+                raise ProviderNotInitializeError(ex.description)
+
+            document = documents[0]
+
+            documents_and_batch_fields = {"document": marshal(document, document_fields), "batch": batch}
+            return documents_and_batch_fields, 200
         except Exception as e:
             import traceback
             return {"message": str(e), "trace": traceback.format_exc()}, 500
-        document = documents[0]
-
-        documents_and_batch_fields = {"document": marshal(document, document_fields), "batch": batch}
-        return documents_and_batch_fields, 200
 
 
 @service_api_ns.route(
