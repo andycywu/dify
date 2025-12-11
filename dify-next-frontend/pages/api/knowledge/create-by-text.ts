@@ -41,6 +41,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const body: any = {
       name,
       text,
+      doc_form: 'text_model',
+      doc_language: 'English',
     }
 
     if (indexing_technique) {
