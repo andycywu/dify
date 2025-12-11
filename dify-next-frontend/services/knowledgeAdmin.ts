@@ -7,14 +7,14 @@ declare const process: any;
 // 依需求：優先使用 Admin Key（前端公開變數），無則回退 Dataset Key
 const ADMIN_API_KEY = process.env.NEXT_PUBLIC_DIFY_ADMIN_API_KEY;
 const DATASET_API_KEY = process.env.NEXT_PUBLIC_DIFY_DATASET_KEY || 'dataset-cELaA8GGeLpoeXZZXsibGqI3';
-// const API_BASE_URL = (process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://172.27.197.100/v1').replace(/\/$/, '');
+const API_BASE_URL = (process.env.NEXT_PUBLIC_DIFY_API_BASE_URL || 'http://172.27.197.100/v1').replace(/\/$/, '');
 // 改用後端代理以避免 CORS
-const API_BASE_URL = '/api/knowledge';
+// const API_BASE_URL = '/api/knowledge';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    // 'Authorization': `Bearer ${ADMIN_API_KEY || DATASET_API_KEY}`, // 代理層會處理 Auth
+    'Authorization': `Bearer ${ADMIN_API_KEY || DATASET_API_KEY}`, // 代理層會處理 Auth
     'Content-Type': 'application/json'
   }
 });
