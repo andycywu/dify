@@ -41,16 +41,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const body: any = {
       name,
       text,
+      indexing_technique: indexing_technique || 'high_quality',
+      process_rule: process_rule || { mode: 'automatic' },
       doc_form: 'text_model',
       doc_language: 'English',
-    }
-
-    if (indexing_technique) {
-      body.indexing_technique = indexing_technique
-    }
-
-    if (process_rule) {
-      body.process_rule = process_rule
     }
 
     console.log(`[Proxy] Payload:`, JSON.stringify(body, null, 2))
