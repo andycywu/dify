@@ -30,6 +30,100 @@ import { uploadRemoteFileInfo } from '@/service/common'
 import type { FileUploadConfigResponse } from '@/models/common'
 import { noop } from 'lodash-es'
 
+// XLSX -> Markdown (by row) preprocessor for Dify segments (dynamic import to keep bundle lean)
+async function preprocessXlsxFileToMarkdown(file: File, fileName: string) {
+  const SEG = '<!--DIFY_SEGMENT-->'
+  try {
+    const [XLSX, buffer] = await Promise.all([
+      import('xlsx'),
+      file.arrayBuffer(),
+    ])
+    // @ts-ignore - xlsx is CJS/UMD-like, use namespace
+    const workbook = XLSX.read(buffer, { type: 'array' })
+    const sheetNames = workbook.SheetNames || []
+    if (!sheetNames.length) {
+      console.log('[Preprocessor][XLSX] No sheet found.')
+      const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
+      return { success: true as const, name: `${base}.md`, mime: 'text/markdown', content: '' }
+    }
+    const firstSheetName = sheetNames[0]
+    const sheet = workbook.Sheets[firstSheetName]
+    // header:1 => array of arrays; defval:'' to keep empty cells
+    // @ts-ignore
+    const rows: any[][] = (XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as any[]) || []
+    console.log('[Preprocessor][XLSX] Parsed sheet:', { sheetCount: sheetNames.length, firstSheetName, rowCount: rows.length })
+
+    if (rows.length === 0) {
+      const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
+      return { success: true as const, name: `${base}.md`, mime: 'text/markdown', content: '' }
+    }
+
+    const header = rows[0] as string[]
+    const dataRows = rows.slice(1)
+    const mdBlocks = dataRows.map((cols: any[], idx: number) => {
+      const fields = header.map((h: string, i: number) => `**${String(h)}:** ${cols[i] ?? ''}`).join('  \n')
+      return `## Row ${idx + 1}\n\n${fields}`
+    })
+    const markdown = mdBlocks.join(`\n\n${SEG}\n\n`)
+
+    const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
+    const newName = `${base}.md`
+    return { success: true as const, name: newName, mime: 'text/markdown', content: markdown }
+  } catch (e) {
+    console.error('[Preprocessor][XLSX] Failed to preprocess Excel:', e)
+    const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
+    return { success: true as const, name: `${base}.md`, mime: 'text/markdown', content: '' }
+  }
+}
+
+// Lightweight CSV -> Markdown preprocessor for Dify segments
+function preprocessCsvToMarkdown(csvText: string, fileName: string) {
+  const lines = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.length > 0)
+  if (lines.length === 0) {
+    return { success: true, name: fileName, mime: 'text/markdown', content: '' }
+  }
+
+  // Parse headers (simple CSV – commas, basic quotes)
+  const parseLine = (line: string) => {
+    const result: string[] = []
+    let current = ''
+    let inQuotes = false
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') { // escaped quote
+          current += '"'
+          i++
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (ch === ',' && !inQuotes) {
+        result.push(current)
+        current = ''
+      } else {
+        current += ch
+      }
+    }
+    result.push(current)
+    return result.map(s => s.trim())
+  }
+
+  const header = parseLine(lines[0])
+  const rows = lines.slice(1).map(parseLine)
+
+  const SEG = '<!--DIFY_SEGMENT-->'
+  const mdBlocks = rows.map((cols, idx) => {
+    const fields = header.map((h, i) => `**${h}:** ${cols[i] ?? ''}`).join('  \n')
+    return `## Row ${idx + 1}\n\n${fields}`
+  })
+  const markdown = mdBlocks.join(`\n\n${SEG}\n\n`)
+
+  // New file name with .md extension
+  const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
+  const newName = `${base}.md`
+  return { success: true, name: newName, mime: 'text/markdown', content: markdown }
+}
+
 export const useFileSizeLimit = (fileUploadConfig?: FileUploadConfigResponse) => {
   const imgSizeLimit = Number(fileUploadConfig?.image_file_size_limit) * 1024 * 1024 || IMG_SIZE_LIMIT
   const docSizeLimit = Number(fileUploadConfig?.file_size_limit) * 1024 * 1024 || FILE_SIZE_LIMIT
@@ -258,7 +352,7 @@ export const useFile = (fileConfig: FileUpload) => {
 
     reader.addEventListener(
       'load',
-      () => {
+      async () => {
         const uploadingFile = {
           id: uuid4(),
           name: file.name,
@@ -271,19 +365,62 @@ export const useFile = (fileConfig: FileUpload) => {
           base64Url: isImage ? reader.result as string : '',
         }
         handleAddFile(uploadingFile)
-        fileUpload({
-          file: uploadingFile.originalFile,
-          onProgressCallback: (progress) => {
-            handleUpdateFile({ ...uploadingFile, progress })
-          },
-          onSuccessCallback: (res) => {
-            handleUpdateFile({ ...uploadingFile, uploadedId: res.id, progress: 100 })
-          },
-          onErrorCallback: () => {
-            notify({ type: 'error', message: t('common.fileUploader.uploadFromComputerUploadError') })
-            handleUpdateFile({ ...uploadingFile, progress: -1 })
-          },
-        }, !!params.token)
+        try {
+          const lowerName = file.name.toLowerCase()
+          const isCsv = lowerName.endsWith('.csv') || file.type === 'text/csv'
+          const isXlsx = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || file.type === 'application/vnd.ms-excel'
+
+          let fileToUpload: File = uploadingFile.originalFile!
+
+          if (isCsv) {
+            console.log('[Preprocessor] CSV detected, starting preprocessing...', { name: file.name, type: file.type })
+            // Read original text for CSV
+            const text = await (async () => {
+              // Prefer reading as text directly for CSV
+              return await (new Response(uploadingFile.originalFile!).text())
+            })()
+            const pre = preprocessCsvToMarkdown(text, file.name)
+            console.log('[Preprocessor] CSV preprocessing done.', { newName: pre.name, mime: pre.mime, length: pre.content.length })
+            const blob = new Blob([pre.content], { type: pre.mime })
+            fileToUpload = new File([blob], pre.name, { type: pre.mime })
+            // reflect new file info in UI
+            uploadingFile.name = pre.name
+            uploadingFile.type = pre.mime
+            uploadingFile.size = fileToUpload.size
+            handleUpdateFile({ ...uploadingFile })
+          } else if (isXlsx) {
+            console.log('[Preprocessor] XLSX detected, starting preprocessing...', { name: file.name, type: file.type })
+            const pre = await preprocessXlsxFileToMarkdown(uploadingFile.originalFile!, file.name)
+            console.log('[Preprocessor] XLSX preprocessing done.', { newName: pre.name, mime: pre.mime, length: pre.content.length })
+            const blob = new Blob([pre.content], { type: pre.mime })
+            fileToUpload = new File([blob], pre.name, { type: pre.mime })
+            // reflect new file info in UI
+            uploadingFile.name = pre.name
+            uploadingFile.type = pre.mime
+            uploadingFile.size = fileToUpload.size
+            handleUpdateFile({ ...uploadingFile })
+          } else {
+            console.log('[Preprocessor] No preprocessing applied.', { name: file.name, type: file.type })
+          }
+
+          fileUpload({
+            file: fileToUpload,
+            onProgressCallback: (progress) => {
+              handleUpdateFile({ ...uploadingFile, progress })
+            },
+            onSuccessCallback: (res) => {
+              handleUpdateFile({ ...uploadingFile, uploadedId: res.id, progress: 100 })
+            },
+            onErrorCallback: () => {
+              notify({ type: 'error', message: t('common.fileUploader.uploadFromComputerUploadError') })
+              handleUpdateFile({ ...uploadingFile, progress: -1 })
+            },
+          }, !!params.token)
+        } catch (err) {
+          console.error('[Preprocessor] Unexpected error during preprocessing/upload:', err)
+          notify({ type: 'error', message: 'Preprocessing error. Please check console logs.' })
+          handleUpdateFile({ ...uploadingFile, progress: -1 })
+        }
       },
       false,
     )
