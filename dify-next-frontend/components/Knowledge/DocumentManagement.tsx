@@ -291,6 +291,21 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         const isXlsx = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || fileToUpload.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || fileToUpload.type === 'application/vnd.ms-excel'
 
         const SEG = '<!--DIFY_SEGMENT-->'
+        const MAX_SEG_LEN = 2000
+        const flushChunks = (blocks: string[]) => {
+          const segments: string[] = []
+          let current = ''
+          for (const b of blocks) {
+            if ((current.length + b.length + 2) > MAX_SEG_LEN) {
+              if (current) segments.push(current)
+              current = b
+            } else {
+              current = current ? `${current}\n\n${b}` : b
+            }
+          }
+          if (current) segments.push(current)
+          return segments
+        }
 
         if (isCsv) {
           console.log('[Preprocessor][Modal] CSV detected, preprocessing before upload...', { name: fileToUpload.name, type: fileToUpload.type })
@@ -334,19 +349,27 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           // @ts-ignore
           const workbook = XLSX.read(buffer, { type: 'array' })
           const sheetNames = workbook.SheetNames || []
-          const firstSheetName = sheetNames[0]
-          // @ts-ignore
-          const sheet = workbook.Sheets[firstSheetName]
-          // @ts-ignore
-          const rows: any[][] = (XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as any[]) || []
-          console.log('[Preprocessor][Modal] XLSX parsed:', { sheetCount: sheetNames.length, firstSheetName, rowCount: rows.length })
-          const header = (rows[0] || []) as string[]
-          const dataRows = rows.slice(1)
-          const mdBlocks = dataRows.map((cols: any[], idx: number) => {
-            const fields = header.map((h: string, i: number) => `**${String(h)}:** ${cols[i] ?? ''}`).join('  \n')
-            return `## Row ${idx + 1}\n\n${fields}`
-          })
-          const markdown = mdBlocks.join(`\n\n${SEG}\n\n`)
+          const allSegments: string[] = []
+          for (const sheetName of sheetNames) {
+            // @ts-ignore
+            const sheet = workbook.Sheets[sheetName]
+            // @ts-ignore
+            const rows: any[][] = (XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as any[]) || []
+            console.log('[Preprocessor][Modal] XLSX parsed:', { sheetName, rowCount: rows.length })
+            if (rows.length === 0) continue
+            const header = (rows[0] || []) as string[]
+            const dataRows = rows.slice(1)
+            const blocks: string[] = []
+            blocks.push(`# Sheet: ${sheetName}`)
+            for (let idx = 0; idx < dataRows.length; idx++) {
+              const cols = dataRows[idx]
+              const fields = header.map((h: string, i: number) => `**${String(h)}:** ${cols[i] ?? ''}`).join('  \n')
+              blocks.push(`## Row ${idx + 1}\n\n${fields}`)
+            }
+            const segments = flushChunks(blocks)
+            allSegments.push(...segments)
+          }
+          const markdown = allSegments.join(`\n\n${SEG}\n\n`)
           const base = fileToUpload.name.includes('.') ? fileToUpload.name.substring(0, fileToUpload.name.lastIndexOf('.')) : fileToUpload.name
           const newName = `${base}.md`
           const blob = new Blob([markdown], { type: 'text/markdown' })

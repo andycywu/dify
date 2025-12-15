@@ -33,6 +33,21 @@ import { noop } from 'lodash-es'
 // XLSX -> Markdown (by row) preprocessor for Dify segments (dynamic import to keep bundle lean)
 async function preprocessXlsxFileToMarkdown(file: File, fileName: string) {
   const SEG = '<!--DIFY_SEGMENT-->'
+  const MAX_SEG_LEN = 2000
+  const flushChunks = (blocks: string[]) => {
+    const segments: string[] = []
+    let current = ''
+    for (const b of blocks) {
+      if ((current.length + b.length + 2) > MAX_SEG_LEN) {
+        if (current) segments.push(current)
+        current = b
+      } else {
+        current = current ? `${current}\n\n${b}` : b
+      }
+    }
+    if (current) segments.push(current)
+    return segments
+  }
   try {
     const [XLSX, buffer] = await Promise.all([
       import('xlsx'),
@@ -46,25 +61,27 @@ async function preprocessXlsxFileToMarkdown(file: File, fileName: string) {
       const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
       return { success: true as const, name: `${base}.md`, mime: 'text/markdown', content: '' }
     }
-    const firstSheetName = sheetNames[0]
-    const sheet = workbook.Sheets[firstSheetName]
-    // header:1 => array of arrays; defval:'' to keep empty cells
-    // @ts-ignore
-    const rows: any[][] = (XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as any[]) || []
-    console.log('[Preprocessor][XLSX] Parsed sheet:', { sheetCount: sheetNames.length, firstSheetName, rowCount: rows.length })
-
-    if (rows.length === 0) {
-      const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
-      return { success: true as const, name: `${base}.md`, mime: 'text/markdown', content: '' }
+    const allSegments: string[] = []
+    for (const sheetName of sheetNames) {
+      // @ts-ignore
+      const sheet = workbook.Sheets[sheetName]
+      // @ts-ignore
+      const rows: any[][] = (XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as any[]) || []
+      console.log('[Preprocessor][XLSX] Parsed sheet:', { sheetName, rowCount: rows.length })
+      if (rows.length === 0) continue
+      const header = rows[0] as string[]
+      const dataRows = rows.slice(1)
+      const blocks: string[] = []
+      blocks.push(`# Sheet: ${sheetName}`)
+      for (let idx = 0; idx < dataRows.length; idx++) {
+        const cols = dataRows[idx]
+        const fields = header.map((h: string, i: number) => `**${String(h)}:** ${cols[i] ?? ''}`).join('  \n')
+        blocks.push(`## Row ${idx + 1}\n\n${fields}`)
+      }
+      const segments = flushChunks(blocks)
+      allSegments.push(...segments)
     }
-
-    const header = rows[0] as string[]
-    const dataRows = rows.slice(1)
-    const mdBlocks = dataRows.map((cols: any[], idx: number) => {
-      const fields = header.map((h: string, i: number) => `**${String(h)}:** ${cols[i] ?? ''}`).join('  \n')
-      return `## Row ${idx + 1}\n\n${fields}`
-    })
-    const markdown = mdBlocks.join(`\n\n${SEG}\n\n`)
+    const markdown = allSegments.join(`\n\n${SEG}\n\n`)
 
     const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
     const newName = `${base}.md`
