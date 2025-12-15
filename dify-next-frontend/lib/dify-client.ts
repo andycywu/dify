@@ -192,7 +192,7 @@ export class DifyClient {
             { id: 'remove_urls_emails', enabled: true },
           ],
           segmentation: {
-            separator: '---',
+            separator: '<!--DIFY_SEGMENT-->',
             max_tokens: 2000,
           },
         },
@@ -244,7 +244,7 @@ export class DifyClient {
             { id: 'remove_urls_emails', enabled: true },
           ],
           segmentation: {
-            separator: '---',
+            separator: '<!--DIFY_SEGMENT-->',
             max_tokens: 2000,
           },
         },

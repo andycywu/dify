@@ -15,7 +15,7 @@ import { DEFAULT_CHUNK_OPTIONS } from '../config';
  *
  * <body>
  *
- * ---
+ * <!--DIFY_SEGMENT-->
  * ```
  */
 export function chunkMarkdown(
@@ -79,12 +79,13 @@ export function chunkMarkdown(
  * 將 chunks 轉換成最終 Markdown 字串 (格式 A)
  */
 export function chunksToMarkdown(chunks: MarkdownChunk[]): string {
+  const separator = DEFAULT_CHUNK_OPTIONS.separator;
   return chunks.map(chunk => {
     // 使用 metadata 中的 level 來決定標題層級，預設為 1
     const level = chunk.metadata?.level || 1;
     const hashes = '#'.repeat(level);
-    return `${hashes} ${chunk.title}\n\n${chunk.body}\n\n---`;
-  }).join('\n\n');
+    return `${hashes} ${chunk.title}\n\n${chunk.body}`;
+  }).join(separator);
 }
 
 /**
