@@ -80,7 +80,10 @@ export function chunkMarkdown(
  */
 export function chunksToMarkdown(chunks: MarkdownChunk[]): string {
   return chunks.map(chunk => {
-    return `# ${chunk.title}\n\n${chunk.body}\n\n---`;
+    // 使用 metadata 中的 level 來決定標題層級，預設為 1
+    const level = chunk.metadata?.level || 1;
+    const hashes = '#'.repeat(level);
+    return `${hashes} ${chunk.title}\n\n${chunk.body}\n\n---`;
   }).join('\n\n');
 }
 

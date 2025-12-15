@@ -40,7 +40,7 @@ export const SERVER_SIDE_FORMATS = [
 
 // Chunking 預設設定
 export const DEFAULT_CHUNK_OPTIONS = {
-  maxChunkSize: 2000,
+  maxChunkSize: 4000, // 增加到 4000 以減少段落被切斷的機會
   separator: '\n\n---\n\n',
   preserveHeadings: true
 };
