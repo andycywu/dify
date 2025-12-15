@@ -344,6 +344,9 @@ async function syncPage(
   // Convert final content to Blob for file upload (bypassing backend text-upload bug)
   const fileBlob = new Blob([finalContent], { type: 'text/plain' });
 
+  // Sanitize filename for Dify API (replace slashes with underscores)
+  const safeFilename = path.replace(/\//g, '_');
+
   // 3. 上傳或更新到 Dify
   let difyDocumentId: string;
   let action: 'created' | 'updated';
@@ -355,7 +358,7 @@ async function syncPage(
     await difyClient.updateDocumentByFile(
       datasetId,
       existingSync.difyDocumentId,
-      path,
+      safeFilename,
       fileBlob
     );
 
@@ -367,7 +370,7 @@ async function syncPage(
 
     const result = await difyClient.createDocumentByFile(
       datasetId,
-      path,
+      safeFilename,
       fileBlob
     );
 
