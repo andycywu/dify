@@ -341,31 +341,34 @@ async function syncPage(
 
   const finalContent = metadata + preprocessResult.markdown;
 
+  // Convert final content to Blob for file upload (bypassing backend text-upload bug)
+  const fileBlob = new Blob([finalContent], { type: 'text/plain' });
+
   // 3. 上傳或更新到 Dify
   let difyDocumentId: string;
   let action: 'created' | 'updated';
 
   if (existingSync?.difyDocumentId) {
     // 更新現有文件
-    console.log(`      ⬆️  Updating in Dify...`);
+    console.log(`      ⬆️  Updating in Dify (via File API)...`);
 
-    await difyClient.updateDocumentByText(
+    await difyClient.updateDocumentByFile(
       datasetId,
       existingSync.difyDocumentId,
       path,
-      finalContent
+      fileBlob
     );
 
     difyDocumentId = existingSync.difyDocumentId;
     action = 'updated';
   } else {
     // 建立新文件
-    console.log(`      ⬆️  Creating in Dify...`);
+    console.log(`      ⬆️  Creating in Dify (via File API)...`);
 
-    const result = await difyClient.createDocumentByText(
+    const result = await difyClient.createDocumentByFile(
       datasetId,
       path,
-      finalContent
+      fileBlob
     );
 
     difyDocumentId = result.document.id;

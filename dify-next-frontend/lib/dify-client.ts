@@ -1,4 +1,3 @@
-
 // Minimal Node env typing fallback to avoid TS errors when @types/node is absent
 // TODO: replace with proper types by installing devDependency @types/node
 declare const process: any;
@@ -25,12 +24,16 @@ export class DifyClient {
     const token = useAdmin
       ? (this.adminKey || this.apiKey)
       : (this.datasetKey || this.apiKey || this.adminKey || '');
-    const headers = {
+    const headers: any = {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
+    // If body is FormData, remove Content-Type to let fetch set it with boundary
+    if (typeof FormData !== 'undefined' && options.body instanceof FormData) {
+      delete headers['Content-Type'];
+    }
 
     const response = await fetch(url, { ...options, headers });
     if (!response.ok) {
@@ -175,5 +178,110 @@ export class DifyClient {
       return this.request(`/datasets/${datasetId}/documents/${documentId}`, {
           method: 'DELETE'
       });
+  }
+
+  async createDocumentByFile(datasetId: string, name: string, fileBlob: Blob, indexingTechnique: string = 'high_quality', processRule?: any) {
+    const formData = new FormData();
+
+    const dataPayload = {
+      indexing_technique: indexingTechnique,
+      process_rule: processRule ?? {
+        rules: {
+          pre_processing_rules: [
+            { id: 'remove_extra_spaces', enabled: true },
+            { id: 'remove_urls_emails', enabled: true },
+          ],
+          segmentation: {
+            separator: '###',
+            max_tokens: 500,
+          },
+        },
+        mode: 'automatic',
+      },
+    };
+
+    formData.append('data', JSON.stringify(dataPayload));
+    formData.append('file', fileBlob, name.endsWith('.txt') ? name : `${name}.txt`);
+
+    const isConsoleApi = /\/console\/api$/.test(this.baseUrl);
+    const apiBase = isConsoleApi ? this.baseUrl.replace(/\/console\/api$/, '/v1') : this.baseUrl;
+
+    const candidates = [
+      `/datasets/${datasetId}/document/create_by_file`,
+      `/datasets/${datasetId}/document/create-by-file`,
+      `/datasets/${datasetId}/documents/create_by_file`,
+      `/datasets/${datasetId}/documents/create-by-file`,
+    ];
+
+    let lastError: any;
+    for (const ep of candidates) {
+      try {
+        // eslint-disable-next-line no-console
+        console.log(`[DifyClient] create_by_file trying: ${ep}`);
+        return await this.request(ep, {
+          method: 'POST',
+          body: formData,
+        }, false, apiBase);
+      } catch (e: any) {
+        lastError = e;
+        const msg = String(e?.message || e);
+        if (/(401|403)/i.test(msg)) throw e;
+        if (/(404|405|Not\s*Found|500|Internal\s*Server\s*Error)/i.test(msg)) continue;
+        throw e;
+      }
+    }
+    throw lastError;
+  }
+
+  async updateDocumentByFile(datasetId: string, documentId: string, name: string, fileBlob: Blob, processRule?: any) {
+    const formData = new FormData();
+
+    const dataPayload = {
+      process_rule: processRule ?? {
+        rules: {
+          pre_processing_rules: [
+            { id: 'remove_extra_spaces', enabled: true },
+            { id: 'remove_urls_emails', enabled: true },
+          ],
+          segmentation: {
+            separator: '###',
+            max_tokens: 500,
+          },
+        },
+        mode: 'automatic',
+      },
+    };
+
+    formData.append('data', JSON.stringify(dataPayload));
+    formData.append('file', fileBlob, name.endsWith('.txt') ? name : `${name}.txt`);
+
+    const isConsoleApi = /\/console\/api$/.test(this.baseUrl);
+    const apiBase = isConsoleApi ? this.baseUrl.replace(/\/console\/api$/, '/v1') : this.baseUrl;
+
+    const candidates = [
+      `/datasets/${datasetId}/documents/${documentId}/update_by_file`,
+      `/datasets/${datasetId}/documents/${documentId}/update-by-file`,
+      `/datasets/${datasetId}/document/${documentId}/update_by_file`,
+      `/datasets/${datasetId}/document/${documentId}/update-by-file`,
+    ];
+
+    let lastError: any;
+    for (const ep of candidates) {
+      try {
+        // eslint-disable-next-line no-console
+        console.log(`[DifyClient] update_by_file trying: ${ep}`);
+        return await this.request(ep, {
+          method: 'POST',
+          body: formData,
+        }, false, apiBase);
+      } catch (e: any) {
+        lastError = e;
+        const msg = String(e?.message || e);
+        if (/(401|403)/i.test(msg)) throw e;
+        if (/(404|405|Not\s*Found|500|Internal\s*Server\s*Error)/i.test(msg)) continue;
+        throw e;
+      }
+    }
+    throw lastError;
   }
 }

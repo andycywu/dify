@@ -13,8 +13,33 @@
 // 先載入 .env，確保後續匯入的程式碼能讀到環境變數
 import path from 'node:path';
 import { config as dotenvConfig } from 'dotenv';
-// 使用 override: true 以避免被空的環境變數覆蓋 .env 中的有效值
-dotenvConfig({ path: path.resolve(process.cwd(), '.env'), override: true });
+import fs from 'node:fs';
+
+// 宣告 process 以避免 TS 錯誤 (在 tsx 環境下是存在的)
+declare const process: any;
+
+// 嘗試載入 .env.local (優先) 和 .env
+const envLocalPath = path.resolve(process.cwd(), '.env.local');
+const envDockerPath = path.resolve(process.cwd(), '.env.docker');
+const envPath = path.resolve(process.cwd(), '.env');
+
+// 1. 載入 .env (不覆蓋已存在的系統變數)
+if (fs.existsSync(envPath)) {
+  // console.log(`Loading env from ${envPath}`);
+  dotenvConfig({ path: envPath });
+}
+
+// 2. 載入 .env.docker (覆蓋 .env 的值)
+if (fs.existsSync(envDockerPath)) {
+  // console.log(`Loading env from ${envDockerPath}`);
+  dotenvConfig({ path: envDockerPath, override: true });
+}
+
+// 3. 載入 .env.local (覆蓋之前的設定，模擬 Next.js 行為)
+if (fs.existsSync(envLocalPath)) {
+  // console.log(`Loading env from ${envLocalPath}`);
+  dotenvConfig({ path: envLocalPath, override: true });
+}
 
 // 注意：不要使用靜態 import，否則在 dotenv 尚未載入前就會評估被匯入模組
 // 後續在 main() 內使用動態 import 以確保環境變數已載入
