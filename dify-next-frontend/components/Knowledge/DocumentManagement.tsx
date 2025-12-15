@@ -284,11 +284,82 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         // Text 模式：直接上傳
         await createDocumentFromText(knowledgeBaseId, formData);
       } else {
-        // File 模式：直接上傳原始檔案 (跳過前處理)
+        // File 模式：針對 CSV / Excel 先在前端轉成 Markdown（分段以 <!--DIFY_SEGMENT-->）
+        let fileToUpload = selectedFile!
+        const lowerName = fileToUpload.name.toLowerCase()
+        const isCsv = lowerName.endsWith('.csv') || fileToUpload.type === 'text/csv'
+        const isXlsx = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || fileToUpload.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || fileToUpload.type === 'application/vnd.ms-excel'
+
+        const SEG = '<!--DIFY_SEGMENT-->'
+
+        if (isCsv) {
+          console.log('[Preprocessor][Modal] CSV detected, preprocessing before upload...', { name: fileToUpload.name, type: fileToUpload.type })
+          const text = await (new Response(fileToUpload).text())
+          const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.length > 0)
+          const parseLine = (line: string) => {
+            const result: string[] = []
+            let current = ''
+            let inQuotes = false
+            for (let i = 0; i < line.length; i++) {
+              const ch = line[i]
+              if (ch === '"') {
+                if (inQuotes && line[i + 1] === '"') { current += '"'; i++ } else { inQuotes = !inQuotes }
+              } else if (ch === ',' && !inQuotes) {
+                result.push(current); current = ''
+              } else {
+                current += ch
+              }
+            }
+            result.push(current)
+            return result.map(s => s.trim())
+          }
+          const header = parseLine(lines[0])
+          const rows = lines.slice(1).map(parseLine)
+          const mdBlocks = rows.map((cols, idx) => {
+            const fields = header.map((h, i) => `**${h}:** ${cols[i] ?? ''}`).join('  \n')
+            return `## Row ${idx + 1}\n\n${fields}`
+          })
+          const markdown = mdBlocks.join(`\n\n${SEG}\n\n`)
+          const base = fileToUpload.name.includes('.') ? fileToUpload.name.substring(0, fileToUpload.name.lastIndexOf('.')) : fileToUpload.name
+          const newName = `${base}.md`
+          const blob = new Blob([markdown], { type: 'text/markdown' })
+          fileToUpload = new File([blob], newName, { type: 'text/markdown' })
+          console.log('[Preprocessor][Modal] CSV preprocessing done.', { newName, size: fileToUpload.size })
+        } else if (isXlsx) {
+          console.log('[Preprocessor][Modal] XLSX detected, preprocessing before upload...', { name: fileToUpload.name, type: fileToUpload.type })
+          const [XLSX, buffer] = await Promise.all([
+            import('xlsx'),
+            fileToUpload.arrayBuffer(),
+          ])
+          // @ts-ignore
+          const workbook = XLSX.read(buffer, { type: 'array' })
+          const sheetNames = workbook.SheetNames || []
+          const firstSheetName = sheetNames[0]
+          // @ts-ignore
+          const sheet = workbook.Sheets[firstSheetName]
+          // @ts-ignore
+          const rows: any[][] = (XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as any[]) || []
+          console.log('[Preprocessor][Modal] XLSX parsed:', { sheetCount: sheetNames.length, firstSheetName, rowCount: rows.length })
+          const header = (rows[0] || []) as string[]
+          const dataRows = rows.slice(1)
+          const mdBlocks = dataRows.map((cols: any[], idx: number) => {
+            const fields = header.map((h: string, i: number) => `**${String(h)}:** ${cols[i] ?? ''}`).join('  \n')
+            return `## Row ${idx + 1}\n\n${fields}`
+          })
+          const markdown = mdBlocks.join(`\n\n${SEG}\n\n`)
+          const base = fileToUpload.name.includes('.') ? fileToUpload.name.substring(0, fileToUpload.name.lastIndexOf('.')) : fileToUpload.name
+          const newName = `${base}.md`
+          const blob = new Blob([markdown], { type: 'text/markdown' })
+          fileToUpload = new File([blob], newName, { type: 'text/markdown' })
+          console.log('[Preprocessor][Modal] XLSX preprocessing done.', { newName, size: fileToUpload.size })
+        } else {
+          console.log('[Preprocessor][Modal] No preprocessing applied.', { name: fileToUpload.name, type: fileToUpload.type })
+        }
+
         await createDocumentFromFile(knowledgeBaseId, {
           name: formData.name,
-          file: selectedFile!
-        });
+          file: fileToUpload
+        })
       }
 
       onSuccess();
