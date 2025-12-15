@@ -351,19 +351,42 @@ async function syncPage(
   let difyDocumentId: string;
   let action: 'created' | 'updated';
 
+  // 如果有 existingSync，先檢查該文件在 Dify 是否真的存在
+  let documentExists = false;
+  if (existingSync?.difyDocumentId) {
+    // 這裡我們假設如果 update 失敗且錯誤是 404，那就代表文件不存在
+    // 為了簡化，我們直接在 try-catch 區塊處理
+  }
+
   if (existingSync?.difyDocumentId) {
     // 更新現有文件
     console.log(`      ⬆️  Updating in Dify (via File API)...`);
 
-    await difyClient.updateDocumentByFile(
-      datasetId,
-      existingSync.difyDocumentId,
-      safeFilename,
-      fileBlob
-    );
-
-    difyDocumentId = existingSync.difyDocumentId;
-    action = 'updated';
+    try {
+      await difyClient.updateDocumentByFile(
+        datasetId,
+        existingSync.difyDocumentId,
+        safeFilename,
+        fileBlob
+      );
+      difyDocumentId = existingSync.difyDocumentId;
+      action = 'updated';
+    } catch (error: any) {
+      // 如果是 404 Not Found，代表 Dify 上文件已被刪除，改為重新建立
+      const msg = String(error?.message || error);
+      if (msg.includes('404') || msg.includes('not_found') || msg.includes('Not Found')) {
+        console.log(`      ⚠️  Document not found in Dify (404), re-creating...`);
+        const result = await difyClient.createDocumentByFile(
+          datasetId,
+          safeFilename,
+          fileBlob
+        );
+        difyDocumentId = result.document.id;
+        action = 'created';
+      } else {
+        throw error;
+      }
+    }
   } else {
     // 建立新文件
     console.log(`      ⬆️  Creating in Dify (via File API)...`);
