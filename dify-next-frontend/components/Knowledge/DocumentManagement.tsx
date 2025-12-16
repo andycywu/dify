@@ -291,17 +291,34 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         const isXlsx = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || fileToUpload.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || fileToUpload.type === 'application/vnd.ms-excel'
 
         const SEG = '<!--DIFY_SEGMENT-->'
-        const MAX_SEG_LEN = 2000
+        const MAX_CHUNK_BYTES = 2048
+        const utf8ByteLength = (s: string) => {
+          try {
+            if (typeof TextEncoder !== 'undefined') {
+              return new TextEncoder().encode(s).length
+            }
+          } catch {
+            // ignore
+          }
+          // Fallback (should not happen in browser, but keeps it safe in non-browser runtimes)
+          // @ts-ignore
+          if (typeof Buffer !== 'undefined') return Buffer.byteLength(s, 'utf8')
+          return s.length
+        }
+
+        // Aggregate RowBlocks into chunks without slicing strings.
+        // If a single RowBlock exceeds MAX_CHUNK_BYTES, it becomes a standalone chunk.
         const flushChunks = (blocks: string[]) => {
           const segments: string[] = []
           let current = ''
           for (const b of blocks) {
-            if ((current.length + b.length + 2) > MAX_SEG_LEN) {
-              if (current) segments.push(current)
+            const candidate = current ? `${current}\n\n${b}` : b
+            if (current && utf8ByteLength(candidate) > MAX_CHUNK_BYTES) {
+              segments.push(current)
               current = b
-            } else {
-              current = current ? `${current}\n\n${b}` : b
+              continue
             }
+            current = candidate
           }
           if (current) segments.push(current)
           return segments
@@ -411,11 +428,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           blocks.push(`# Sheet: CSV (${baseName})\n\n- Rows: ${rows.length}\n- Delimiter: ${delimiter === '\t' ? 'TAB' : delimiter}`)
           for (let idx = 0; idx < rows.length; idx++) {
             const cols = rows[idx]
-            const fields = header.map((h, i) => `**${h}:** ${cols[i] ?? ''}`).join('  \\\n')
-            blocks.push(`## Row ${idx + 1}\\n\\n${fields}`)
+            const fields = header.map((h, i) => `**${h}:** ${cols[i] ?? ''}`).join('  \n')
+            blocks.push(`## Row ${idx + 1}\n\n${fields}`)
           }
           const segments = flushChunks(blocks)
-          const markdown = segments.join(`\\n\\n${SEG}\\n\\n`)
+          const markdown = segments.join(`\n\n${SEG}\n\n`)
           const base = fileToUpload.name.includes('.') ? fileToUpload.name.substring(0, fileToUpload.name.lastIndexOf('.')) : fileToUpload.name
           const newName = `${base}.md`
           const blob = new Blob([markdown], { type: 'text/markdown' })
