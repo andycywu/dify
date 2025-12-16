@@ -479,11 +479,13 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           console.log('[Preprocessor][Modal] No preprocessing applied.', { name: fileToUpload.name, type: fileToUpload.type })
         }
 
-        await createDocumentFromFile(knowledgeBaseId, {
+        const created = await createDocumentFromFile(knowledgeBaseId, {
           name: formData.name,
           file: fileToUpload,
           ...(uploadProcessRule ? { process_rule: uploadProcessRule } : {}),
         })
+
+        console.log('[Preprocessor][Modal] Upload response:', created)
       }
 
       onSuccess();
