@@ -343,12 +343,12 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             }
             let best = ','
             let bestCount = -1
-            for (const [delim, count] of counts.entries()) {
+            counts.forEach((count, delim) => {
               if (count > bestCount) {
                 bestCount = count
                 best = delim
               }
-            }
+            })
             return best
           }
 
