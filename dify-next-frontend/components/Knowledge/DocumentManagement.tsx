@@ -231,6 +231,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   onClose,
   onSuccess
 }) => {
+  const MAX_UPLOAD_FILE_BYTES = 15 * 1024 * 1024
   const [activeTab, setActiveTab] = useState<'text' | 'file'>('text');
   const [formData, setFormData] = useState({
     name: '',
@@ -249,9 +250,12 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       // Check file size (15MB limit)
-      if (file.size > 15 * 1024 * 1024) {
-        setError('File size must be less than 15MB');
-        return;
+      if (file.size > MAX_UPLOAD_FILE_BYTES) {
+        setSelectedFile(null)
+        setError('上傳檔案超過 15MB，請先切小一點再上傳。')
+        // allow re-selecting the same file after rejection
+        e.target.value = ''
+        return
       }
 
       // Check file type
@@ -284,6 +288,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
         // Text 模式：直接上傳
         await createDocumentFromText(knowledgeBaseId, formData);
       } else {
+        if (selectedFile && selectedFile.size > MAX_UPLOAD_FILE_BYTES) {
+          setSelectedFile(null)
+          setError('上傳檔案超過 15MB，請先切小一點再上傳。')
+          return
+        }
         // File 模式：針對 CSV / Excel 先在前端轉成 Markdown（分段以 <!--DIFY_SEGMENT-->）
         let fileToUpload = selectedFile!
         const lowerName = fileToUpload.name.toLowerCase()

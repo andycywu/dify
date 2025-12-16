@@ -19,10 +19,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const debugEnabled = process.env.DEBUG_PROCESS_RULE === '1'
 
-  const form = new IncomingForm()
+  const MAX_UPLOAD_FILE_BYTES = 15 * 1024 * 1024
+
+  const form = new IncomingForm({
+    maxFileSize: MAX_UPLOAD_FILE_BYTES,
+  })
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
+      const msg = String((err as any)?.message || err)
+      const isTooLarge = msg.toLowerCase().includes('maxfilesize') || msg.toLowerCase().includes('max file size')
+      if (isTooLarge) {
+        console.warn('[Proxy] Upload rejected: file too large', { maxBytes: MAX_UPLOAD_FILE_BYTES })
+        return res.status(413).json({ message: '上傳檔案超過 15MB，請先切小一點再上傳。' })
+      }
+
       console.error('Form parse error:', err)
       return res.status(500).json({ message: 'Error parsing form data' })
     }
