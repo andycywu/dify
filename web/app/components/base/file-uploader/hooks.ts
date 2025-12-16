@@ -72,7 +72,7 @@ async function preprocessXlsxFileToMarkdown(file: File, fileName: string) {
       const header = rows[0] as string[]
       const dataRows = rows.slice(1)
       const blocks: string[] = []
-      blocks.push(`# Sheet: ${sheetName}`)
+      blocks.push(`# Sheet: ${sheetName}\n\n- Rows: ${dataRows.length}`)
       for (let idx = 0; idx < dataRows.length; idx++) {
         const cols = dataRows[idx]
         const fields = header.map((h: string, i: number) => `**${String(h)}:** ${cols[i] ?? ''}`).join('  \n')
@@ -129,14 +129,30 @@ function preprocessCsvToMarkdown(csvText: string, fileName: string) {
   const rows = lines.slice(1).map(parseLine)
 
   const SEG = '<!--DIFY_SEGMENT-->'
-  const mdBlocks = rows.map((cols, idx) => {
+  const MAX_SEG_LEN = 2000
+  const blocks: string[] = []
+  // Add a CSV sheet header for clarity (include file base name and row count)
+  const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
+  blocks.push(`# Sheet: CSV (${base})\n\n- Rows: ${rows.length}`)
+  for (let idx = 0; idx < rows.length; idx++) {
+    const cols = rows[idx]
     const fields = header.map((h, i) => `**${h}:** ${cols[i] ?? ''}`).join('  \n')
-    return `## Row ${idx + 1}\n\n${fields}`
-  })
-  const markdown = mdBlocks.join(`\n\n${SEG}\n\n`)
+    blocks.push(`## Row ${idx + 1}\n\n${fields}`)
+  }
+  const segments: string[] = []
+  let current = ''
+  for (const b of blocks) {
+    if ((current.length + b.length + 2) > MAX_SEG_LEN) {
+      if (current) segments.push(current)
+      current = b
+    } else {
+      current = current ? `${current}\n\n${b}` : b
+    }
+  }
+  if (current) segments.push(current)
+  const markdown = segments.join(`\n\n${SEG}\n\n`)
 
   // New file name with .md extension
-  const base = fileName.includes('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName
   const newName = `${base}.md`
   return { success: true, name: newName, mime: 'text/markdown', content: markdown }
 }

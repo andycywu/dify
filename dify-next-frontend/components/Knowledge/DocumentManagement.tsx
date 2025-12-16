@@ -330,11 +330,17 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           }
           const header = parseLine(lines[0])
           const rows = lines.slice(1).map(parseLine)
-          const mdBlocks = rows.map((cols, idx) => {
-            const fields = header.map((h, i) => `**${h}:** ${cols[i] ?? ''}`).join('  \n')
-            return `## Row ${idx + 1}\n\n${fields}`
-          })
-          const markdown = mdBlocks.join(`\n\n${SEG}\n\n`)
+          const blocks: string[] = []
+          // Add a CSV sheet header for clarity (include file base name and row count)
+          const baseName = fileToUpload.name.includes('.') ? fileToUpload.name.substring(0, fileToUpload.name.lastIndexOf('.')) : fileToUpload.name
+          blocks.push(`# Sheet: CSV (${baseName})\n\n- Rows: ${rows.length}`)
+          for (let idx = 0; idx < rows.length; idx++) {
+            const cols = rows[idx]
+            const fields = header.map((h, i) => `**${h}:** ${cols[i] ?? ''}`).join('  \\\n')
+            blocks.push(`## Row ${idx + 1}\\n\\n${fields}`)
+          }
+          const segments = flushChunks(blocks)
+          const markdown = segments.join(`\\n\\n${SEG}\\n\\n`)
           const base = fileToUpload.name.includes('.') ? fileToUpload.name.substring(0, fileToUpload.name.lastIndexOf('.')) : fileToUpload.name
           const newName = `${base}.md`
           const blob = new Blob([markdown], { type: 'text/markdown' })
@@ -360,7 +366,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             const header = (rows[0] || []) as string[]
             const dataRows = rows.slice(1)
             const blocks: string[] = []
-            blocks.push(`# Sheet: ${sheetName}`)
+            blocks.push(`# Sheet: ${sheetName}\n\n- Rows: ${dataRows.length}`)
             for (let idx = 0; idx < dataRows.length; idx++) {
               const cols = dataRows[idx]
               const fields = header.map((h: string, i: number) => `**${String(h)}:** ${cols[i] ?? ''}`).join('  \n')
