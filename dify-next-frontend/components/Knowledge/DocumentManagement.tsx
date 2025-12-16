@@ -166,7 +166,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ knowledgeBase, 
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {doc.word_count.toLocaleString()}
+                          {doc.word_count == null ? 'N/A' : doc.word_count.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {doc.hit_count}
@@ -447,6 +447,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           const blob = new Blob([markdown], { type: 'text/markdown' })
           fileToUpload = new File([blob], newName, { type: 'text/markdown' })
           console.log('[Preprocessor][Modal] CSV preprocessing done.', { newName, size: fileToUpload.size })
+          if (fileToUpload.size > MAX_UPLOAD_FILE_BYTES) {
+            setSelectedFile(null)
+            setError('轉換後的檔案超過 15MB，請先切小一點再上傳。')
+            return
+          }
           uploadProcessRule = buildCustomProcessRule()
         } else if (isXlsx) {
           console.log('[Preprocessor][Modal] XLSX detected, preprocessing before upload...', { name: fileToUpload.name, type: fileToUpload.type })
@@ -483,6 +488,11 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           const blob = new Blob([markdown], { type: 'text/markdown' })
           fileToUpload = new File([blob], newName, { type: 'text/markdown' })
           console.log('[Preprocessor][Modal] XLSX preprocessing done.', { newName, size: fileToUpload.size })
+          if (fileToUpload.size > MAX_UPLOAD_FILE_BYTES) {
+            setSelectedFile(null)
+            setError('轉換後的檔案超過 15MB，請先切小一點再上傳。')
+            return
+          }
           uploadProcessRule = buildCustomProcessRule()
         } else {
           console.log('[Preprocessor][Modal] No preprocessing applied.', { name: fileToUpload.name, type: fileToUpload.type })
@@ -498,9 +508,14 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
       }
 
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create document:', error);
-      setError('Failed to create document. Please try again.');
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        'Failed to create document. Please try again.'
+      setError(String(msg))
     } finally {
       setLoading(false);
     }
