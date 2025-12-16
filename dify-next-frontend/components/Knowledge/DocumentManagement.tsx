@@ -307,33 +307,108 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           return segments
         }
 
+        const buildCustomProcessRule = () => ({
+          mode: 'custom',
+          rules: {
+            pre_processing_rules: [
+              { id: 'remove_extra_spaces', enabled: true },
+              { id: 'remove_urls_emails', enabled: true },
+            ],
+            segmentation: {
+              separator: SEG,
+              max_tokens: 2000,
+            },
+          },
+        })
+
+        const parseCsv = (text: string) => {
+          const normalized = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+          const candidates = [',', ';', '\t', '|']
+
+          const detectDelimiter = () => {
+            const counts = new Map<string, number>()
+            for (const c of candidates) counts.set(c, 0)
+            let inQuotes = false
+            for (let i = 0; i < normalized.length; i++) {
+              const ch = normalized[i]
+              if (ch === '"') {
+                if (inQuotes && normalized[i + 1] === '"') i++
+                else inQuotes = !inQuotes
+                continue
+              }
+              if (!inQuotes) {
+                if (ch === '\n') break
+                if (counts.has(ch)) counts.set(ch, (counts.get(ch) || 0) + 1)
+              }
+            }
+            let best = ','
+            let bestCount = -1
+            for (const [delim, count] of counts.entries()) {
+              if (count > bestCount) {
+                bestCount = count
+                best = delim
+              }
+            }
+            return best
+          }
+
+          const delimiter = detectDelimiter()
+          const rows: string[][] = []
+          let row: string[] = []
+          let field = ''
+          let inQuotes = false
+
+          for (let i = 0; i < normalized.length; i++) {
+            const ch = normalized[i]
+
+            if (ch === '"') {
+              if (inQuotes && normalized[i + 1] === '"') {
+                field += '"'
+                i++
+              } else {
+                inQuotes = !inQuotes
+              }
+              continue
+            }
+
+            if (!inQuotes && ch === delimiter) {
+              row.push(field)
+              field = ''
+              continue
+            }
+
+            if (!inQuotes && ch === '\n') {
+              row.push(field)
+              field = ''
+              if (row.some(v => v !== '')) rows.push(row)
+              row = []
+              continue
+            }
+
+            field += ch
+          }
+
+          row.push(field)
+          if (row.some(v => v !== '')) rows.push(row)
+
+          return { rows, delimiter }
+        }
+
+        let uploadProcessRule: any | undefined
+
         if (isCsv) {
           console.log('[Preprocessor][Modal] CSV detected, preprocessing before upload...', { name: fileToUpload.name, type: fileToUpload.type })
           const text = await (new Response(fileToUpload).text())
-          const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.length > 0)
-          const parseLine = (line: string) => {
-            const result: string[] = []
-            let current = ''
-            let inQuotes = false
-            for (let i = 0; i < line.length; i++) {
-              const ch = line[i]
-              if (ch === '"') {
-                if (inQuotes && line[i + 1] === '"') { current += '"'; i++ } else { inQuotes = !inQuotes }
-              } else if (ch === ',' && !inQuotes) {
-                result.push(current); current = ''
-              } else {
-                current += ch
-              }
-            }
-            result.push(current)
-            return result.map(s => s.trim())
+          const { rows: csvRows, delimiter } = parseCsv(text)
+          if (csvRows.length === 0) {
+            throw new Error('CSV is empty or cannot be parsed')
           }
-          const header = parseLine(lines[0])
-          const rows = lines.slice(1).map(parseLine)
+          const header = (csvRows[0] || []).map(v => String(v).trim())
+          const rows = csvRows.slice(1)
           const blocks: string[] = []
           // Add a CSV sheet header for clarity (include file base name and row count)
           const baseName = fileToUpload.name.includes('.') ? fileToUpload.name.substring(0, fileToUpload.name.lastIndexOf('.')) : fileToUpload.name
-          blocks.push(`# Sheet: CSV (${baseName})\n\n- Rows: ${rows.length}`)
+          blocks.push(`# Sheet: CSV (${baseName})\n\n- Rows: ${rows.length}\n- Delimiter: ${delimiter === '\t' ? 'TAB' : delimiter}`)
           for (let idx = 0; idx < rows.length; idx++) {
             const cols = rows[idx]
             const fields = header.map((h, i) => `**${h}:** ${cols[i] ?? ''}`).join('  \\\n')
@@ -346,6 +421,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           const blob = new Blob([markdown], { type: 'text/markdown' })
           fileToUpload = new File([blob], newName, { type: 'text/markdown' })
           console.log('[Preprocessor][Modal] CSV preprocessing done.', { newName, size: fileToUpload.size })
+          uploadProcessRule = buildCustomProcessRule()
         } else if (isXlsx) {
           console.log('[Preprocessor][Modal] XLSX detected, preprocessing before upload...', { name: fileToUpload.name, type: fileToUpload.type })
           const [XLSX, buffer] = await Promise.all([
@@ -381,13 +457,15 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           const blob = new Blob([markdown], { type: 'text/markdown' })
           fileToUpload = new File([blob], newName, { type: 'text/markdown' })
           console.log('[Preprocessor][Modal] XLSX preprocessing done.', { newName, size: fileToUpload.size })
+          uploadProcessRule = buildCustomProcessRule()
         } else {
           console.log('[Preprocessor][Modal] No preprocessing applied.', { name: fileToUpload.name, type: fileToUpload.type })
         }
 
         await createDocumentFromFile(knowledgeBaseId, {
           name: formData.name,
-          file: fileToUpload
+          file: fileToUpload,
+          ...(uploadProcessRule ? { process_rule: uploadProcessRule } : {}),
         })
       }
 
