@@ -799,9 +799,8 @@ services:
       OLLAMA_BASE_URL: http://host.docker.internal:11434
 
       # === 瀏覽器端外部訪問（通過 Next.js API 代理避免 CORS）===
-      NEXT_PUBLIC_API_URL: http://localhost:3001/api
-      NEXT_PUBLIC_DIFY_API_BASE_URL: http://localhost:3001/api/dify
-      NEXTAUTH_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: /api
+      NEXT_PUBLIC_DIFY_API_BASE_URL: /api/dify
 
       # === 運行配置 ===
       NODE_ENV: development
