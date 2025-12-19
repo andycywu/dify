@@ -1,6 +1,8 @@
 // Mock translation implementation to avoid SSR issues
 // This replaces react-i18next with a simple, static translation system
 
+import { useEffect, useMemo, useState } from 'react';
+
 type TranslationFunction = (key: string, options?: { defaultValue?: string }) => string;
 
 interface UseTranslationReturn {
@@ -155,29 +157,52 @@ const translations: Record<string, Record<string, string>> = {
   }
 };
 
-// Get current locale (default to 'en')
-const getCurrentLocale = (): string => {
-  if (typeof window === 'undefined') return 'en'; // SSR safe
-  
-  // Try to get from localStorage, URL, or default
-  const stored = localStorage.getItem('locale');
-  if (stored && translations[stored]) return stored;
-  
-  // Check browser language
-  const browserLang = navigator.language.toLowerCase();
+const DEFAULT_LOCALE = 'en';
+const LOCALE_CHANGED_EVENT = 'dify-locale-changed';
+
+const detectClientLocale = (): string => {
+  if (typeof window === 'undefined') return DEFAULT_LOCALE;
+
+  try {
+    const stored = window.localStorage.getItem('locale');
+    if (stored && translations[stored]) return stored;
+  } catch {
+    // ignore
+  }
+
+  const browserLang = (window.navigator?.language || '').toLowerCase();
   if (browserLang.startsWith('zh')) return 'zh';
-  
-  return 'en';
+
+  return DEFAULT_LOCALE;
 };
 
 // Mock useTranslation hook
 export const useTranslation = (namespace?: string): UseTranslationReturn => {
-  const locale = getCurrentLocale();
-  
-  const t: TranslationFunction = (key: string, options?: { defaultValue?: string }) => {
-    const translation = translations[locale]?.[key] || translations['en']?.[key];
-    return translation || options?.defaultValue || key;
-  };
-  
+  // Important: Keep the first client render consistent with SSR to avoid hydration errors.
+  // We only resolve the real locale after mount.
+  const [locale, setLocale] = useState<string>(DEFAULT_LOCALE);
+
+  useEffect(() => {
+    const applyLocale = () => setLocale(detectClientLocale());
+    applyLocale();
+
+    // `storage` won't fire in the same tab; we also listen to a custom event.
+    window.addEventListener('storage', applyLocale);
+    window.addEventListener(LOCALE_CHANGED_EVENT, applyLocale as EventListener);
+    return () => {
+      window.removeEventListener('storage', applyLocale);
+      window.removeEventListener(LOCALE_CHANGED_EVENT, applyLocale as EventListener);
+    };
+  }, []);
+
+  const t: TranslationFunction = useMemo(() => {
+    return (key: string, options?: { defaultValue?: string }) => {
+      const translation = translations[locale]?.[key] || translations[DEFAULT_LOCALE]?.[key];
+      return translation || options?.defaultValue || key;
+    };
+  }, [locale]);
+
   return { t };
 };
+
+export const LOCALE_CHANGE_EVENT_NAME = LOCALE_CHANGED_EVENT;

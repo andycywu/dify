@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useTranslation } from '../../lib/mockTranslation';
+import { LOCALE_CHANGE_EVENT_NAME, useTranslation } from '../../lib/mockTranslation';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
 
@@ -30,23 +30,23 @@ const Header: React.FC = () => {
   const handleLogout = async () => {
     try {
       console.log('Starting logout process...');
-      
+
       // 關閉下拉菜單
       setDropdownOpen(false);
-      
+
       // 使用 NextAuth 的 signOut 並讓它處理重導向
       // 使用明確的回調 URL 確保重導向到正確位置
       const baseUrl = window.location.origin;
       const loginUrl = `${baseUrl}/login`;
-      
+
       console.log('Calling signOut with callbackUrl:', loginUrl);
-      
+
       // 讓 NextAuth 處理重導向，避免多重導航
-      await signOut({ 
+      await signOut({
         callbackUrl: loginUrl,
         redirect: true  // 讓 NextAuth 處理重導向
       });
-      
+
     } catch (error) {
       console.error('Logout error:', error);
       // 只有在 signOut 失敗時才手動重導向
@@ -119,8 +119,8 @@ const Header: React.FC = () => {
                     {t('usage')}
                   </Link>
 
-                  <button 
-                    onClick={handleLogout} 
+                  <button
+                    onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
                   >
                     {t('logout')}
@@ -135,20 +135,20 @@ const Header: React.FC = () => {
           )}
         </nav>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => {
               localStorage.setItem('locale', 'en');
-              window.location.reload();
-            }} 
+              window.dispatchEvent(new Event(LOCALE_CHANGE_EVENT_NAME));
+            }}
             className={`px-2 py-1 rounded border border-blue-300 hover:bg-blue-100 transition font-semibold bg-white text-blue-900`}
           >
             EN
           </button>
-          <button 
+          <button
             onClick={() => {
               localStorage.setItem('locale', 'zh');
-              window.location.reload();
-            }} 
+              window.dispatchEvent(new Event(LOCALE_CHANGE_EVENT_NAME));
+            }}
             className={`px-2 py-1 rounded border border-blue-300 hover:bg-blue-100 transition font-semibold bg-white text-blue-900`}
           >
             中文
