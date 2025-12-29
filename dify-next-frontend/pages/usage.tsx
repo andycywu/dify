@@ -47,15 +47,15 @@ function UsageStats() {
   React.useEffect(() => {
     if (authLoading) return;
     if (!user) return;
-    
+
     setLoading(true);
-    
+
     const fetchData = async () => {
       try {
         // 首先獲取個人統計數據（必需）
         console.log('Fetching user stats for userId:', user.id);
         const userStatsResponse = await axios.get(`/api/user-token-stats?userId=${user.id}`);
-        
+
         setUsageData(userStatsResponse.data.dailyUsage.map((d: any) => ({
           id: `${user.id}-${d.date}`,
           date: d.date.slice(0, 10),
@@ -124,7 +124,7 @@ function UsageStats() {
 
 export default function Usage() {
   const { t } = useTranslation('auth');
-  
+
   return (
     <MainLayout title={(t('usage_page.title') as string) || 'Usage / Reports'}>
       <div className="w-full max-w-3xl">
