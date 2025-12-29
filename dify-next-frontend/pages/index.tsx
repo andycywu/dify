@@ -95,10 +95,10 @@ const Home: React.FC = () => {
 
                         {/* Wiki Batch Importer */}
                         <Link href="http://localhost:5050" className="block">
-                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 shadow-md hover:shadow-xl transition-all duration-300 border-2 border-blue-200 hover:border-blue-400 cursor-pointer">
-                                <div className="text-4xl mb-4">📦</div>
-                                <h2 className="text-xl font-bold mb-2 text-blue-900">Wiki Batch Importer</h2>
-                                <p className="text-gray-700">跳轉到批量導入頁面</p>
+                            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 shadow-md hover:shadow-xl transition-all duration-300 border-2 border-green-200 hover:border-green-400 cursor-pointer">
+                                <div className="text-4xl mb-4">📂</div>
+                                <h2 className="text-xl font-bold mb-2 text-green-900">Wiki Batch Importer</h2>
+                                <p className="text-sm text-gray-600">批量導入文檔到 Wiki.js</p>
                             </div>
                         </Link>
                     </div>

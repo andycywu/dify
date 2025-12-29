@@ -15,8 +15,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import logging
-from flask import Flask, request, jsonify, render_template, render_template_string, redirect, url_for
-from functools import wraps
 
 # 文檔處理相關
 import pypandoc
@@ -28,6 +26,7 @@ import pandas as pd
 import markdown
 
 # Web框架
+from flask import Flask, request, jsonify, render_template, render_template_string
 from werkzeug.utils import secure_filename
 
 # Wiki.js API 客戶端
@@ -632,7 +631,14 @@ def batch_import():
 @app.route('/')
 def index():
     """主頁面 - Web 管理界面"""
-    return render_template('index.html')
+    return '''
+    <html>
+        <body>
+            <h1>Wiki Batch Importer</h1>
+            <button onclick="window.location.href='http://localhost:3001'">返回 3001</button>
+        </body>
+    </html>
+    '''
 
 @app.route('/api/smb-configs', methods=['GET'])
 def get_smb_configs():
@@ -991,23 +997,27 @@ def smb_status():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Middleware to enforce admin-only access
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        admin_cookie = request.cookies.get('admin')
-        if admin_cookie != 'true':
-            return jsonify({'error': 'Admin access required'}), 403
-        return f(*args, **kwargs)
-    return decorated_function
+# 新增中介層驗證 3001 的登入 Cookie
+from flask import Flask, request, jsonify, redirect
+import requests
 
-# Apply middleware to all routes
+app = Flask(__name__)
+
+ADMIN_API_VALIDATE = "http://localhost:3001/api/auth/validate"
+
 @app.before_request
-def enforce_admin_access():
-    if request.endpoint not in ['static', 'index']:
-        admin_cookie = request.cookies.get('admin')
-        if admin_cookie != 'true':
-            return jsonify({'error': 'Admin access required'}), 403
+def authenticate():
+    cookie = request.headers.get('Cookie')
+    if not cookie:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    try:
+        # 驗證 Cookie
+        response = requests.get(ADMIN_API_VALIDATE, headers={"Cookie": cookie})
+        if response.status_code != 200 or response.json().get("role") != "admin":
+            return jsonify({"error": "Forbidden"}), 403
+    except Exception as e:
+        return jsonify({"error": "Authentication failed", "details": str(e)}), 403
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5050))  # 改用 5050 端口
