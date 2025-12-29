@@ -27,6 +27,8 @@ const WikiImportManager: React.FC = () => {
   const [history, setHistory] = useState<ImportHistory | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [cronTime, setCronTime] = useState('');
+  const [cronMessage, setCronMessage] = useState<string | null>(null);
 
   const fetchImportHistory = useCallback(async () => {
     try {
@@ -169,6 +171,31 @@ const WikiImportManager: React.FC = () => {
       await fetchImportHistory();
     } catch (err: any) {
       setError('刪除任務失敗: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const triggerManualSync = async () => {
+    try {
+      setError(null);
+      const response = await axios.post('/api/admin/sync-wiki');
+      setCronMessage(response.data.message);
+    } catch (err: any) {
+      setError('手動同步失敗: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const setupCronSync = async () => {
+    if (!cronTime) {
+      setError('請提供有效的 cron 時間格式');
+      return;
+    }
+
+    try {
+      setError(null);
+      const response = await axios.post('/api/admin/setup-cron', { cron_time: cronTime });
+      setCronMessage(response.data.message);
+    } catch (err: any) {
+      setError('設置自動同步失敗: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -394,6 +421,43 @@ const WikiImportManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 手動同步 */}
+      <div className="bg-white border rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">手動同步</h3>
+        <button
+          onClick={triggerManualSync}
+          className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
+        >
+          立即同步
+        </button>
+        {cronMessage && (
+          <p className="mt-2 text-green-700">{cronMessage}</p>
+        )}
+      </div>
+
+      {/* 自動同步設置 */}
+      <div className="bg-white border rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">自動同步設置</h3>
+        <div className="flex items-center space-x-4">
+          <input
+            type="text"
+            value={cronTime}
+            onChange={(e) => setCronTime(e.target.value)}
+            placeholder="例如: 0 2 * * *"
+            className="border rounded px-4 py-2 w-full"
+          />
+          <button
+            onClick={setupCronSync}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+          >
+            設置
+          </button>
+        </div>
+        {cronMessage && (
+          <p className="mt-2 text-green-700">{cronMessage}</p>
+        )}
+      </div>
     </div>
   );
 };

@@ -549,3 +549,50 @@ export async function getSyncStats(department?: Department) {
     lastSyncAt: lastSync?.lastSyncedAt,
   };
 }
+
+// 新增同步邏輯的主函數
+export async function syncWikiToDify(department: Department) {
+  console.log(`Starting sync for department: ${department}`);
+
+  const config = DEPARTMENT_CONFIG[department];
+  if (!config || !config.datasetId) {
+    throw new Error(`Invalid department or missing dataset ID for ${department}`);
+  }
+
+  // Fetch pages from Wiki.js
+  const pages = await fetchWikiPages(config.path);
+  console.log(`Fetched ${pages.length} pages for department: ${department}`);
+
+  // Upload pages to Dify Dataset
+  await uploadToDifyDataset(config.datasetId, pages);
+  console.log(`Sync completed for department: ${department}`);
+}
+
+// Fetch pages by department path
+async function fetchWikiPages(path: string) {
+  const query = `
+    query {
+      pages(filter: { path: "${path}" }) {
+        list {
+          id
+          title
+          content
+        }
+      }
+    }
+  `;
+
+  const response = await difyClient.graphql(WIKI_GRAPHQL_URL, query, WIKI_API_KEY);
+  return response.data.pages.list;
+}
+
+// Upload pages to Dify Dataset
+async function uploadToDifyDataset(datasetId: string, pages: any[]) {
+  for (const page of pages) {
+    await difyClient.uploadDocument(datasetId, {
+      title: page.title,
+      content: page.content,
+    });
+    console.log(`Uploaded page: ${page.title}`);
+  }
+}
