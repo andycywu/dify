@@ -67,5 +67,38 @@ def setup_cron():
     except Exception as e:
         return jsonify({"error": f"設置失敗: {str(e)}"}), 500
 
+# 模擬部門同步狀態資料
+sync_status = {
+    "HR": {"totalPages": 100, "syncedPages": 50, "status": "in-progress", "lastSyncTime": "2025-12-29T00:00:00Z"},
+    "Finance": {"totalPages": 80, "syncedPages": 80, "status": "success", "lastSyncTime": "2025-12-28T23:00:00Z"},
+    # ...其他部門
+}
+
+@app.route('/api/admin/sync-status', methods=['GET'])
+def get_sync_status():
+    return jsonify(sync_status)
+
+@app.route('/api/admin/sync-department', methods=['POST'])
+def sync_department():
+    data = request.json
+    department = data.get('department')
+    if department not in sync_status:
+        return jsonify({"error": "Department not found"}), 404
+
+    # 模擬同步邏輯
+    sync_status[department]["syncedPages"] = sync_status[department]["totalPages"]
+    sync_status[department]["status"] = "success"
+    sync_status[department]["lastSyncTime"] = "2025-12-29T01:00:00Z"
+
+    return jsonify({"message": f"Department {department} synced successfully"})
+
+@app.route('/api/admin/setup-cron', methods=['POST'])
+def setup_cron():
+    data = request.json
+    time = data.get('time', '00:00')
+
+    # 模擬設定自動同步時間
+    return jsonify({"message": f"Auto sync time set to {time}"})
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)

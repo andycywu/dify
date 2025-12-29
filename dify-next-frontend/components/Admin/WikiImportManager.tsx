@@ -29,6 +29,9 @@ const WikiImportManager: React.FC = () => {
   const [dragOver, setDragOver] = useState(false);
   const [cronTime, setCronTime] = useState('');
   const [cronMessage, setCronMessage] = useState<string | null>(null);
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [autoSyncTime, setAutoSyncTime] = useState('00:00');
 
   const fetchImportHistory = useCallback(async () => {
     try {
@@ -215,6 +218,37 @@ const WikiImportManager: React.FC = () => {
       case 'completed': return '已完成';
       case 'failed': return '失敗';
       default: return '未知';
+    }
+  };
+
+  const fetchSyncStatus = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('/api/admin/sync-status');
+      setDepartments(Object.entries(response.data));
+    } catch (error) {
+      console.error('Failed to fetch sync status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManualSync = async (department: string) => {
+    try {
+      await axios.post('/api/admin/sync-department', { department });
+      alert(`Department ${department} synced successfully!`);
+      fetchSyncStatus();
+    } catch (error) {
+      console.error(`Failed to sync department ${department}:`, error);
+    }
+  };
+
+  const handleAutoSyncSetup = async () => {
+    try {
+      await axios.post('/api/admin/setup-cron', { time: autoSyncTime });
+      alert(`Auto sync time set to ${autoSyncTime}`);
+    } catch (error) {
+      console.error('Failed to set auto sync time:', error);
     }
   };
 
@@ -456,6 +490,64 @@ const WikiImportManager: React.FC = () => {
         </div>
         {cronMessage && (
           <p className="mt-2 text-green-700">{cronMessage}</p>
+        )}
+      </div>
+
+      {/* 部門同步管理 */}
+      <div className="bg-white border rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">部門同步管理</h3>
+
+        <div className="flex items-center space-x-4 mb-4">
+          <input
+            type="time"
+            value={autoSyncTime}
+            onChange={(e) => setAutoSyncTime(e.target.value)}
+            className="border rounded px-4 py-2"
+          />
+          <button
+            onClick={handleAutoSyncSetup}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+          >
+            設置自動同步時間
+          </button>
+        </div>
+
+        {loading ? (
+          <p>載入中...</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left p-3">部門</th>
+                  <th className="text-left p-3">總頁數</th>
+                  <th className="text-left p-3">已同步頁數</th>
+                  <th className="text-left p-3">狀態</th>
+                  <th className="text-left p-3">最後同步時間</th>
+                  <th className="text-left p-3">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {departments.map(([department, data]) => (
+                  <tr key={department} className="hover:bg-gray-50">
+                    <td className="p-3 font-medium">{department}</td>
+                    <td className="p-3">{data.totalPages}</td>
+                    <td className="p-3">{data.syncedPages}</td>
+                    <td className="p-3">{data.status}</td>
+                    <td className="p-3">{data.lastSyncTime}</td>
+                    <td className="p-3">
+                      <button
+                        onClick={() => handleManualSync(department)}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                      >
+                        手動同步
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
