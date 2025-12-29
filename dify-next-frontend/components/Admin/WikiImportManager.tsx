@@ -61,14 +61,11 @@ const WikiImportManager: React.FC = () => {
       <div className="bg-white border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4 text-gray-700">手動同步</h3>
         <button
-          onClick={triggerManualSync}
+          onClick={() => handleManualSync('all')}
           className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
         >
           立即同步
         </button>
-        {cronMessage && (
-          <p className="mt-2 text-green-700">{cronMessage}</p>
-        )}
       </div>
 
       {/* 部門同步管理 */}
@@ -78,12 +75,12 @@ const WikiImportManager: React.FC = () => {
         <div className="flex items-center space-x-4 mb-4">
           <input
             type="time"
-            value={autoSyncTime}
-            onChange={(e) => setAutoSyncTime(e.target.value)}
+            // value={autoSyncTime}
+            // onChange={(e) => setAutoSyncTime(e.target.value)}
             className="border rounded px-4 py-2"
           />
           <button
-            onClick={handleAutoSyncSetup}
+            // onClick={handleAutoSyncSetup}
             className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
           >
             設置自動同步時間
