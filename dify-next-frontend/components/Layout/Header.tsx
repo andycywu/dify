@@ -105,6 +105,8 @@ const Header: React.FC = () => {
               Wiki Batch Importer
             </Link>
           )}
+
+          {session?.user ? (
             <div className="relative inline-block" ref={dropdownRef}>
               <button
                 className="text-blue-900 font-medium hover:text-cyan-700 transition-colors duration-200 flex items-center gap-1"
