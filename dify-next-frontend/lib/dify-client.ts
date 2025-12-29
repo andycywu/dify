@@ -284,4 +284,18 @@ export class DifyClient {
     }
     throw lastError;
   }
+
+  async uploadDocument(datasetId: string, document: { title: string; content: string }) {
+    const payload = {
+      name: document.title,
+      text: document.content,
+      indexing_technique: 'high_quality',
+    };
+
+    const endpoint = `/datasets/${datasetId}/documents/create_by_text`;
+    return this.request(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
 }
