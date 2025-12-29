@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import logging
+from flask import Flask, request, jsonify, render_template, render_template_string, redirect, url_for
+from functools import wraps
 
 # 文檔處理相關
 import pypandoc
@@ -26,7 +28,6 @@ import pandas as pd
 import markdown
 
 # Web框架
-from flask import Flask, request, jsonify, render_template, render_template_string
 from werkzeug.utils import secure_filename
 
 # Wiki.js API 客戶端
@@ -639,14 +640,14 @@ def get_smb_configs():
     # TODO: 從數據庫或配置文件讀取
     configs = []
     config_file = '/app/data/smb_configs.json'
-    
+
     if os.path.exists(config_file):
         try:
             with open(config_file, 'r', encoding='utf-8') as f:
                 configs = json.load(f)
         except Exception as e:
             print(f"讀取配置失敗: {e}")
-    
+
     return jsonify({'success': True, 'configs': configs})
 
 @app.route('/api/smb-configs', methods=['POST'])
@@ -655,27 +656,27 @@ def save_smb_config():
     try:
         config = request.get_json()
         config_file = '/app/data/smb_configs.json'
-        
+
         # 創建目錄
         os.makedirs('/app/data', exist_ok=True)
-        
+
         # 讀取現有配置
         configs = []
         if os.path.exists(config_file):
             with open(config_file, 'r', encoding='utf-8') as f:
                 configs = json.load(f)
-        
+
         # 添加或更新配置
         existing = next((c for c in configs if c['group'] == config['group']), None)
         if existing:
             configs[configs.index(existing)] = config
         else:
             configs.append(config)
-        
+
         # 保存配置
         with open(config_file, 'w', encoding='utf-8') as f:
             json.dump(configs, f, ensure_ascii=False, indent=2)
-        
+
         return jsonify({'success': True, 'message': '配置已保存'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -989,6 +990,24 @@ def smb_status():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Middleware to enforce admin-only access
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        admin_cookie = request.cookies.get('admin')
+        if admin_cookie != 'true':
+            return jsonify({'error': 'Admin access required'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Apply middleware to all routes
+@app.before_request
+def enforce_admin_access():
+    if request.endpoint not in ['static', 'index']:
+        admin_cookie = request.cookies.get('admin')
+        if admin_cookie != 'true':
+            return jsonify({'error': 'Admin access required'}), 403
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5050))  # 改用 5050 端口

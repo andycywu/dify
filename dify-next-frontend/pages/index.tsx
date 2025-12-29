@@ -21,7 +21,7 @@ const Home: React.FC = () => {
 
     // 如果是管理員且來自 ?admin=true 參數，顯示管理中心導航
     const showAdminPanel = user && user.role === 'admin' && router.query.admin === 'true';
-    
+
     if (showAdminPanel) {
         return (
             <MainLayout title="TPV OBM 測試助手 - 管理中心">
@@ -92,6 +92,15 @@ const Home: React.FC = () => {
                                 <div className="mt-2 text-xs text-indigo-600">↗ 在新視窗開啟</div>
                             </div>
                         </a>
+
+                        {/* Wiki Batch Importer */}
+                        <Link href="http://localhost:5050" className="block">
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 shadow-md hover:shadow-xl transition-all duration-300 border-2 border-blue-200 hover:border-blue-400 cursor-pointer">
+                                <div className="text-4xl mb-4">📦</div>
+                                <h2 className="text-xl font-bold mb-2 text-blue-900">Wiki Batch Importer</h2>
+                                <p className="text-gray-700">跳轉到批量導入頁面</p>
+                            </div>
+                        </Link>
                     </div>
 
                     <div className="mt-10 bg-gray-50 rounded-lg p-6 border border-gray-200">
