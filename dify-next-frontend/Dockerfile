@@ -49,6 +49,9 @@ ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 ENV NODE_ENV=production
 RUN npm run build
 
+# 安裝 @types/node 型別定義
+RUN npm install --save-dev @types/node
+
 # Production image, copy all the files and run next
 
 FROM node:20-slim AS runner

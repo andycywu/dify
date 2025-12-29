@@ -197,7 +197,7 @@ async function syncDepartment(department: Department, options: SyncOptions) {
   // 1. 從 Wiki.js 獲取所有頁面
   console.log(`   📥 Fetching pages from Wiki.js path: /${wikiPath}`);
 
-  const allPages = await fetchWikiPages();
+  const allPages = await fetchWikiPages(config.path);
   // 有些 Wiki.js 會回傳以 '/' 開頭的 path，例如 '/COMMON/...'
   // 再者部門代碼大小寫不一，這裡統一移除前導斜線並轉為小寫後比對
   const normalize = (s: string) => (s.startsWith('/') ? s.slice(1) : s);
@@ -437,7 +437,7 @@ async function syncPage(
 
 // ==================== Wiki.js 頁面獲取 ====================
 
-async function fetchWikiPages() {
+async function fetchWikiPages(path: string) {
   // 1) 單次列表（部分 Wiki.js 不支援 offset 參數）
   const listQuery = `
     query {
