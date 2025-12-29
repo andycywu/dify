@@ -20,7 +20,7 @@ const Home: React.FC = () => {
     }
 
     // 如果是管理員且來自 ?admin=true 參數，顯示管理中心導航
-    const showAdminPanel = user && user.role === 'admin' && router.query.admin === 'true';
+    const showAdminPanel = user && user.role === 'Administrator' && router.query.admin === 'true';
 
     if (showAdminPanel) {
         return (
@@ -43,7 +43,7 @@ const Home: React.FC = () => {
                         </Link>
 
                         {/* REST to SOAP 管理 */}
-                        <Link href="/admin" className="block">
+                        <Link href="/Administrator" className="block">
                             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6 shadow-md hover:shadow-xl transition-all duration-300 border-2 border-purple-200 hover:border-purple-400 cursor-pointer">
                                 <div className="text-4xl mb-4">🔄</div>
                                 <h2 className="text-xl font-bold mb-2 text-purple-900">REST to SOAP 管理</h2>
@@ -52,7 +52,7 @@ const Home: React.FC = () => {
                         </Link>
 
                         {/* 用戶管理 */}
-                        <Link href="/admin-users" className="block">
+                        <Link href="/Administrator-users" className="block">
                             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 shadow-md hover:shadow-xl transition-all duration-300 border-2 border-green-200 hover:border-green-400 cursor-pointer">
                                 <div className="text-4xl mb-4">👥</div>
                                 <h2 className="text-xl font-bold mb-2 text-green-900">用戶管理</h2>
