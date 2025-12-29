@@ -270,6 +270,12 @@ const WikiImportManager: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    fetchSyncStatus();
+    const interval = setInterval(fetchSyncStatus, 5000); // 每 5 秒更新一次同步狀態
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

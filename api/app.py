@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 from datetime import datetime
 import subprocess
 import os
+import time
 
 
 def is_db_command():
@@ -89,7 +90,13 @@ def sync_department():
         return jsonify({"error": "Department not found"}), 404
 
     # 模擬同步邏輯
-    sync_status[department]["syncedPages"] = sync_status[department]["totalPages"]
+    sync_status[department]["status"] = "in-progress"
+    sync_status[department]["syncedPages"] = 0
+
+    for i in range(1, sync_status[department]["totalPages"] + 1):
+        time.sleep(0.1)  # 模擬同步延遲
+        sync_status[department]["syncedPages"] = i
+
     sync_status[department]["status"] = "success"
     sync_status[department]["lastSyncTime"] = "2025-12-29T01:00:00Z"
 
