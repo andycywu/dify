@@ -7,6 +7,18 @@
  */
 
 const http = require('http');
+const dotenv = require('dotenv');
+const path = require('path');
+
+// 載入 .env.docker
+dotenv.config({ path: path.resolve(process.cwd(), '.env.docker') });
+
+// 確保 API_BASE_URL 已定義
+const apiUrl = process.env.API_BASE_URL;
+if (!apiUrl) {
+  console.error('❌ 未定義 API_BASE_URL，請確認 .env.docker 中的設定');
+  process.exit(1);
+}
 
 // 解析命令列參數
 const args = process.argv.slice(2);
@@ -54,13 +66,11 @@ async function main() {
   try {
     console.log('🚀 Wiki.js → Dify Sync CLI (API Version)\n');
 
-    const apiUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-
     if (options.stats) {
       // GET 請求獲取統計
       const url = options.department
-        ? `${apiUrl}/api/admin/sync-wiki?department=${options.department}`
-        : `${apiUrl}/api/admin/sync-wiki`;
+        ? `${apiUrl}/admin/sync-wiki?department=${options.department}`
+        : `${apiUrl}/admin/sync-wiki`;
 
       console.log(`📊 Fetching sync statistics from ${url}...\n`);
 
@@ -81,7 +91,7 @@ async function main() {
       console.log(`   Force full sync: ${options.forceFullSync}`);
       console.log(`   Dry run: ${options.dryRun}\n`);
 
-      const response = await fetch(`${apiUrl}/api/admin/sync-wiki`, {
+      const response = await fetch(`${apiUrl}/admin/sync-wiki`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

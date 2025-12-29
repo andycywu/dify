@@ -25,6 +25,13 @@ async function loadSyncModule() {
   }
 }
 
+// 設定 API 基底 URL，從環境變數中讀取
+const API_BASE_URL = process.env.API_BASE_URL;
+if (!API_BASE_URL) {
+  console.error('❌ 未定義 API_BASE_URL，請確認 .env.docker 中的設定');
+  process.exit(1);
+}
+
 // 解析命令列參數
 const args = process.argv.slice(2);
 const options = {
