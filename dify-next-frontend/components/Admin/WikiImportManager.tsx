@@ -20,6 +20,14 @@ interface ImportHistory {
   failedImports: number;
 }
 
+// 定義部門同步狀態的型別
+interface DepartmentSyncStatus {
+  totalPages: number;
+  syncedPages: number;
+  status: string;
+  lastSyncTime: string;
+}
+
 const WikiImportManager: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
@@ -29,7 +37,7 @@ const WikiImportManager: React.FC = () => {
   const [dragOver, setDragOver] = useState(false);
   const [cronTime, setCronTime] = useState('');
   const [cronMessage, setCronMessage] = useState<string | null>(null);
-  const [departments, setDepartments] = useState([]);
+  const [departments, setDepartments] = useState<[string, DepartmentSyncStatus][]>([]);
   const [loading, setLoading] = useState(false);
   const [autoSyncTime, setAutoSyncTime] = useState('00:00');
 
@@ -225,7 +233,7 @@ const WikiImportManager: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/admin/sync-status');
-      setDepartments(Object.entries(response.data));
+      setDepartments(Object.entries(response.data) as [string, DepartmentSyncStatus][]);
     } catch (error) {
       console.error('Failed to fetch sync status:', error);
     } finally {
