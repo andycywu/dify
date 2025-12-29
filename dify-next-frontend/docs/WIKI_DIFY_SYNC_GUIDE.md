@@ -2,7 +2,14 @@
 
 ## 📋 系統架構
 
-```
+```# 1. 檢查 Docker 服務狀態
+docker --version
+docker-compose --version
+docker ps
+
+# 2. 檢查網路連通性
+docker network ls
+docker network inspect dify-network
 Wiki.js (10 個分類頁面)
     ↓ GraphQL API
 【定時同步器】(wiki-sync-enhanced.ts)
