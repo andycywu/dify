@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 
 interface ImportJob {
@@ -40,6 +40,7 @@ const WikiImportManager: React.FC = () => {
   const [departments, setDepartments] = useState<[string, DepartmentSyncStatus][]>([]);
   const [loading, setLoading] = useState(false);
   const [autoSyncTime, setAutoSyncTime] = useState('00:00');
+  const [logs, setLogs] = useState<string[]>([]);
 
   const fetchImportHistory = useCallback(async () => {
     try {
@@ -243,8 +244,8 @@ const WikiImportManager: React.FC = () => {
 
   const handleManualSync = async (department: string) => {
     try {
-      await axios.post('/api/admin/sync-department', { department });
-      alert(`Department ${department} synced successfully!`);
+      const response = await axios.post('/api/admin/sync-department', { department });
+      alert(response.data.message);
       fetchSyncStatus();
     } catch (error) {
       console.error(`Failed to sync department ${department}:`, error);
@@ -257,6 +258,15 @@ const WikiImportManager: React.FC = () => {
       alert(`Auto sync time set to ${autoSyncTime}`);
     } catch (error) {
       console.error('Failed to set auto sync time:', error);
+    }
+  };
+
+  const fetchLogs = async () => {
+    try {
+      const response = await axios.get('/api/admin/sync-log');
+      setLogs(response.data.log);
+    } catch (error) {
+      console.error('Failed to fetch logs:', error);
     }
   };
 
@@ -557,6 +567,20 @@ const WikiImportManager: React.FC = () => {
             </table>
           </div>
         )}
+      </div>
+
+      {/* 同步日誌 */}
+      <div className="bg-white border rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">同步日誌</h3>
+        <button
+          onClick={fetchLogs}
+          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+        >
+          取得日誌
+        </button>
+        <pre className="whitespace-pre-wrap break-words mt-4">
+          {logs.join('\n')}
+        </pre>
       </div>
     </div>
   );

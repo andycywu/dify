@@ -2,6 +2,7 @@ import sys
 from flask import Flask, request, jsonify
 from datetime import datetime
 import subprocess
+import os
 
 
 def is_db_command():
@@ -74,6 +75,8 @@ sync_status = {
     # ...其他部門
 }
 
+LOG_FILE_PATH = "/var/log/dify-wiki-sync/sync.log"
+
 @app.route('/api/admin/sync-status', methods=['GET'])
 def get_sync_status():
     return jsonify(sync_status)
@@ -99,6 +102,18 @@ def setup_cron():
 
     # 模擬設定自動同步時間
     return jsonify({"message": f"Auto sync time set to {time}"})
+
+@app.route('/api/admin/sync-log', methods=['GET'])
+def get_sync_log():
+    try:
+        if not os.path.exists(LOG_FILE_PATH):
+            return jsonify({"error": "Log file not found"}), 404
+
+        with open(LOG_FILE_PATH, 'r') as log_file:
+            lines = log_file.readlines()
+            return jsonify({"log": lines[-100:]})  # 返回最後 100 行日誌
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)
