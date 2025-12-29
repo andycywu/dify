@@ -568,24 +568,6 @@ export async function syncWikiToDify(department: Department) {
   console.log(`Sync completed for department: ${department}`);
 }
 
-// Fetch pages by department path
-async function fetchWikiPages(path: string) {
-  const query = `
-    query {
-      pages(filter: { path: "${path}" }) {
-        list {
-          id
-          title
-          content
-        }
-      }
-    }
-  `;
-
-  const response = await difyClient.graphql(WIKI_GRAPHQL_URL, query, WIKI_API_KEY);
-  return response.data.pages.list;
-}
-
 // Upload pages to Dify Dataset
 async function uploadToDifyDataset(datasetId: string, pages: any[]) {
   for (const page of pages) {
