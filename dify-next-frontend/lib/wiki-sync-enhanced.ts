@@ -165,7 +165,7 @@ export async function syncWikiToDifyEnhanced(options: SyncOptions = {}) {
   console.log(`   Skipped: ${stats.skipped}`);
   console.log(`   Failed: ${stats.failed}`);
 
-  if (stats.errors.length > 0) {
+  if (stats.errors && stats.errors.length > 0) {
     console.log('\n⚠️  Errors:');
     stats.errors.forEach((err, i) => {
       console.log(`   ${i + 1}. [${err.department}] ${err.path}: ${err.error}`);
@@ -212,10 +212,9 @@ async function syncDepartment(department: Department, options: SyncOptions) {
     console.log(`   🔎 dept[${i}] ${p.id} ${p.path} ${p.title}`);
   });
 
-  console.log(`   Found ${deptPages.length} pages`);
-  stats.total = deptPages.length;
-
-  if (deptPages.length === 0) {
+  console.log(`   Found ${deptPages?.length || 0} pages`);
+  stats.total = deptPages?.length || 0;
+  if (!deptPages || deptPages.length === 0) {
     console.log(`   ⚠️  No pages found for ${department}, skipping...`);
     return stats;
   }
@@ -455,7 +454,7 @@ async function fetchWikiPages(path: string) {
   const listResult = await wikiRequest(listQuery);
   const publishedPages = (listResult.pages.list as any[]).filter((p: any) => p.isPublished);
   // Debug: 輸出列表長度與前幾筆供定位問題
-  console.log(`   🔎 Wiki list total: ${(listResult.pages.list as any[]).length}, published: ${publishedPages.length}`);
+  console.log(`   🔎 Wiki list total: ${(listResult.pages?.list as any[])?.length || 0}, published: ${publishedPages?.length || 0}`);
   (publishedPages.slice(0, 5) as any[]).forEach((p: any, i: number) => {
     console.log(`   🔎 [${i}] ${p.id} ${p.path} ${p.title}`);
   });
@@ -561,7 +560,7 @@ export async function syncWikiToDify(department: Department) {
 
   // Fetch pages from Wiki.js
   const pages = await fetchWikiPages(config.path);
-  console.log(`Fetched ${pages.length} pages for department: ${department}`);
+  console.log(`Fetched ${pages?.length || 0} pages for department: ${department}`);
 
   // Upload pages to Dify Dataset
   await uploadToDifyDataset(config.datasetId, pages);

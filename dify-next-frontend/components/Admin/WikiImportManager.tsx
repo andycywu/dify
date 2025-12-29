@@ -110,7 +110,7 @@ const WikiImportManager: React.FC = () => {
     e.preventDefault();
     setDragOver(false);
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
+    if (files?.length > 0) {
       handleFileSelect(files[0]);
     }
   };
@@ -361,7 +361,7 @@ const WikiImportManager: React.FC = () => {
               </div>
             )}
 
-            {currentJob.errors.length > 0 && (
+            {currentJob?.errors?.length > 0 && (
               <div className="bg-red-50 border border-red-200 rounded p-4">
                 <h4 className="font-medium text-red-800 mb-2">錯誤信息:</h4>
                 <ul className="text-sm text-red-700 space-y-1">
@@ -376,7 +376,7 @@ const WikiImportManager: React.FC = () => {
       )}
 
       {/* 導入歷史 */}
-      {history && history.jobs.length > 0 && (
+      {history && history.jobs?.length > 0 && (
         <div className="bg-white border rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-700">導入歷史</h3>
 
