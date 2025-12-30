@@ -89,8 +89,14 @@ const Header: React.FC = () => {
             {t('chat_to_agentic')}
           </Link>
           {/* Wiki.js 知識庫 - 公共按鈕 */}
-          <Link href={process.env.NEXT_PUBLIC_WIKI_URL} passHref  className="text-blue-900 font-medium hover:text-cyan-700 transition-colors duration-200">
-            {t('OBM I&D KB') || 'OBM I&D知識庫'}
+          <Link href={process.env.NEXT_PUBLIC_WIKI_URL || 'http://localhost:3002'} passHref>
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-900 font-medium hover:text-cyan-700 transition-colors duration-200"
+            >
+              {t('OBM I&D KB') || 'OBM I&D知識庫'}
+            </a>
           </Link>
 
           {session?.user ? (
