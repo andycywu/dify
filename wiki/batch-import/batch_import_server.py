@@ -633,9 +633,9 @@ def index():
     """主頁面 - Web 管理界面"""
     # 檢查 URL 參數中的認證 token
     auth_token = request.args.get('auth')
-    print(f"[DEBUG] Received auth_token: {auth_token is not None}")
-    print(f"[DEBUG] Full URL: {request.url}")
-    print(f"[DEBUG] Request args: {dict(request.args)}")
+    print(f"[DEBUG] Received auth_token: {auth_token is not None}", flush=True)
+    print(f"[DEBUG] Full URL: {request.url}", flush=True)
+    print(f"[DEBUG] Request args: {dict(request.args)}", flush=True)
 
     if auth_token:
         try:
@@ -644,9 +644,9 @@ def index():
             import json
             import time
 
-            print(f"[DEBUG] Decoding token: {auth_token[:50]}...")
+            print(f"[DEBUG] Decoding token: {auth_token[:50]}...", flush=True)
             token_data = json.loads(base64.b64decode(auth_token).decode('utf-8'))
-            print(f"[DEBUG] Decoded token data: {token_data}")
+            print(f"[DEBUG] Decoded token data: {token_data}", flush=True)
 
             # 檢查過期時間
             if token_data.get('exp', 0) < time.time():
@@ -663,9 +663,9 @@ def index():
 
             # 檢查角色
             user_role = token_data.get('role')
-            print(f"[DEBUG] Checking role: '{user_role}' (type: {type(user_role)})")
+            print(f"[DEBUG] Checking role: '{user_role}' (type: {type(user_role)})", flush=True)
             if user_role != 'Administrator':
-                print(f"[DEBUG] Invalid role: '{user_role}' != 'Administrator'")
+                print(f"[DEBUG] Invalid role: '{user_role}' != 'Administrator'", flush=True)
                 return '''
                 <html>
                     <body>
@@ -677,7 +677,7 @@ def index():
                 '''.format(user_role=user_role)
 
             # Token 有效，重定向到管理界面
-            print(f"[DEBUG] Token valid, redirecting to /admin")
+            print(f"[DEBUG] Token valid, redirecting to /admin", flush=True)
             return redirect('/admin')
 
         except Exception as e:
@@ -1445,17 +1445,17 @@ ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL", "http://localhost:3001")
 
 @app.before_request
 def authenticate():
-    print(f"[DEBUG] Before request: {request.method} {request.path}")
-    print(f"[DEBUG] Request args: {dict(request.args)}")
+    print(f"[DEBUG] Before request: {request.method} {request.path}", flush=True)
+    print(f"[DEBUG] Request args: {dict(request.args)}", flush=True)
 
     # 允許訪問主頁面，用於顯示登入提示
     if request.path == '/':
-        print("[DEBUG] Allowing access to root path")
+        print("[DEBUG] Allowing access to root path", flush=True)
         return
 
     # 允許訪問管理界面 (認證已在主頁面處理)
     if request.path == '/admin':
-        print("[DEBUG] Allowing access to admin path")
+        print("[DEBUG] Allowing access to admin path", flush=True)
         return
 
     # 檢查 URL 參數中的認證 token
