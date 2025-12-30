@@ -662,17 +662,19 @@ def index():
                 '''
 
             # 檢查角色
-            if token_data.get('role') != 'Administrator':
-                print(f"[DEBUG] Invalid role: {token_data.get('role')}")
+            user_role = token_data.get('role')
+            print(f"[DEBUG] Checking role: '{user_role}' (type: {type(user_role)})")
+            if user_role != 'Administrator':
+                print(f"[DEBUG] Invalid role: '{user_role}' != 'Administrator'")
                 return '''
                 <html>
                     <body>
                         <h1>權限不足</h1>
-                        <p>需要管理員權限。</p>
+                        <p>需要管理員權限。當前角色: {user_role}</p>
                         <a href="''' + ADMIN_FRONTEND_URL + '''">返回主系統</a>
                     </body>
                 </html>
-                '''
+                '''.format(user_role=user_role)
 
             # Token 有效，重定向到管理界面
             print(f"[DEBUG] Token valid, redirecting to /admin")

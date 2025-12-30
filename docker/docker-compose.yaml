@@ -740,7 +740,7 @@ services:
       - WIKI_API_URL=http://wiki:3000/graphql
       - WIKI_API_KEY=${WIKI_API_KEY:-}
       - ADMIN_API_VALIDATE=http://dify-next-frontend:3000/api/auth/validate
-      - ADMIN_FRONTEND_URL=http://localhost:3001
+      - ADMIN_FRONTEND_URL=http://172.27.197.100:3001
     volumes:
       - ../wiki/batch-import/uploads:/app/uploads
     depends_on:

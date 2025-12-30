@@ -36,16 +36,17 @@ export default async function handler(
     }
 
     // 生成臨時認證 token 或使用 session 資訊
+    // 統一使用 'Administrator' 作為角色，與後端期望保持一致
     const authToken = Buffer.from(JSON.stringify({
       email: token.email,
-      role: token.role,
+      role: 'Administrator', // 統一使用 Administrator 角色
       exp: Math.floor(Date.now() / 1000) + (15 * 60) // 15 分鐘過期
     })).toString('base64');
 
     console.log('[wiki-batch-importer] Generated auth token:', authToken);
     console.log('[wiki-batch-importer] Token payload:', {
       email: token.email,
-      role: token.role,
+      role: 'Administrator', // 記錄統一後的角色
       exp: Math.floor(Date.now() / 1000) + (15 * 60)
     });
 
