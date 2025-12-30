@@ -114,7 +114,7 @@ const Header: React.FC = () => {
               </button>
               {dropdownOpen && (
                 <div className="absolute right-0 z-10 w-48 mt-2 bg-white rounded shadow-lg animate-fade-in">
-                  {(session.user.role === 'admin' || session.user.role === 'super admin') && (
+                  {(session.user.role === 'admin' || session.user.role === 'Administrator' || session.user.role === 'super admin') && (
                     <>
                       <Link href="/admin" className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100">
                         {t('user_admin') || '管理頁面'}

@@ -99,7 +99,7 @@ export function getUserRole(groups: Array<{ id: number; name: string }>): string
   const adminGroups = ['administrators', 'Administrators', 'admin', 'Admin']
 
   if (groups.some(g => adminGroups.includes(g.name))) {
-    return 'admin'
+    return 'Administrator'  // 改為返回 'Administrator' 以保持一致性
   }
 
   return 'user'

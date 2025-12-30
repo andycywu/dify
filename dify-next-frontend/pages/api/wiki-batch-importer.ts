@@ -16,13 +16,22 @@ export default async function handler(
       secret: process.env.NEXTAUTH_SECRET
     });
 
+    console.log('[wiki-batch-importer] Token:', token);
+
     if (!token || !token.email) {
+      console.log('[wiki-batch-importer] No token or email');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // 檢查角色
-    const isAdmin = token.role === 'Administrator';
+    console.log('[wiki-batch-importer] User email:', token.email);
+    console.log('[wiki-batch-importer] User role from token:', token.role);
+
+    // 檢查角色 - 同時檢查多種可能的值
+    const isAdmin = token.role === 'Administrator' || token.role === 'admin' || token.role === 'super admin';
+    console.log('[wiki-batch-importer] Is admin check result:', isAdmin);
+
     if (!isAdmin) {
+      console.log('[wiki-batch-importer] User is not admin, role:', token.role);
       return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
 
