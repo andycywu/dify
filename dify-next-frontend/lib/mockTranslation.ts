@@ -81,7 +81,9 @@ const translations: Record<string, Record<string, string>> = {
     'knowledge_management': 'Knowledge Management',
     'usage': 'Usage',
     'login': 'Login',
-    'logout': 'Logout'
+    'logout': 'Logout',
+    'OBM I&D KB': 'OBM I&D Knowledge Base',
+    'Wiki Sync': 'Wiki Synchronization'
   },
   zh: {
     // Loading and common
@@ -153,7 +155,9 @@ const translations: Record<string, Record<string, string>> = {
     'knowledge_management': '知識庫管理',
     'usage': '使用報告',
     'login': '登入',
-    'logout': '登出'
+    'logout': '登出',
+    'OBM I&D KB': 'OBM I&D 知識庫',
+    'Wiki Sync': 'Wiki 同步管理'
   }
 };
 
