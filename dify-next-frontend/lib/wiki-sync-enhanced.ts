@@ -54,11 +54,11 @@ const DEPARTMENT_CONFIG: Record<Department, { path: string; datasetId: string }>
     datasetId: process.env.DIFY_DATASET_DQE_CERTI_ID || '',
   },
   HW: {
-    path: 'hw',
+    path: 'hardware',  // 修正：實際路徑是 /Hardware/
     datasetId: process.env.DIFY_DATASET_HW_ID || '',
   },
   PWR: {
-    path: 'pwr',
+    path: 'power',     // 修正：實際路徑是 /Power/
     datasetId: process.env.DIFY_DATASET_PWR_ID || '',
   },
   ME_LCM: {
@@ -66,7 +66,7 @@ const DEPARTMENT_CONFIG: Record<Department, { path: string; datasetId: string }>
     datasetId: process.env.DIFY_DATASET_ME_LCM_ID || '',
   },
   SW: {
-    path: 'sw',
+    path: 'software',  // 修正：實際路徑是 /Software/
     datasetId: process.env.DIFY_DATASET_SW_ID || '',
   },
   PJM: {
@@ -78,7 +78,7 @@ const DEPARTMENT_CONFIG: Record<Department, { path: string; datasetId: string }>
     datasetId: process.env.DIFY_DATASET_ARCH_ID || '',
   },
   TM: {
-    path: 'tm',
+    path: 'tme',       // 修正：實際路徑是 /TME/
     datasetId: process.env.DIFY_DATASET_TM_ID || '',
   },
 };
