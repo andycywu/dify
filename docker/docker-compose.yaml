@@ -739,10 +739,14 @@ services:
       - PORT=5050
       - WIKI_API_URL=http://wiki:3000/graphql
       - WIKI_API_KEY=${WIKI_API_KEY:-}
+      - ADMIN_API_VALIDATE=http://dify-next-frontend:3000/api/auth/validate
+      - ADMIN_FRONTEND_URL=http://localhost:3001
     volumes:
       - ../wiki/batch-import/uploads:/app/uploads
     depends_on:
       wiki:
+        condition: service_started
+      dify-next-frontend:
         condition: service_started
     networks:
       - default

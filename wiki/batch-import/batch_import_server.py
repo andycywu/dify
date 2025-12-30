@@ -631,11 +631,11 @@ def batch_import():
 @app.route('/')
 def index():
     """主頁面 - Web 管理界面"""
-    return '''
+    return f'''
     <html>
         <body>
             <h1>Wiki Batch Importer</h1>
-            <button onclick="window.location.href='http://localhost:3001'">返回 3001</button>
+            <button onclick="window.location.href='{ADMIN_FRONTEND_URL}'">返回 3001</button>
         </body>
     </html>
     '''
@@ -1000,10 +1000,13 @@ def smb_status():
 # 新增中介層驗證 3001 的登入 Cookie
 from flask import Flask, request, jsonify, redirect
 import requests
+import os
 
 app = Flask(__name__)
 
-ADMIN_API_VALIDATE = "http://localhost:3001/api/auth/validate"
+# 使用環境變數配置 API 端點，預設使用 Docker 內部網路
+ADMIN_API_VALIDATE = os.getenv("ADMIN_API_VALIDATE", "http://dify-next-frontend:3000/api/auth/validate")
+ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL", "http://localhost:3001")
 
 @app.before_request
 def authenticate():
