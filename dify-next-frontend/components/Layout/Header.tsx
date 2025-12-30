@@ -88,16 +88,9 @@ const Header: React.FC = () => {
           <Link href="/test-agentic" className="text-blue-900 font-medium hover:text-cyan-700 transition-colors duration-200">
             {t('chat_to_agentic')}
           </Link>
-
           {/* Wiki.js 知識庫 - 公共按鈕 */}
-          <Link href={process.env.NEXT_PUBLIC_WIKI_URL || 'http://localhost:3002'} passHref>
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-900 font-medium hover:text-cyan-700 transition-colors duration-200"
-            >
-              Wiki.js 知識庫
-            </a>
+          <Link href={process.env.NEXT_PUBLIC_WIKI_URL} passHref  className="text-blue-900 font-medium hover:text-cyan-700 transition-colors duration-200">
+            {t('OBM I&D KB') || 'OBM I&D知識庫'}
           </Link>
 
           {session?.user ? (
@@ -123,8 +116,8 @@ const Header: React.FC = () => {
                       <Link href="/knowledge-management" className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100">
                         {t('knowledge_management') || '知識庫管理'}
                       </Link>
-                      <Link href={process.env.NEXT_PUBLIC_WIKI_BATCH_IMPORTER_URL || 'http://localhost:5050'} className="text-green-600 hover:text-green-800 transition-colors">
-                        Wiki Batch Importer
+                      <Link href={process.env.NEXT_PUBLIC_WIKI_BATCH_IMPORTER_URL || 'http://localhost:5050'} className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100">
+                        {t('Wiki Sync') || 'Wiki同步管理'}
                       </Link>
                     </>
                   )}
