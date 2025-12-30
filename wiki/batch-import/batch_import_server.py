@@ -26,7 +26,7 @@ import pandas as pd
 import markdown
 
 # Web框架
-from flask import Flask, request, jsonify, render_template, render_template_string
+from flask import Flask, request, jsonify, render_template, render_template_string, redirect
 from werkzeug.utils import secure_filename
 
 # Wiki.js API 客戶端
