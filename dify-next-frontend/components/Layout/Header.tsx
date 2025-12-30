@@ -122,7 +122,7 @@ const Header: React.FC = () => {
                       <Link href="/knowledge-management" className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100">
                         {t('knowledge_management') || '知識庫管理'}
                       </Link>
-                      <Link href={process.env.NEXT_PUBLIC_WIKI_BATCH_IMPORTER_URL || 'http://wiki-batch-importer:5050'} className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100">
+                      <Link href="/api/wiki-batch-importer" className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100">
                         {t('Wiki Sync') || 'Wiki同步管理'}
                       </Link>
                     </>

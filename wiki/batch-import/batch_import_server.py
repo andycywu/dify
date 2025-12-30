@@ -631,11 +631,46 @@ def batch_import():
 @app.route('/')
 def index():
     """主頁面 - Web 管理界面"""
-    return f'''
+    return '''
     <html>
+        <head>
+            <title>Wiki Batch Importer</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+                .button { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; margin: 5px; }
+                .button:hover { background: #0056b3; }
+            </style>
+        </head>
         <body>
-            <h1>Wiki Batch Importer</h1>
-            <button onclick="window.location.href='{ADMIN_FRONTEND_URL}'">返回 3001</button>
+            <div class="container">
+                <h1>📂 Wiki Batch Importer</h1>
+                <div class="warning">
+                    <strong>🔐 認證要求</strong><br>
+                    此工具僅供管理員使用。您需要先從主系統登入才能訪問完整功能。
+                </div>
+                <p>此工具用於批量導入文檔到 Wiki.js 知識庫系統。</p>
+
+                <h3>📋 支援的功能</h3>
+                <ul>
+                    <li>批量文檔上傳和導入</li>
+                    <li>目錄掃描和自動導入</li>
+                    <li>SMB 網路共享同步</li>
+                    <li>導入進度追蹤</li>
+                </ul>
+
+                <h3>🚀 開始使用</h3>
+                <ol>
+                    <li>確保您已登入主系統並具有管理員權限</li>
+                    <li>使用上方導航返回主系統</li>
+                    <li>從管理面板訪問此工具</li>
+                </ol>
+
+                <div style="margin-top: 30px;">
+                    <a href="''' + ADMIN_FRONTEND_URL + '''" class="button">← 返回主系統</a>
+                </div>
+            </div>
         </body>
     </html>
     '''
@@ -1010,6 +1045,36 @@ ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL", "http://localhost:3001")
 
 @app.before_request
 def authenticate():
+    # 允許訪問主頁面，用於顯示登入提示
+    if request.path == '/':
+        return
+
+    # 檢查 URL 參數中的認證 token
+    auth_token = request.args.get('auth')
+    if auth_token:
+        try:
+            # 解碼 token
+            import base64
+            import json
+            import time
+
+            token_data = json.loads(base64.b64decode(auth_token).decode('utf-8'))
+
+            # 檢查過期時間
+            if token_data.get('exp', 0) < time.time():
+                return jsonify({"error": "Authentication token expired"}), 403
+
+            # 檢查角色
+            if token_data.get('role') != 'Administrator':
+                return jsonify({"error": "Forbidden"}), 403
+
+            # Token 有效，允許訪問
+            return
+
+        except Exception as e:
+            return jsonify({"error": "Invalid authentication token", "details": str(e)}), 403
+
+    # 如果沒有 token，檢查 Cookie
     cookie = request.headers.get('Cookie')
     if not cookie:
         return jsonify({"error": "Unauthorized"}), 403
@@ -1017,7 +1082,7 @@ def authenticate():
     try:
         # 驗證 Cookie
         response = requests.get(ADMIN_API_VALIDATE, headers={"Cookie": cookie})
-        if response.status_code != 200 or response.json().get("role") != "admin":
+        if response.status_code != 200 or response.json().get("role") != "Administrator":
             return jsonify({"error": "Forbidden"}), 403
     except Exception as e:
         return jsonify({"error": "Authentication failed", "details": str(e)}), 403
