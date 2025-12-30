@@ -43,6 +43,7 @@ export default async function handler(
     })).toString('base64');
 
     // 重定向到 wiki-batch-importer，帶上認證參數
+    // 使用外部可訪問的地址，因為用戶的瀏覽器需要在新標籤頁中訪問
     const batchImporterUrl = process.env.NEXT_PUBLIC_WIKI_BATCH_IMPORTER_URL || 'http://localhost:5050';
     const redirectUrl = `${batchImporterUrl}?auth=${authToken}`;
 

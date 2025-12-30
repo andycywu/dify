@@ -631,6 +631,56 @@ def batch_import():
 @app.route('/')
 def index():
     """主頁面 - Web 管理界面"""
+    # 檢查 URL 參數中的認證 token
+    auth_token = request.args.get('auth')
+    if auth_token:
+        try:
+            # 驗證 token
+            import base64
+            import json
+            import time
+
+            token_data = json.loads(base64.b64decode(auth_token).decode('utf-8'))
+
+            # 檢查過期時間
+            if token_data.get('exp', 0) < time.time():
+                return '''
+                <html>
+                    <body>
+                        <h1>認證過期</h1>
+                        <p>請重新從主系統登入。</p>
+                        <a href="''' + ADMIN_FRONTEND_URL + '''">返回主系統</a>
+                    </body>
+                </html>
+                '''
+
+            # 檢查角色
+            if token_data.get('role') != 'Administrator':
+                return '''
+                <html>
+                    <body>
+                        <h1>權限不足</h1>
+                        <p>需要管理員權限。</p>
+                        <a href="''' + ADMIN_FRONTEND_URL + '''">返回主系統</a>
+                    </body>
+                </html>
+                '''
+
+            # Token 有效，重定向到管理界面
+            return redirect('/admin')
+
+        except Exception as e:
+            return f'''
+            <html>
+                <body>
+                    <h1>認證錯誤</h1>
+                    <p>無效的認證 token: {str(e)}</p>
+                    <a href="''' + ADMIN_FRONTEND_URL + '''">返回主系統</a>
+                </body>
+            </html>
+            '''
+
+    # 沒有認證 token，顯示登入提示
     return '''
     <html>
         <head>
@@ -669,6 +719,351 @@ def index():
 
                 <div style="margin-top: 30px;">
                     <a href="''' + ADMIN_FRONTEND_URL + '''" class="button">← 返回主系統</a>
+                </div>
+            </div>
+        </body>
+    </html>
+    '''
+
+@app.route('/admin')
+def admin_panel():
+    """管理員界面 - 批量導入工具"""
+    return '''
+    <html>
+        <head>
+            <title>Wiki Batch Importer - 管理面板</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
+                .header { background: #343a40; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+                .header h1 { margin: 0; font-size: 24px; }
+                .logout-btn { background: #dc3545; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; }
+                .logout-btn:hover { background: #c82333; }
+                .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+                .card { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+                .card-header { background: #007bff; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; }
+                .card-body { padding: 20px; }
+                .form-group { margin-bottom: 15px; }
+                .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+                .form-control { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+                .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; margin: 5px; }
+                .btn-primary { background: #007bff; color: white; }
+                .btn-primary:hover { background: #0056b3; }
+                .btn-success { background: #28a745; color: white; }
+                .btn-success:hover { background: #218838; }
+                .btn-info { background: #17a2b8; color: white; }
+                .btn-info:hover { background: #138496; }
+                .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
+                .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+                .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+                .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+                .progress { width: 100%; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+                .progress-bar { height: 100%; background: #007bff; width: 0%; transition: width 0.3s; }
+                .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+                .table th { background: #f8f9fa; font-weight: bold; }
+                .tabs { display: flex; margin-bottom: 20px; }
+                .tab { padding: 10px 20px; background: #e9ecef; border: none; cursor: pointer; margin-right: 5px; border-radius: 4px 4px 0 0; }
+                .tab.active { background: white; border-bottom: 2px solid #007bff; }
+                .tab-content { display: none; }
+                .tab-content.active { display: block; }
+            </style>
+            <script>
+                let currentTab = 'upload';
+                let currentJobId = null;
+
+                function switchTab(tabName) {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById('tab-' + tabName).classList.add('active');
+                    document.getElementById(tabName).classList.add('active');
+                    currentTab = tabName;
+                }
+
+                function uploadFiles() {
+                    const files = document.getElementById('files').files;
+                    if (files.length === 0) {
+                        alert('請選擇要上傳的文件');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    for (let file of files) {
+                        formData.append('files', file);
+                    }
+
+                    const statusDiv = document.getElementById('upload-status');
+                    statusDiv.innerHTML = '<div class="status info">正在上傳文件...</div>';
+
+                    fetch('/api/wiki/batch-import', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            statusDiv.innerHTML = '<div class="status success">文件上傳成功！任務 ID: ' + data.job_id + '</div>';
+                            currentJobId = data.job_id;
+                            checkStatus();
+                        } else {
+                            statusDiv.innerHTML = '<div class="status error">上傳失敗: ' + data.error + '</div>';
+                        }
+                    })
+                    .catch(error => {
+                        statusDiv.innerHTML = '<div class="status error">上傳錯誤: ' + error.message + '</div>';
+                    });
+                }
+
+                function scanDirectory() {
+                    const path = document.getElementById('scan-path').value;
+                    if (!path) {
+                        alert('請輸入目錄路徑');
+                        return;
+                    }
+
+                    const statusDiv = document.getElementById('scan-status');
+                    statusDiv.innerHTML = '<div class="status info">正在掃描目錄...</div>';
+
+                    fetch('/api/wiki/scan-directory', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: path })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            statusDiv.innerHTML = '<div class="status success">掃描完成！找到 ' + data.files.length + ' 個文件</div>';
+                            displayScanResults(data.files);
+                        } else {
+                            statusDiv.innerHTML = '<div class="status error">掃描失敗: ' + data.error + '</div>';
+                        }
+                    })
+                    .catch(error => {
+                        statusDiv.innerHTML = '<div class="status error">掃描錯誤: ' + error.message + '</div>';
+                    });
+                }
+
+                function displayScanResults(files) {
+                    const tbody = document.getElementById('scan-results');
+                    tbody.innerHTML = '';
+                    files.forEach(file => {
+                        const row = tbody.insertRow();
+                        row.insertCell(0).textContent = file.name;
+                        row.insertCell(1).textContent = file.path;
+                        row.insertCell(2).textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+                        row.insertCell(3).textContent = file.type;
+                    });
+                }
+
+                function importScannedFiles() {
+                    const selectedFiles = [];
+                    document.querySelectorAll('#scan-results input[type="checkbox"]:checked').forEach(cb => {
+                        selectedFiles.push(cb.value);
+                    });
+
+                    if (selectedFiles.length === 0) {
+                        alert('請選擇要導入的文件');
+                        return;
+                    }
+
+                    const statusDiv = document.getElementById('scan-status');
+                    statusDiv.innerHTML = '<div class="status info">正在導入文件...</div>';
+
+                    fetch('/api/wiki/batch-directory-import', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ files: selectedFiles })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            statusDiv.innerHTML = '<div class="status success">導入任務已啟動！任務 ID: ' + data.job_id + '</div>';
+                            currentJobId = data.job_id;
+                            checkStatus();
+                        } else {
+                            statusDiv.innerHTML = '<div class="status error">導入失敗: ' + data.error + '</div>';
+                        }
+                    })
+                    .catch(error => {
+                        statusDiv.innerHTML = '<div class="status error">導入錯誤: ' + error.message + '</div>';
+                    });
+                }
+
+                function checkStatus() {
+                    if (!currentJobId) return;
+
+                    fetch('/api/wiki/status/' + currentJobId)
+                    .then(response => response.json())
+                    .then(data => {
+                        const progressBar = document.getElementById('progress-bar');
+                        const statusDiv = document.getElementById('job-status');
+
+                        if (progressBar) {
+                            progressBar.style.width = data.progress + '%';
+                        }
+
+                        if (data.status === 'completed') {
+                            statusDiv.innerHTML = '<div class="status success">任務完成！處理了 ' + data.processed + ' 個文件</div>';
+                        } else if (data.status === 'failed') {
+                            statusDiv.innerHTML = '<div class="status error">任務失敗: ' + data.error + '</div>';
+                        } else {
+                            statusDiv.innerHTML = '<div class="status info">任務進行中... ' + data.progress + '% (' + data.processed + '/' + data.total + ')</div>';
+                            setTimeout(checkStatus, 2000);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('檢查狀態失敗:', error);
+                    });
+                }
+
+                function syncSMB() {
+                    const configId = document.getElementById('smb-config').value;
+                    if (!configId) {
+                        alert('請選擇 SMB 配置');
+                        return;
+                    }
+
+                    const statusDiv = document.getElementById('smb-status');
+                    statusDiv.innerHTML = '<div class="status info">正在同步 SMB 共享...</div>';
+
+                    fetch('/api/wiki/smb-sync', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ config_id: configId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            statusDiv.innerHTML = '<div class="status success">SMB 同步任務已啟動！任務 ID: ' + data.job_id + '</div>';
+                            currentJobId = data.job_id;
+                            checkSMBStatus();
+                        } else {
+                            statusDiv.innerHTML = '<div class="status error">同步失敗: ' + data.error + '</div>';
+                        }
+                    })
+                    .catch(error => {
+                        statusDiv.innerHTML = '<div class="status error">同步錯誤: ' + error.message + '</div>';
+                    });
+                }
+
+                function checkSMBStatus() {
+                    if (!currentJobId) return;
+
+                    fetch('/api/wiki/smb-status')
+                    .then(response => response.json())
+                    .then(data => {
+                        const statusDiv = document.getElementById('smb-status');
+
+                        if (data.status === 'running') {
+                            statusDiv.innerHTML = '<div class="status info">SMB 同步進行中... ' + data.message + '</div>';
+                            setTimeout(checkSMBStatus, 3000);
+                        } else if (data.status === 'completed') {
+                            statusDiv.innerHTML = '<div class="status success">SMB 同步完成！</div>';
+                        } else {
+                            statusDiv.innerHTML = '<div class="status error">SMB 同步失敗: ' + data.error + '</div>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('檢查 SMB 狀態失敗:', error);
+                    });
+                }
+
+                // 初始化
+                document.addEventListener('DOMContentLoaded', function() {
+                    switchTab('upload');
+                });
+            </script>
+        </head>
+        <body>
+            <div class="header">
+                <h1>📂 Wiki Batch Importer - 管理面板</h1>
+                <a href="''' + ADMIN_FRONTEND_URL + '''" class="logout-btn">← 返回主系統</a>
+            </div>
+
+            <div class="container">
+                <div class="tabs">
+                    <button id="tab-upload" class="tab active" onclick="switchTab('upload')">文件上傳</button>
+                    <button id="tab-directory" class="tab" onclick="switchTab('directory')">目錄掃描</button>
+                    <button id="tab-smb" class="tab" onclick="switchTab('smb')">SMB 同步</button>
+                </div>
+
+                <div id="upload" class="tab-content active">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📤 批量文件上傳</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="files">選擇文件 (支援 PDF、Word、Excel、PowerPoint 等格式)</label>
+                                <input type="file" id="files" multiple class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md">
+                            </div>
+                            <button onclick="uploadFiles()" class="btn btn-primary">開始上傳</button>
+                            <div id="upload-status"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="directory" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>📁 目錄掃描與導入</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="scan-path">目錄路徑</label>
+                                <input type="text" id="scan-path" class="form-control" placeholder="/path/to/directory">
+                            </div>
+                            <button onclick="scanDirectory()" class="btn btn-info">掃描目錄</button>
+                            <div id="scan-status"></div>
+
+                            <div id="scan-results-container" style="display: none;">
+                                <h4>掃描結果</h4>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>文件名</th>
+                                            <th>路徑</th>
+                                            <th>大小</th>
+                                            <th>類型</th>
+                                            <th>選擇</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scan-results">
+                                    </tbody>
+                                </table>
+                                <button onclick="importScannedFiles()" class="btn btn-success">導入選中文件</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="smb" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>🌐 SMB 網路共享同步</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="smb-config">SMB 配置</label>
+                                <select id="smb-config" class="form-control">
+                                    <option value="">選擇配置...</option>
+                                </select>
+                            </div>
+                            <button onclick="syncSMB()" class="btn btn-success">開始同步</button>
+                            <div id="smb-status"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="job-status" class="card">
+                    <div class="card-header">
+                        <h3>📊 任務狀態</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress">
+                            <div id="progress-bar" class="progress-bar"></div>
+                        </div>
+                        <div id="status-text">等待任務開始...</div>
+                    </div>
                 </div>
             </div>
         </body>
@@ -1047,6 +1442,10 @@ ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL", "http://localhost:3001")
 def authenticate():
     # 允許訪問主頁面，用於顯示登入提示
     if request.path == '/':
+        return
+
+    # 允許訪問管理界面 (認證已在主頁面處理)
+    if request.path == '/admin':
         return
 
     # 檢查 URL 參數中的認證 token

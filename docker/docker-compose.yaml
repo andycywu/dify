@@ -802,9 +802,13 @@ services:
       # === 外部服務（本地 Ollama）===
       OLLAMA_BASE_URL: http://host.docker.internal:11434
 
+      # === Wiki Batch Importer 內部地址 ===
+      WIKI_BATCH_IMPORTER_INTERNAL_URL: http://wiki-batch-importer:5050
+
       # === 瀏覽器端外部訪問（通過 Next.js API 代理避免 CORS）===
       NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_DIFY_API_BASE_URL: /api/dify
+      NEXT_PUBLIC_WIKI_BATCH_IMPORTER_URL: http://localhost:5050
 
       # === 運行配置 ===
       NODE_ENV: development
