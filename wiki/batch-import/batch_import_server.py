@@ -633,6 +633,10 @@ def index():
     """主頁面 - Web 管理界面"""
     # 檢查 URL 參數中的認證 token
     auth_token = request.args.get('auth')
+    print(f"[DEBUG] Received auth_token: {auth_token is not None}")
+    print(f"[DEBUG] Full URL: {request.url}")
+    print(f"[DEBUG] Request args: {dict(request.args)}")
+
     if auth_token:
         try:
             # 驗證 token
@@ -640,10 +644,13 @@ def index():
             import json
             import time
 
+            print(f"[DEBUG] Decoding token: {auth_token[:50]}...")
             token_data = json.loads(base64.b64decode(auth_token).decode('utf-8'))
+            print(f"[DEBUG] Decoded token data: {token_data}")
 
             # 檢查過期時間
             if token_data.get('exp', 0) < time.time():
+                print(f"[DEBUG] Token expired: {token_data.get('exp')} < {time.time()}")
                 return '''
                 <html>
                     <body>
@@ -656,6 +663,7 @@ def index():
 
             # 檢查角色
             if token_data.get('role') != 'Administrator':
+                print(f"[DEBUG] Invalid role: {token_data.get('role')}")
                 return '''
                 <html>
                     <body>
@@ -667,9 +675,11 @@ def index():
                 '''
 
             # Token 有效，重定向到管理界面
+            print(f"[DEBUG] Token valid, redirecting to /admin")
             return redirect('/admin')
 
         except Exception as e:
+            print(f"[DEBUG] Token validation error: {str(e)}")
             return f'''
             <html>
                 <body>
@@ -1427,25 +1437,23 @@ def smb_status():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 新增中介層驗證 3001 的登入 Cookie
-from flask import Flask, request, jsonify, redirect
-import requests
-import os
-
-app = Flask(__name__)
-
 # 使用環境變數配置 API 端點，預設使用 Docker 內部網路
 ADMIN_API_VALIDATE = os.getenv("ADMIN_API_VALIDATE", "http://dify-next-frontend:3000/api/auth/validate")
 ADMIN_FRONTEND_URL = os.getenv("ADMIN_FRONTEND_URL", "http://localhost:3001")
 
 @app.before_request
 def authenticate():
+    print(f"[DEBUG] Before request: {request.method} {request.path}")
+    print(f"[DEBUG] Request args: {dict(request.args)}")
+
     # 允許訪問主頁面，用於顯示登入提示
     if request.path == '/':
+        print("[DEBUG] Allowing access to root path")
         return
 
     # 允許訪問管理界面 (認證已在主頁面處理)
     if request.path == '/admin':
+        print("[DEBUG] Allowing access to admin path")
         return
 
     # 檢查 URL 參數中的認證 token
@@ -1457,33 +1465,43 @@ def authenticate():
             import json
             import time
 
+            print(f"[DEBUG] Validating auth token for API call")
             token_data = json.loads(base64.b64decode(auth_token).decode('utf-8'))
 
             # 檢查過期時間
             if token_data.get('exp', 0) < time.time():
+                print(f"[DEBUG] API token expired")
                 return jsonify({"error": "Authentication token expired"}), 403
 
             # 檢查角色
             if token_data.get('role') != 'Administrator':
+                print(f"[DEBUG] API token invalid role: {token_data.get('role')}")
                 return jsonify({"error": "Forbidden"}), 403
 
             # Token 有效，允許訪問
+            print("[DEBUG] API token valid")
             return
 
         except Exception as e:
+            print(f"[DEBUG] API token validation error: {str(e)}")
             return jsonify({"error": "Invalid authentication token", "details": str(e)}), 403
 
     # 如果沒有 token，檢查 Cookie
     cookie = request.headers.get('Cookie')
     if not cookie:
+        print("[DEBUG] No auth token or cookie found")
         return jsonify({"error": "Unauthorized"}), 403
 
     try:
         # 驗證 Cookie
+        print(f"[DEBUG] Validating cookie: {cookie[:100]}...")
         response = requests.get(ADMIN_API_VALIDATE, headers={"Cookie": cookie})
         if response.status_code != 200 or response.json().get("role") != "Administrator":
+            print(f"[DEBUG] Cookie validation failed: status={response.status_code}, role={response.json().get('role')}")
             return jsonify({"error": "Forbidden"}), 403
+        print("[DEBUG] Cookie validation successful")
     except Exception as e:
+        print(f"[DEBUG] Cookie validation error: {str(e)}")
         return jsonify({"error": "Authentication failed", "details": str(e)}), 403
 
 if __name__ == '__main__':

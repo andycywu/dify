@@ -42,12 +42,20 @@ export default async function handler(
       exp: Math.floor(Date.now() / 1000) + (15 * 60) // 15 分鐘過期
     })).toString('base64');
 
+    console.log('[wiki-batch-importer] Generated auth token:', authToken);
+    console.log('[wiki-batch-importer] Token payload:', {
+      email: token.email,
+      role: token.role,
+      exp: Math.floor(Date.now() / 1000) + (15 * 60)
+    });
+
     // 重定向到 wiki-batch-importer，帶上認證參數
     // 使用外部可訪問的地址，因為用戶的瀏覽器需要在新標籤頁中訪問
     const batchImporterUrl = process.env.NEXT_PUBLIC_WIKI_BATCH_IMPORTER_URL || 'http://localhost:5050';
     const redirectUrl = `${batchImporterUrl}?auth=${authToken}`;
 
-    console.log('[wiki-batch-importer] Redirecting to:', redirectUrl);
+    console.log('[wiki-batch-importer] Batch importer URL:', batchImporterUrl);
+    console.log('[wiki-batch-importer] Final redirect URL:', redirectUrl);
 
     return res.redirect(redirectUrl);
 
