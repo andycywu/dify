@@ -108,6 +108,17 @@ const WikiImportManager: React.FC = () => {
       time: autoSyncTime
     };
     console.log('Sending request data:', requestData);
+
+    // 先測試 API 調用
+    try {
+      console.log('Testing API call first...');
+      const testResponse = await axios.post('/api/admin/test', requestData);
+      console.log('Test API response:', testResponse.data);
+    } catch (testError: any) {
+      console.error('Test API failed:', testError.response?.data);
+    }
+
+    // 然後調用真正的 API
     try {
       const response = await axios.post('/api/admin/setup-cron', requestData);
       console.log('Setup response:', response.data);
@@ -157,10 +168,12 @@ const WikiImportManager: React.FC = () => {
       console.log('Fetching logs...');
       const response = await axios.get('/api/admin/sync-log');
       console.log('Logs response:', response.data);
+      console.log('Logs array:', response.data.log);
       setLogs(response.data.log || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch logs:', error);
-      setLogs(['獲取日誌失敗']);
+      console.error('Error response:', error.response?.data);
+      setLogs(['獲取日誌失敗: ' + (error.response?.data?.error || error.message)]);
     }
   };
 
