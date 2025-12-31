@@ -102,16 +102,19 @@ const WikiImportManager: React.FC = () => {
   };
 
   const handleAutoSyncSetup = async () => {
+    console.log('Setting up auto sync with time:', autoSyncTime);
     try {
       const response = await axios.post('/api/admin/setup-cron', {
         action: 'setup',
         time: autoSyncTime
       });
+      console.log('Setup response:', response.data);
       alert(response.data.message);
       fetchCronStatus();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to setup auto sync:', error);
-      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      console.error('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.error || error.message || '未知錯誤';
       alert(`設置失敗: ${errorMessage}`);
     }
   };

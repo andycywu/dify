@@ -44,7 +44,9 @@ export default async function handler(
         });
       }
     } else if (req.method === 'POST') {
+      console.log('Raw request body:', req.body);
       const { action, time = '02:00' } = req.body;
+      console.log('Parsed request:', { action, time, timeType: typeof time });
 
       if (action === 'check') {
         try {
@@ -68,9 +70,22 @@ export default async function handler(
 
       if (action === 'setup') {
         // 解析時間
+        console.log('Parsing time:', time);
         const [hour, minute] = time.split(':');
-        if (!hour || !minute) {
+        console.log('Parsed time:', { hour, minute });
+
+        if (!hour || !minute || hour.length !== 2 || minute.length !== 2) {
+          console.log('Invalid time format detected');
           return res.status(400).json({ error: 'Invalid time format. Use HH:MM' });
+        }
+
+        // 驗證小時和分鐘是否為有效數字
+        const hourNum = parseInt(hour, 10);
+        const minuteNum = parseInt(minute, 10);
+
+        if (isNaN(hourNum) || isNaN(minuteNum) || hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
+          console.log('Invalid time values:', { hourNum, minuteNum });
+          return res.status(400).json({ error: 'Invalid time values. Hour must be 0-23, minute must be 0-59' });
         }
 
         // 在 Docker 容器中，我們不能直接修改系統 crontab
