@@ -71,11 +71,12 @@ export default async function handler(
       if (action === 'setup') {
         // 解析時間
         console.log('Parsing time:', time);
-        const [hour, minute] = time.split(':');
-        console.log('Parsed time:', { hour, minute });
+        const timeStr = String(time).trim();
+        const [hour, minute] = timeStr.split(':');
+        console.log('Parsed time:', { hour, minute, timeStr });
 
-        if (!hour || !minute || hour.length !== 2 || minute.length !== 2) {
-          console.log('Invalid time format detected');
+        if (!hour || !minute) {
+          console.log('Invalid time format - missing hour or minute');
           return res.status(400).json({ error: 'Invalid time format. Use HH:MM' });
         }
 
@@ -83,10 +84,17 @@ export default async function handler(
         const hourNum = parseInt(hour, 10);
         const minuteNum = parseInt(minute, 10);
 
-        if (isNaN(hourNum) || isNaN(minuteNum) || hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
-          console.log('Invalid time values:', { hourNum, minuteNum });
+        if (isNaN(hourNum) || isNaN(minuteNum)) {
+          console.log('Invalid time values - not numbers:', { hourNum, minuteNum });
+          return res.status(400).json({ error: 'Invalid time values. Hour and minute must be numbers' });
+        }
+
+        if (hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
+          console.log('Invalid time range:', { hourNum, minuteNum });
           return res.status(400).json({ error: 'Invalid time values. Hour must be 0-23, minute must be 0-59' });
         }
+
+        console.log('Time validation passed:', { hourNum, minuteNum });
 
         // 在 Docker 容器中，我們不能直接修改系統 crontab
         // 改為創建一個配置記錄，應用可以檢查這個配置來決定是否運行同步

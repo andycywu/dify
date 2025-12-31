@@ -103,17 +103,20 @@ const WikiImportManager: React.FC = () => {
 
   const handleAutoSyncSetup = async () => {
     console.log('Setting up auto sync with time:', autoSyncTime);
+    const requestData = {
+      action: 'setup',
+      time: autoSyncTime
+    };
+    console.log('Sending request data:', requestData);
     try {
-      const response = await axios.post('/api/admin/setup-cron', {
-        action: 'setup',
-        time: autoSyncTime
-      });
+      const response = await axios.post('/api/admin/setup-cron', requestData);
       console.log('Setup response:', response.data);
       alert(response.data.message);
       fetchCronStatus();
     } catch (error: any) {
       console.error('Failed to setup auto sync:', error);
       console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
       const errorMessage = error.response?.data?.error || error.message || '未知錯誤';
       alert(`設置失敗: ${errorMessage}`);
     }
@@ -151,10 +154,13 @@ const WikiImportManager: React.FC = () => {
 
   const fetchLogs = async () => {
     try {
+      console.log('Fetching logs...');
       const response = await axios.get('/api/admin/sync-log');
-      setLogs(response.data.log);
+      console.log('Logs response:', response.data);
+      setLogs(response.data.log || []);
     } catch (error) {
       console.error('Failed to fetch logs:', error);
+      setLogs(['獲取日誌失敗']);
     }
   };
 
