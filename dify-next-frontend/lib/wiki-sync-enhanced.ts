@@ -513,8 +513,21 @@ export async function resetFailedSyncs(department?: Department) {
 /**
  * 清空所有同步狀態（用於強制全量重新同步）
  */
-export async function clearSyncStatus(department?: Department) {
+export async function clearSyncStatus(department?: Department, clearDataset: boolean = false) {
   const where = department ? { department } : {};
+
+  // 如果指定了部門且需要清除 Dataset
+  if (department && clearDataset) {
+    const config = DEPARTMENT_CONFIG[department];
+    if (config.datasetId) {
+      try {
+        await difyClient.clearDataset(config.datasetId);
+      } catch (error) {
+        console.error(`❌ Failed to clear Dify dataset for ${department}:`, error);
+        // 不中斷執行，繼續清除同步狀態
+      }
+    }
+  }
 
   const result = await prisma.wikiSyncStatus.deleteMany({ where });
 

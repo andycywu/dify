@@ -54,6 +54,8 @@ const options = {
   pagePath: undefined as string | undefined,
   stats: false,
   clear: false,
+  clearDataset: false,
+  clearAll: false,
 };
 
 for (let i = 0; i < args.length; i++) {
@@ -73,6 +75,10 @@ for (let i = 0; i < args.length; i++) {
     options.stats = true;
   } else if (arg === '--clear') {
     options.clear = true;
+  } else if (arg === '--clear-dataset') {
+    options.clearDataset = true;
+  } else if (arg === '--clear-all') {
+    options.clearAll = true;
   } else if (arg === '--help' || arg === '-h') {
     showHelp();
     process.exit(0);
@@ -94,6 +100,8 @@ Options:
   --page-path <path>     只同步特定頁面
   --stats                顯示同步統計資訊
   --clear                清空同步狀態（用於完全重新同步）
+  --clear-dataset        清空指定部門的 Dify Dataset 文檔（與 --department 配合使用）
+  --clear-all            清空同步狀態和 Dify Dataset 文檔（與 --department 配合使用）
   --help, -h             顯示此幫助訊息
 
 Examples:
@@ -103,6 +111,8 @@ Examples:
   npx tsx scripts/sync-wiki.ts --dry-run --department COMMON
   npx tsx scripts/sync-wiki.ts --stats
   npx tsx scripts/sync-wiki.ts --clear --department DQE
+  npx tsx scripts/sync-wiki.ts --clear-dataset --department DQE
+  npx tsx scripts/sync-wiki.ts --clear-all --department DQE
   `);
 }
 
@@ -134,13 +144,31 @@ async function main() {
     // 清空狀態
     if (options.clear) {
       console.log('🗑️  Clearing sync status...\n');
-  const count = await clearSyncStatus(options.department as any);
+      const count = await clearSyncStatus(options.department as any, false);
       console.log(`✅ Cleared ${count} records`);
 
       if (!options.forceFullSync) {
         console.log('\nℹ️  Use --force-full-sync to sync all pages now');
         return;
       }
+    } else if (options.clearDataset) {
+      if (!options.department) {
+        console.error('❌ --clear-dataset 必須與 --department 配合使用');
+        process.exit(1);
+      }
+      console.log(`🗑️  Clearing Dify dataset for department ${options.department}...\n`);
+      const count = await clearSyncStatus(options.department as any, true);
+      console.log(`✅ Cleared dataset for ${options.department}`);
+      return;
+    } else if (options.clearAll) {
+      if (!options.department) {
+        console.error('❌ --clear-all 必須與 --department 配合使用');
+        process.exit(1);
+      }
+      console.log(`🗑️  Clearing sync status and Dify dataset for department ${options.department}...\n`);
+      const count = await clearSyncStatus(options.department as any, true);
+      console.log(`✅ Cleared sync status and dataset for ${options.department}`);
+      return;
     }
 
     // 重置失敗

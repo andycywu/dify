@@ -180,6 +180,41 @@ export class DifyClient {
       });
   }
 
+  async clearDataset(datasetId: string) {
+    console.log(`🗑️  Clearing all documents from dataset ${datasetId}...`);
+
+    try {
+      // 首先獲取所有文檔
+      const documentsResponse = await this.listDocuments(datasetId, 1, 1000);
+      const documents = documentsResponse.data || [];
+
+      if (documents.length === 0) {
+        console.log(`✅ Dataset ${datasetId} is already empty`);
+        return 0;
+      }
+
+      console.log(`📄 Found ${documents.length} documents to delete`);
+
+      // 刪除所有文檔
+      let deletedCount = 0;
+      for (const doc of documents) {
+        try {
+          await this.deleteDocument(datasetId, doc.id);
+          deletedCount++;
+          console.log(`  ✅ Deleted document: ${doc.name}`);
+        } catch (error) {
+          console.error(`  ❌ Failed to delete document ${doc.name}:`, error);
+        }
+      }
+
+      console.log(`✅ Cleared ${deletedCount} documents from dataset ${datasetId}`);
+      return deletedCount;
+    } catch (error) {
+      console.error(`❌ Failed to clear dataset ${datasetId}:`, error);
+      throw error;
+    }
+  }
+
   async createDocumentByFile(datasetId: string, name: string, fileBlob: Blob, indexingTechnique: string = 'high_quality', processRule?: any) {
     const formData = new FormData();
 
