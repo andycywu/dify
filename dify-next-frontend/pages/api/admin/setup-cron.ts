@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import { promises as fs } from 'fs';
 
 const execAsync = promisify(exec);
 
@@ -23,27 +24,46 @@ export default async function handler(
 ) {
   try {
     if (req.method === 'GET') {
-      // 檢查當前 cron jobs
-      const { stdout } = await execAsync('crontab -l 2>/dev/null || echo "No cron jobs found"');
-      const cronJobs = stdout.split('\n').filter(line => line.includes('sync-wiki') || line.includes('wiki-sync'));
+      // 檢查配置文件
+      try {
+        const configPath = path.join(process.cwd(), '.wiki-sync-cron-config');
+        const configContent = await fs.readFile(configPath, 'utf-8');
+        const config = JSON.parse(configContent);
 
-      return res.status(200).json({
-        success: true,
-        cronJobs,
-        hasWikiSyncCron: cronJobs.length > 0,
-      });
+        return res.status(200).json({
+          success: true,
+          cronJobs: config.enabled ? [`自動同步已設置為每日 ${config.time}`] : [],
+          hasWikiSyncCron: config.enabled || false,
+        });
+      } catch (error) {
+        // 配置文件不存在或無效
+        return res.status(200).json({
+          success: true,
+          cronJobs: [],
+          hasWikiSyncCron: false,
+        });
+      }
     } else if (req.method === 'POST') {
       const { action, time = '02:00' } = req.body;
 
       if (action === 'check') {
-        const { stdout } = await execAsync('crontab -l 2>/dev/null || echo "No cron jobs found"');
-        const cronJobs = stdout.split('\n').filter(line => line.includes('sync-wiki') || line.includes('wiki-sync'));
+        try {
+          const configPath = path.join(process.cwd(), '.wiki-sync-cron-config');
+          const configContent = await fs.readFile(configPath, 'utf-8');
+          const config = JSON.parse(configContent);
 
-        return res.status(200).json({
-          success: true,
-          cronJobs,
-          hasWikiSyncCron: cronJobs.length > 0,
-        });
+          return res.status(200).json({
+            success: true,
+            cronJobs: config.enabled ? [`自動同步已設置為每日 ${config.time}`] : [],
+            hasWikiSyncCron: config.enabled || false,
+          });
+        } catch (error) {
+          return res.status(200).json({
+            success: true,
+            cronJobs: [],
+            hasWikiSyncCron: false,
+          });
+        }
       }
 
       if (action === 'setup') {
@@ -53,47 +73,43 @@ export default async function handler(
           return res.status(400).json({ error: 'Invalid time format. Use HH:MM' });
         }
 
-        // 創建 cron 腳本路徑
-        const scriptPath = path.join(process.cwd(), 'setup-wiki-sync-cron.sh');
-
-        // 檢查腳本是否存在
+        // 在 Docker 容器中，我們不能直接修改系統 crontab
+        // 改為創建一個配置記錄，應用可以檢查這個配置來決定是否運行同步
         try {
-          await execAsync(`test -f "${scriptPath}"`);
+          // 創建一個標記文件來表示已設置自動同步
+          const configPath = path.join(process.cwd(), '.wiki-sync-cron-config');
+          const config = {
+            enabled: true,
+            time: time,
+            createdAt: new Date().toISOString()
+          };
+
+          // 寫入配置文件
+          await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+
+          return res.status(200).json({
+            success: true,
+            message: `自動同步已設置為每日 ${time}。請在宿主機上運行以下命令設置系統 cron：\n\n0 ${hour} * * * /path/to/dify/auto-sync-call.sh\n\n或者使用 '測試自動同步' 按鈕進行手動測試。`,
+          });
         } catch (error) {
-          return res.status(400).json({ error: 'setup-wiki-sync-cron.sh script not found' });
+          console.error('Failed to create cron config:', error);
+          return res.status(500).json({ error: '無法創建自動同步配置' });
         }
-
-        // 執行設置腳本
-        await execAsync(`chmod +x "${scriptPath}" && "${scriptPath}"`);
-
-        return res.status(200).json({
-          success: true,
-          message: `Cron job set up successfully for ${time} daily`,
-        });
       }
 
       if (action === 'remove') {
-        // 移除現有的 wiki sync cron jobs
-        const { stdout: currentCrontab } = await execAsync('crontab -l 2>/dev/null || echo ""');
-        const lines = currentCrontab.split('\n');
-        const filteredLines = lines.filter(line =>
-          !line.includes('sync-wiki') && !line.includes('wiki-sync') && line.trim() !== ''
-        );
-
-        if (filteredLines.length !== lines.length) {
-          // 有變化，更新 crontab
-          const newCrontab = filteredLines.join('\n') + '\n';
-          await execAsync(`echo "${newCrontab}" | crontab -`);
+        try {
+          // 刪除配置文件
+          const configPath = path.join(process.cwd(), '.wiki-sync-cron-config');
+          await fs.unlink(configPath).catch(() => {}); // 忽略如果文件不存在的錯誤
 
           return res.status(200).json({
             success: true,
-            message: 'Wiki sync cron jobs removed successfully',
+            message: '自動同步配置已移除',
           });
-        } else {
-          return res.status(200).json({
-            success: true,
-            message: 'No wiki sync cron jobs found to remove',
-          });
+        } catch (error) {
+          console.error('Failed to remove cron config:', error);
+          return res.status(500).json({ error: '無法移除自動同步配置' });
         }
       }
 

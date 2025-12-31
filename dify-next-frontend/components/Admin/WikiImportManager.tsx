@@ -132,6 +132,20 @@ const WikiImportManager: React.FC = () => {
     }
   };
 
+  const handleTestAutoSync = async () => {
+    if (!confirm('確定要測試自動同步功能嗎？這將同步所有部門。')) return;
+
+    try {
+      const response = await axios.post('/api/admin/auto-sync');
+      alert(`自動同步測試完成: ${response.data.message}`);
+      fetchSyncStatus();
+    } catch (error) {
+      console.error('Failed to test auto sync:', error);
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      alert(`自動同步測試失敗: ${errorMessage}`);
+    }
+  };
+
   const fetchLogs = async () => {
     try {
       const response = await axios.get('/api/admin/sync-log');
@@ -203,6 +217,12 @@ const WikiImportManager: React.FC = () => {
             className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
           >
             移除自動同步
+          </button>
+          <button
+            onClick={handleTestAutoSync}
+            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
+          >
+            測試自動同步
           </button>
         </div>
         {cronStatus && (
