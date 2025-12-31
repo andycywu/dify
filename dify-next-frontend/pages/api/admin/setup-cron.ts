@@ -22,6 +22,12 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log('=== SETUP-CRON API CALLED ===');
+  console.log('Method:', req.method);
+  console.log('Headers:', req.headers);
+  console.log('Raw body:', req.body);
+  console.log('Body type:', typeof req.body);
+
   try {
     if (req.method === 'GET') {
       // 檢查配置文件
