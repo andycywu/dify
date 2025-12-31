@@ -47,7 +47,8 @@ const WikiImportManager: React.FC = () => {
       fetchSyncStatus();
     } catch (error) {
       console.error(`Failed to sync department ${department}:`, error);
-      alert(`同步失敗: ${error.response?.data?.error || error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      alert(`同步失敗: ${errorMessage}`);
     }
   };
 
@@ -63,7 +64,8 @@ const WikiImportManager: React.FC = () => {
       fetchSyncStatus();
     } catch (error) {
       console.error(`Failed to clear sync status for ${department}:`, error);
-      alert(`清除失敗: ${error.response?.data?.error || error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      alert(`清除失敗: ${errorMessage}`);
     }
   };
 
@@ -79,7 +81,8 @@ const WikiImportManager: React.FC = () => {
       fetchSyncStatus();
     } catch (error) {
       console.error(`Failed to clear dataset for ${department}:`, error);
-      alert(`清除失敗: ${error.response?.data?.error || error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      alert(`清除失敗: ${errorMessage}`);
     }
   };
 
@@ -93,7 +96,8 @@ const WikiImportManager: React.FC = () => {
       fetchSyncStatus();
     } catch (error) {
       console.error('Failed to sync all departments:', error);
-      alert(`同步失敗: ${error.response?.data?.error || error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      alert(`同步失敗: ${errorMessage}`);
     }
   };
 
@@ -107,7 +111,8 @@ const WikiImportManager: React.FC = () => {
       fetchCronStatus();
     } catch (error) {
       console.error('Failed to setup auto sync:', error);
-      alert(`設置失敗: ${error.response?.data?.error || error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      alert(`設置失敗: ${errorMessage}`);
     }
   };
 
@@ -122,7 +127,8 @@ const WikiImportManager: React.FC = () => {
       fetchCronStatus();
     } catch (error) {
       console.error('Failed to remove cron job:', error);
-      alert(`移除失敗: ${error.response?.data?.error || error.message}`);
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      alert(`移除失敗: ${errorMessage}`);
     }
   };
 
