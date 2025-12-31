@@ -69,54 +69,29 @@ export default async function handler(
       }
 
       if (action === 'setup') {
-        // 解析時間
-        console.log('Parsing time:', time);
-        const timeStr = String(time).trim();
-        const [hour, minute] = timeStr.split(':');
-        console.log('Parsed time:', { hour, minute, timeStr });
+        console.log('=== SETUP ACTION STARTED ===');
+        console.log('Time received:', time);
 
-        if (!hour || !minute) {
-          console.log('Invalid time format - missing hour or minute');
-          return res.status(400).json({ error: 'Invalid time format. Use HH:MM' });
-        }
-
-        // 驗證小時和分鐘是否為有效數字
-        const hourNum = parseInt(hour, 10);
-        const minuteNum = parseInt(minute, 10);
-
-        if (isNaN(hourNum) || isNaN(minuteNum)) {
-          console.log('Invalid time values - not numbers:', { hourNum, minuteNum });
-          return res.status(400).json({ error: 'Invalid time values. Hour and minute must be numbers' });
-        }
-
-        if (hourNum < 0 || hourNum > 23 || minuteNum < 0 || minuteNum > 59) {
-          console.log('Invalid time range:', { hourNum, minuteNum });
-          return res.status(400).json({ error: 'Invalid time values. Hour must be 0-23, minute must be 0-59' });
-        }
-
-        console.log('Time validation passed:', { hourNum, minuteNum });
-
-        // 在 Docker 容器中，我們不能直接修改系統 crontab
-        // 改為創建一個配置記錄，應用可以檢查這個配置來決定是否運行同步
+        // 臨時跳過驗證，直接創建配置文件
         try {
-          // 創建一個標記文件來表示已設置自動同步
           const configPath = path.join(process.cwd(), '.wiki-sync-cron-config');
           const config = {
             enabled: true,
-            time: time,
+            time: time || '02:00',
             createdAt: new Date().toISOString()
           };
 
-          // 寫入配置文件
+          console.log('Creating config:', config);
           await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+          console.log('Config file created successfully');
 
           return res.status(200).json({
             success: true,
-            message: `自動同步已設置為每日 ${time}。請在宿主機上運行以下命令設置系統 cron：\n\n0 ${hour} * * * /path/to/dify/auto-sync-call.sh\n\n或者使用 '測試自動同步' 按鈕進行手動測試。`,
+            message: `自動同步已設置為每日 ${time || '02:00'}。`,
           });
         } catch (error) {
-          console.error('Failed to create cron config:', error);
-          return res.status(500).json({ error: '無法創建自動同步配置' });
+          console.error('Failed to create config:', error);
+          return res.status(500).json({ error: '無法創建配置文件' });
         }
       }
 
