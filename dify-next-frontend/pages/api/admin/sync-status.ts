@@ -16,15 +16,16 @@ export default async function handler(
 
   try {
     const { department } = req.query;
+    const departmentStr = Array.isArray(department) ? department[0] : department;
 
-    const stats = await getSyncStats(department as Department | undefined);
+    const stats = await getSyncStats(departmentStr as Department | undefined);
 
     // 轉換為前端期望的格式
     const response: Record<string, any> = {};
 
-    if (department) {
+    if (departmentStr) {
       // 單個部門
-      response[department] = {
+      response[departmentStr] = {
         totalPages: stats.total,
         syncedPages: stats.success,
         status: stats.failed > 0 ? '部分失敗' : stats.pending > 0 ? '進行中' : '完成',
