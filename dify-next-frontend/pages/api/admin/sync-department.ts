@@ -53,12 +53,19 @@ export default async function handler(
           // 清除所有部門的 dataset
           const departments: Department[] = ['COMMON', 'DQE', 'DQE_CERTI', 'HW', 'PWR', 'ME_LCM', 'SW', 'PJM', 'ARCH', 'TM'];
           let totalCleared = 0;
+          let errors: string[] = [];
           for (const dept of departments) {
-            const cleared = await clearSyncStatus(dept, true);
-            totalCleared += cleared;
+            try {
+              const cleared = await clearSyncStatus(dept, true);
+              totalCleared += cleared;
+            } catch (error) {
+              const errorMsg = `Failed to clear dataset for ${dept}: ${error instanceof Error ? error.message : String(error)}`;
+              console.error(errorMsg);
+              errors.push(errorMsg);
+            }
           }
-          result = totalCleared;
-          message = `成功清除所有部門的同步狀態和 Dataset 記錄 (${result} 條)`;
+          result = { totalCleared, errors };
+          message = `清除完成：成功清除 ${totalCleared} 條記錄${errors.length > 0 ? `，${errors.length} 個部門失敗` : ''}`;
         } else {
           result = await clearSyncStatus(department as Department, true);
           message = `成功清除同步狀態和 Dataset 記錄`;

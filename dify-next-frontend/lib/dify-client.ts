@@ -19,7 +19,15 @@ export class DifyClient {
   }
 
   private async request(endpoint: string, options: RequestInit = {}, useAdmin: boolean = false, baseOverride?: string) {
-    const base = (baseOverride || this.baseUrl).replace(/\/$/, '');
+    let base = (baseOverride || this.baseUrl).replace(/\/$/, '');
+
+    // For admin operations, ensure we're using the console API endpoint
+    if (useAdmin && !baseOverride) {
+      if (!base.includes('/console/api')) {
+        base = base.replace(/\/v1\/?$/, '/console/api');
+      }
+    }
+
     const url = `${base}${endpoint}`;
     const token = useAdmin
       ? (this.adminKey || this.apiKey)
@@ -171,20 +179,20 @@ export class DifyClient {
   }
 
   async listDocuments(datasetId: string, page: number = 1, limit: number = 100, keyword: string = '') {
-      return this.request(`/datasets/${datasetId}/documents?page=${page}&limit=${limit}&keyword=${keyword}`);
+      return this.request(`/datasets/${datasetId}/documents?page=${page}&limit=${limit}&keyword=${keyword}`, {}, true);
   }
 
   async deleteDocument(datasetId: string, documentId: string) {
       return this.request(`/datasets/${datasetId}/documents/${documentId}`, {
           method: 'DELETE'
-      });
+      }, true);
   }
 
   async clearDataset(datasetId: string) {
     console.log(`🗑️  Clearing all documents from dataset ${datasetId}...`);
 
     try {
-      // 首先獲取所有文檔
+      // 首先獲取所有文檔 (使用管理員權限)
       const documentsResponse = await this.listDocuments(datasetId, 1, 1000);
       const documents = documentsResponse.data || [];
 
@@ -195,7 +203,7 @@ export class DifyClient {
 
       console.log(`📄 Found ${documents.length} documents to delete`);
 
-      // 刪除所有文檔
+      // 刪除所有文檔 (使用管理員權限)
       let deletedCount = 0;
       for (const doc of documents) {
         try {

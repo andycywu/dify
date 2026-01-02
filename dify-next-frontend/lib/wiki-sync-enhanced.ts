@@ -595,7 +595,7 @@ export async function clearSyncStatus(department?: Department, clearDataset: boo
     if (clearDataset && department) {
       // Clear Dify dataset documents
       const config = DEPARTMENT_CONFIG[department];
-      if (config && config.datasetId) {
+      if (config && config.datasetId && config.datasetId.trim() !== '') {
         console.log(`🗑️  Clearing all documents from dataset ${config.datasetId}...`);
         try {
           await difyClient.clearDataset(config.datasetId);
@@ -606,6 +606,9 @@ export async function clearSyncStatus(department?: Department, clearDataset: boo
           await writeSyncLog(`清除數據集 ${config.datasetId} 失敗: ${error}`);
           throw error;
         }
+      } else {
+        console.log(`⚠️  No dataset ID configured for department ${department}, skipping dataset clear`);
+        await writeSyncLog(`部門 ${department} 未配置數據集 ID，跳過數據集清除`);
       }
     }
 
