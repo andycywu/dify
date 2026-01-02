@@ -42,7 +42,7 @@ export default async function handler(
 
     return res.status(200).json({
       log: logLines,
-      foundPath: foundPath || '未找到日誌文件，使用默認內容',
+      foundPath: logPath,
     });
   } catch (error) {
     console.error('Sync log API error:', error);
