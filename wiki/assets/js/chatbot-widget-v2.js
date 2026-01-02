@@ -1,4 +1,4 @@
-(function() { window.CHATBOT_VERSION = "2.0.1"; })();
+(function() { window.CHATBOT_VERSION = "2.0.2"; })();
 (function() {
     'use strict';
 
@@ -21,6 +21,23 @@
     let availableDatasets = {};
     let selectedGroup = 'default';
     let conversationHistory = {};
+    let selectedToken = null; // 新增：選定的 Dify token
+
+    // 群組到 token 的映射（硬編碼，從 .env.dify 取得）
+    const GROUP_TOKEN_MAP = {
+        'administrators': 'app-PxzkiLjnjcU2w2ARj5qeflQq',
+        'Guests': 'app-AxL0cpF55v7I70hbVGR4R8YF',
+        'EE': 'app-9VgBzkiVSPQzpewclO0VmokX', // DQE
+        'ME_LCM': 'app-l5htgvwBGi5WWDLus9alXaCj', // HW or ME_LCM
+        'PWR': 'app-w3wWfpE590ZTPILJugK0hWKB',
+        'SW': 'app-I8NXWJwmfNMWJdqB4LSvOkly',
+        'PJM': 'app-HS8g5SVRvGAGOJcOjdfF7EGv',
+        'DQE': 'app-9VgBzkiVSPQzpewclO0VmokX',
+        'Certi': 'app-GUXfMHGxh3LCwiXTTO64DO7Z',
+        'HW': 'app-l5htgvwBGi5WWDLus9alXaCj',
+        'ARCH': 'app-7vtzhicvHgoX6FmBrtItqnjH',
+        'TM': 'app-TpAELcdUix0YrWTtdOe05a7A'
+    };
 
     // Fetch user info and available datasets
     async function fetchUserData() {
@@ -104,6 +121,10 @@
                     }
 
                     console.log('🎯 自動選擇知識庫:', selectedGroup);
+
+                    // 根據選擇的群組設定 Dify token
+                    selectedToken = GROUP_TOKEN_MAP[selectedGroup] || GROUP_TOKEN_MAP['Guests'];
+                    console.log('🔑 選定的 Dify Token:', selectedToken);
                 } else {
                     console.warn('⚠️ 未獲取到用戶組別信息');
                     currentUser = { groups: ['Guests'] };
@@ -132,6 +153,7 @@
         };
         currentUser = { groups: ['Guests'] };
         selectedGroup = 'Guests';
+        selectedToken = GROUP_TOKEN_MAP['Guests'];
         return false;
     }
 
@@ -494,7 +516,8 @@
                     body: JSON.stringify({
                         message: message,
                         group_id: selectedGroup,
-                        conversation_id: conversationId
+                        conversation_id: conversationId,
+                        dify_token: selectedToken // 新增 Dify token
                     })
                 });
 
