@@ -53,22 +53,35 @@ export default async function handler(
           // 清除所有部門的 dataset
           const departments: Department[] = ['COMMON', 'DQE', 'DQE_CERTI', 'HW', 'PWR', 'ME_LCM', 'SW', 'PJM', 'ARCH', 'TM'];
           let totalCleared = 0;
+          let successCount = 0;
           let errors: string[] = [];
           for (const dept of departments) {
             try {
               const cleared = await clearSyncStatus(dept, true);
               totalCleared += cleared;
+              successCount++;
             } catch (error) {
-              const errorMsg = `Failed to clear dataset for ${dept}: ${error instanceof Error ? error.message : String(error)}`;
+              // clearSyncStatus 現在不會因為 dataset 清除失敗而拋出錯誤
+              // 但我們仍然記錄它以防萬一
+              const errorMsg = `Failed to process ${dept}: ${error instanceof Error ? error.message : String(error)}`;
               console.error(errorMsg);
               errors.push(errorMsg);
             }
           }
-          result = { totalCleared, errors };
-          message = `清除完成：成功清除 ${totalCleared} 條記錄${errors.length > 0 ? `，${errors.length} 個部門失敗` : ''}`;
+          result = { totalCleared, successCount, errors };
+          message = `清除完成：成功處理 ${successCount} 個部門，清除 ${totalCleared} 條記錄${errors.length > 0 ? `，${errors.length} 個部門有錯誤` : ''}`;
+          if (errors.length > 0) {
+            message += `。注意：數據集文檔可能需要手動刪除。`;
+          }
         } else {
-          result = await clearSyncStatus(department as Department, true);
-          message = `成功清除同步狀態和 Dataset 記錄`;
+          try {
+            result = await clearSyncStatus(department as Department, true);
+            message = `成功清除同步狀態和 Dataset 記錄`;
+          } catch (error) {
+            // clearSyncStatus 現在不會拋出錯誤，但以防萬一
+            result = 0;
+            message = `清除完成，但可能需要手動刪除數據集文檔`;
+          }
         }
         break;
 

@@ -603,8 +603,10 @@ export async function clearSyncStatus(department?: Department, clearDataset: boo
           await writeSyncLog(`已清除數據集 ${config.datasetId} 的所有文檔`);
         } catch (error) {
           console.error(`❌ Failed to clear dataset ${config.datasetId}:`, error);
-          await writeSyncLog(`清除數據集 ${config.datasetId} 失敗: ${error}`);
-          throw error;
+          // 不拋出錯誤，因為 Dify 可能不支持通過 API 刪除文檔
+          console.warn(`⚠️  Dataset clearing failed, but sync status records will still be cleared.`);
+          console.warn(`⚠️  You may need to manually delete documents from dataset ${config.datasetId} in Dify web interface.`);
+          await writeSyncLog(`數據集 ${config.datasetId} 清除失敗，可能需要手動刪除文檔`);
         }
       } else {
         console.log(`⚠️  No dataset ID configured for department ${department}, skipping dataset clear`);

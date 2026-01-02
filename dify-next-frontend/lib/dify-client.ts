@@ -12,7 +12,7 @@ export class DifyClient {
     // Normalize base URL
     this.baseUrl = baseUrl.replace(/\/$/, '');
     // Capture keys from env for flexible selection
-    this.adminKey = process.env.DIFY_ADMIN_API_KEY || undefined;
+    this.adminKey = process.env.NEXT_PUBLIC_DIFY_API_KEY || process.env.DIFY_ADMIN_API_KEY || undefined;
     this.datasetKey = process.env.NEXT_PUBLIC_DIFY_DATASET_KEY || process.env.DIFY_DATASET_API_KEY || undefined;
     // Backward-compatible default apiKey (will be overridden per request)
     this.apiKey = apiKey || this.datasetKey || this.adminKey || '';
@@ -21,16 +21,15 @@ export class DifyClient {
   private async request(endpoint: string, options: RequestInit = {}, useAdmin: boolean = false, baseOverride?: string) {
     let base = (baseOverride || this.baseUrl).replace(/\/$/, '');
 
-    // For admin operations, ensure we're using the console API endpoint
+    // For admin operations, try different endpoints
     if (useAdmin && !baseOverride) {
-      if (!base.includes('/console/api')) {
-        base = base.replace(/\/v1\/?$/, '/console/api');
-      }
+      // Try /v1 endpoint first for admin operations
+      // Dify might not support document deletion via API
     }
 
     const url = `${base}${endpoint}`;
     const token = useAdmin
-      ? (this.adminKey || this.apiKey)
+      ? (this.adminKey || this.datasetKey || this.apiKey)  // Try admin key first, then dataset key
       : (this.datasetKey || this.apiKey || this.adminKey || '');
     const headers: any = {
       'Authorization': `Bearer ${token}`,
@@ -179,7 +178,7 @@ export class DifyClient {
   }
 
   async listDocuments(datasetId: string, page: number = 1, limit: number = 100, keyword: string = '') {
-      return this.request(`/datasets/${datasetId}/documents?page=${page}&limit=${limit}&keyword=${keyword}`, {}, true);
+      return this.request(`/datasets/${datasetId}/documents?page=${page}&limit=${limit}&keyword=${keyword}`);
   }
 
   async deleteDocument(datasetId: string, documentId: string) {
@@ -205,20 +204,35 @@ export class DifyClient {
 
       // 刪除所有文檔 (使用管理員權限)
       let deletedCount = 0;
+      let failedCount = 0;
       for (const doc of documents) {
         try {
           await this.deleteDocument(datasetId, doc.id);
           deletedCount++;
           console.log(`  ✅ Deleted document: ${doc.name}`);
         } catch (error) {
+          failedCount++;
           console.error(`  ❌ Failed to delete document ${doc.name}:`, error);
         }
+      }
+
+      if (failedCount > 0) {
+        console.warn(`⚠️  Failed to delete ${failedCount} documents. This might be due to API limitations.`);
+        console.warn(`⚠️  You may need to manually delete documents from the Dify web interface.`);
       }
 
       console.log(`✅ Cleared ${deletedCount} documents from dataset ${datasetId}`);
       return deletedCount;
     } catch (error) {
       console.error(`❌ Failed to clear dataset ${datasetId}:`, error);
+
+      // 如果是認證錯誤，提供更具體的指導
+      if (error instanceof Error && error.message.includes('401')) {
+        console.warn(`⚠️  Authentication failed. The API key may not have permission to delete documents.`);
+        console.warn(`⚠️  You may need to manually delete documents from the Dify web interface.`);
+        console.warn(`⚠️  Dataset ID: ${datasetId}`);
+      }
+
       throw error;
     }
   }
