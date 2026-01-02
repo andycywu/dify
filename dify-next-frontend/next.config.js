@@ -26,7 +26,7 @@ const nextConfig = {
         source: '/api/wiki-proxy/:path*',
         headers: [
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: 'http://localhost:3002' },
+          { key: 'Access-Control-Allow-Origin', value: 'http://172.27.197.100:3002' },
           { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
         ],
