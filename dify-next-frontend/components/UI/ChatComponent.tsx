@@ -659,7 +659,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
                     {/* 新增：user 訊息顯示 User Query 標籤 */}
                     {message.role === 'user' && (
                       <div className="flex items-center mb-1">
-                        <span className="font-bold text-xs text-blue-600 mr-2">User Query</span>
+                        <span className="font-bold text-xs text-blue-600 mr-2">{user?.name || user?.email || 'User Query'}</span>
                       </div>
                     )}
                     {/* 強制顯示內容與 debug */}
@@ -670,8 +670,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
                       <>
                         {/* 引用來源顯示 */}
                         {ENABLE_CITATION_AND_SUGGESTED && citation && <AssistantCitation resources={citation} />}
-                        {/* 評分功能 */}
-                        {user && (
+                        {/* 評分功能 - 只在非歡迎訊息時顯示 */}
+                        {user && message.id !== 'welcome' && (
                           <div className="mt-1">
                             <AssistantFeedback
                               messageId={message.rawId || message.id}
