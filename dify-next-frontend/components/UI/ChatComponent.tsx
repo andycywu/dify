@@ -65,6 +65,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
   const userId = user?.id;
   const difyAPI = useMemo(() => new DifyAPI(apiBaseUrl, apiKey), [apiBaseUrl, apiKey]);
 
+  // 新增：記錄 user 資訊調試
+  useEffect(() => {
+    console.log('ChatComponent - User info:', user);
+    console.log('ChatComponent - User ID:', userId);
+    console.log('ChatComponent - Is authenticated:', isAuthenticated);
+  }, [user, userId, isAuthenticated]);
+
   // Feature flag
   const ENABLE_CITATION_AND_SUGGESTED = process.env.NEXT_PUBLIC_ENABLE_CHAT_CITATION_AND_SUGGESTED_QUESTIONS === 'true';
 
@@ -639,6 +646,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
                 citation = extractCitation((message as any).metadata);
               }
               // 新增：user 訊息顯示 User Query 標籤
+              console.log('Rendering message - ID:', message.id, 'Role:', message.role, 'Content preview:', message.content?.substring(0, 50));
               return (
                 <div
                   key={message.id}
@@ -659,7 +667,13 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
                     {/* 新增：user 訊息顯示 User Query 標籤 */}
                     {message.role === 'user' && (
                       <div className="flex items-center mb-1">
-                        <span className="font-bold text-xs text-blue-600 mr-2">{user?.name || user?.email || 'User'}</span>
+                        <span className="font-bold text-xs text-blue-600 mr-2">
+                          {(() => {
+                            const displayLabel = user?.name || user?.email || 'User';
+                            console.log('User Query Label - User object:', user, 'Displayed label:', displayLabel);
+                            return displayLabel;
+                          })()}
+                        </span>
                       </div>
                     )}
                     {/* 強制顯示內容與 debug */}
@@ -671,7 +685,10 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
                         {/* 引用來源顯示 */}
                         {ENABLE_CITATION_AND_SUGGESTED && citation && <AssistantCitation resources={citation} />}
                         {/* 評分功能 */}
-                        {user && message.id !== 'welcome' && (
+                        {user && message.id !== 'welcome' && (() => {
+                          console.log('Feedback Display - Message ID:', message.id, 'User exists:', !!user, 'Will show feedback:', true);
+                          return true;
+                        })() && (
                           <div className="mt-1">
                             <AssistantFeedback
                               messageId={message.rawId || message.id}
