@@ -333,6 +333,4 @@ export class DifyClient {
       body: JSON.stringify(payload),
     });
   }
-
-  }
 }
