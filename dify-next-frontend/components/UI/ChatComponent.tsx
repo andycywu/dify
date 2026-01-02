@@ -62,7 +62,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const userId = user?.id;
+  const userId = user?.email || user?.id; // 使用 email 作為 Dify 用戶 ID
   const difyAPI = useMemo(() => new DifyAPI(apiBaseUrl, apiKey), [apiBaseUrl, apiKey]);
 
   // Feature flag
