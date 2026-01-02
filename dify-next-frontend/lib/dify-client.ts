@@ -178,7 +178,7 @@ export class DifyClient {
   }
 
   async listDocuments(datasetId: string, page: number = 1, limit: number = 100, keyword: string = '') {
-      return this.request(`/datasets/${datasetId}/documents?page=${page}&limit=${limit}&keyword=${keyword}`);
+      return this.request(`/datasets/${datasetId}/documents?page=${page}&limit=${limit}&keyword=${keyword}`, {}, true);
   }
 
   async deleteDocument(datasetId: string, documentId: string) {
