@@ -96,7 +96,9 @@ const WikiImportManager: React.FC = () => {
         action: 'clear-dataset'
       });
       alert(response.data.message);
-      fetchSyncStatus();      fetchLogs(); // 更新日誌    } catch (error) {
+      fetchSyncStatus();
+      fetchLogs(); // 更新日誌
+    } catch (error) {
       console.error(`Failed to clear dataset for ${department}:`, error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
       alert(`清除失敗: ${errorMessage}`);
