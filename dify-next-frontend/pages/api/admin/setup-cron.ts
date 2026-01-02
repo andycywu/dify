@@ -28,9 +28,9 @@ export default async function handler(
   console.log('Raw body:', req.body);
   console.log('Body type:', typeof req.body);
 
-  // 檢查請求是否正確
-  if (!req.body || typeof req.body !== 'object') {
-    console.log('ERROR: Invalid request body');
+  // 只有 POST 請求才檢查請求體
+  if (req.method === 'POST' && (!req.body || typeof req.body !== 'object')) {
+    console.log('ERROR: Invalid request body for POST');
     return res.status(400).json({ error: 'Invalid request body' });
   }
 

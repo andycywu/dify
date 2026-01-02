@@ -16,6 +16,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log('=== AUTO-SYNC API CALLED ===');
+  console.log('Method:', req.method);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+
   try {
     if (req.method === 'GET') {
       // 檢查配置文件，看是否應該運行自動同步
@@ -66,15 +71,20 @@ export default async function handler(
         const departments: Department[] = ['COMMON', 'DQE', 'DQE_CERTI', 'HW', 'PWR', 'ME_LCM', 'SW', 'PJM', 'ARCH', 'TM'];
         const results = [];
 
+        console.log('Starting auto-sync for departments:', departments);
+
         for (const dept of departments) {
           try {
+            console.log(`Syncing department: ${dept}`);
             const result = await syncWikiToDifyEnhanced({
               department: dept,
               forceFullSync: false,
               dryRun: false,
             });
             results.push({ department: dept, success: true, result });
+            console.log(`✅ Department ${dept} synced successfully`);
           } catch (error) {
+            console.error(`❌ Failed to sync department ${dept}:`, error);
             results.push({
               department: dept,
               success: false,
@@ -82,6 +92,8 @@ export default async function handler(
             });
           }
         }
+
+        console.log('Auto-sync completed. Results:', results);
 
         return res.status(200).json({
           success: true,
