@@ -22,9 +22,9 @@
     "manage_service": "管理服務"
   },
   "wiki_batch_import": {
-    "title": "Wiki 批次匯入",
-    "description": "文檔批量處理服務",
-    "manage_import": "管理匯入"
+    "title": "Wiki-Dify Auto Sync",
+    "description": "文檔自動同步服務",
+    "manage_import": "管理同步"
   },
   "user_statistics": {
     "title": "用戶統計",

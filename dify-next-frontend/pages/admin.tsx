@@ -136,7 +136,7 @@ export default function Admin() {
                 </button>
               </div>
 
-              {/* Wiki batch import status */}
+              {/* Wiki-Dify Auto Sync status */}
               <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
                 <div className="flex items-center mb-3">
                   <span className="text-2xl mr-3">📚</span>

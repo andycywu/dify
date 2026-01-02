@@ -65,7 +65,7 @@ const Home: React.FC = () => {
                             <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-6 shadow-md hover:shadow-xl transition-all duration-300 border-2 border-amber-200 hover:border-amber-400 cursor-pointer">
                                 <div className="text-4xl mb-4">📚</div>
                                 <h2 className="text-xl font-bold mb-2 text-amber-900">知識庫管理</h2>
-                                <p className="text-gray-700">Wiki Batch Import 與知識庫同步</p>
+                                <p className="text-gray-700">Wiki-Dify Auto Sync 與知識庫同步</p>
                             </div>
                         </Link>
 
@@ -93,11 +93,11 @@ const Home: React.FC = () => {
                             </div>
                         </a>
 
-                        {/* Wiki Batch Importer */}
+                        {/* Wiki-Dify Auto Sync */}
                         <Link href="http://localhost:5050" className="block">
                             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 shadow-md hover:shadow-xl transition-all duration-300 border-2 border-green-200 hover:border-green-400 cursor-pointer">
                                 <div className="text-4xl mb-4">📂</div>
-                                <h2 className="text-xl font-bold mb-2 text-green-900">Wiki Batch Importer</h2>
+                                <h2 className="text-xl font-bold mb-2 text-green-900">Wiki-Dify Auto Sync</h2>
                                 <p className="text-sm text-gray-600">批量導入文檔到 Wiki.js</p>
                             </div>
                         </Link>
