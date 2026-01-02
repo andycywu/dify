@@ -16,33 +16,25 @@ export default async function handler(
   }
 
   try {
-    // 可能的日誌文件路徑
-    const possibleLogPaths = [
-      '/var/log/dify-wiki-sync/sync.log',
-      path.join(process.cwd(), 'logs', 'sync.log'),
-      path.join(process.cwd(), 'sync.log'),
-      path.join(process.cwd(), '..', 'logs', 'sync.log'), // 檢查父目錄
-    ];
+    // 使用應用目錄中的日誌文件
+    const logPath = path.join(process.cwd(), 'logs', 'sync.log');
 
     let logContent = '';
-    let foundPath = '';
 
-    for (const logPath of possibleLogPaths) {
-      try {
-        logContent = await fs.readFile(logPath, 'utf-8');
-        foundPath = logPath;
-        console.log(`Found log file at: ${logPath}`);
-        break;
-      } catch (error) {
-        // 繼續嘗試下一個路徑
-        console.log(`Log file not found at: ${logPath}`);
-        continue;
-      }
-    }
+    try {
+      // 確保日誌目錄存在
+      await fs.mkdir(path.dirname(logPath), { recursive: true });
 
-    if (!logContent) {
-      // 如果沒有找到日誌文件，創建一個示例日誌
+      // 嘗試讀取日誌文件
+      logContent = await fs.readFile(logPath, 'utf-8');
+      console.log(`Found log file at: ${logPath}`);
+    } catch (error) {
+      // 如果日誌文件不存在，創建一個示例日誌
       logContent = `[${new Date().toISOString()}] 系統日誌初始化\n[${new Date().toISOString()}] 尚未執行任何同步操作\n[${new Date().toISOString()}] 請先執行同步操作以生成日誌`;
+
+      // 寫入示例日誌
+      await fs.writeFile(logPath, logContent, 'utf-8');
+      console.log(`Created new log file at: ${logPath}`);
     }
 
     // 分割為行數組
