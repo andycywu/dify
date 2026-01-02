@@ -64,14 +64,17 @@ export default async function handler(
   }
 
   try {
-    const { message, group_id, conversation_id } = req.body;
+    const { message, group_id, conversation_id, dify_token } = req.body;
 
     if (!message || !group_id) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    // 從資料庫獲取對應的 API Key
-    const apiKey = await getDepartmentApiKey(group_id as string);
+    // 使用傳入的 dify_token，或從資料庫獲取對應的 API Key
+    let apiKey = dify_token;
+    if (!apiKey) {
+      apiKey = await getDepartmentApiKey(group_id as string);
+    }
 
     if (!apiKey) {
       return res.status(400).json({
@@ -153,7 +156,7 @@ export default async function handler(
         inputs: {},
         query: message,
         response_mode: 'blocking',
-        conversation_id: conversation_id || undefined,
+        conversation_id: typeof conversation_id === 'string' ? conversation_id : undefined,
         user: userId,
       }),
     });
