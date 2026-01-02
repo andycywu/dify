@@ -6,6 +6,8 @@
 import { prisma } from './prisma';
 import { DifyClient } from './dify-client';
 import { preprocessFile } from './preprocess';
+import * as fs from 'fs/promises';
+import * as pathModule from 'path';
 
 // ==================== 配置 ====================
 
@@ -39,8 +41,8 @@ console.log(`   🔧 Dify key head: ${DIFY_ADMIN_API_KEY?.slice(0, 10) || 'N/A'}
 // 日誌工具函數
 async function writeSyncLog(message: string) {
   try {
-    const logPath = path.join(process.cwd(), 'logs', 'sync.log');
-    await fs.mkdir(path.dirname(logPath), { recursive: true });
+    const logPath = pathModule.join(process.cwd(), 'logs', 'sync.log');
+    await fs.mkdir(pathModule.dirname(logPath), { recursive: true });
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}\n`;
     await fs.appendFile(logPath, logEntry, 'utf-8');
