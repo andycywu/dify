@@ -11,8 +11,8 @@ export class DifyClient {
   constructor(baseUrl: string, apiKey: string) {
     // Normalize base URL
     this.baseUrl = baseUrl.replace(/\/$/, '');
-    // Capture keys from env for flexible selection
-    this.adminKey = process.env.NEXT_PUBLIC_DIFY_API_KEY || process.env.DIFY_ADMIN_API_KEY || undefined;
+    // Use the provided apiKey as adminKey for wiki sync operations
+    this.adminKey = apiKey || process.env.DIFY_ADMIN_API_KEY || process.env.NEXT_PUBLIC_DIFY_API_KEY || undefined;
     this.datasetKey = process.env.NEXT_PUBLIC_DIFY_DATASET_KEY || process.env.DIFY_DATASET_API_KEY || undefined;
     // Backward-compatible default apiKey (will be overridden per request)
     this.apiKey = apiKey || this.datasetKey || this.adminKey || '';

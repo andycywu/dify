@@ -19,8 +19,7 @@ const DIFY_API_BASE_RAW = process.env.NEXT_PUBLIC_DIFY_API_BASE_URL
   || 'http://api:5001/v1';
 // 使用與代理相同的 /v1 端點
 const DIFY_API_URL = DIFY_API_BASE_RAW.replace(/\/?$/, ''); // 確保沒有尾隨斜槓
-const DIFY_ADMIN_API_KEY = process.env.NEXT_PUBLIC_DIFY_API_KEY
-  || process.env.DIFY_ADMIN_API_KEY;
+const DIFY_ADMIN_API_KEY = process.env.DIFY_ADMIN_API_KEY; // 使用與代理相同的 key
 
 if (!WIKI_API_KEY) {
   throw new Error('WIKI_API_KEY is required');
