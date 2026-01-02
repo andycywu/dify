@@ -37,6 +37,21 @@ const WikiImportManager: React.FC = () => {
     }
   }, []);
 
+  const handleManualSync = async (department: string) => {
+    try {
+      const response = await axios.post('/api/admin/sync-department', {
+        department,
+        action: 'sync'
+      });
+      alert(response.data.message);
+      fetchSyncStatus();
+    } catch (error) {
+      console.error(`Failed to sync department ${department}:`, error);
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      alert(`同步失敗: ${errorMessage}`);
+    }
+  };
+
   const handleForceSync = async (department: string) => {
     try {
       const response = await axios.post('/api/admin/sync-department', {
@@ -163,7 +178,7 @@ const WikiImportManager: React.FC = () => {
     }
   };
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       console.log('Fetching logs...');
       const response = await axios.get('/api/admin/sync-log');
@@ -175,7 +190,7 @@ const WikiImportManager: React.FC = () => {
       console.error('Error response:', error.response?.data);
       setLogs(['獲取日誌失敗: ' + (error.response?.data?.error || error.message)]);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSyncStatus();
@@ -187,7 +202,7 @@ const WikiImportManager: React.FC = () => {
       clearInterval(interval);
       clearInterval(logInterval);
     };
-  }, [fetchSyncStatus, fetchCronStatus]);
+  }, [fetchSyncStatus, fetchCronStatus, fetchLogs]);
 
   return (
     <div className="space-y-6">
