@@ -196,12 +196,7 @@ const WikiImportManager: React.FC = () => {
     fetchSyncStatus();
     fetchCronStatus();
     fetchLogs(); // 初始載入日誌
-    const interval = setInterval(fetchSyncStatus, 5000); // 每 5 秒更新一次同步狀態
-    const logInterval = setInterval(fetchLogs, 10000); // 每 10 秒更新一次日誌
-    return () => {
-      clearInterval(interval);
-      clearInterval(logInterval);
-    };
+    // 移除定時更新，只在頁面載入時更新一次
   }, [fetchSyncStatus, fetchCronStatus, fetchLogs]);
 
   return (

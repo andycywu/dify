@@ -594,7 +594,7 @@ export async function getDepartmentPageStats(department?: Department) {
         totalPages,
         syncedPages: syncStats.success,
         status,
-        lastSyncTime: syncStats.lastSyncAt ? new Date(syncStats.lastSyncAt).toISOString() : '',
+        lastSyncTime: syncStats.lastSyncAt ? new Date(syncStats.lastSyncAt).toLocaleString('zh-TW') : '',
       };
     } catch (error) {
       console.error(`Failed to get page stats for ${dept}:`, error);
