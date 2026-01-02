@@ -334,32 +334,5 @@ export class DifyClient {
     });
   }
 
-  async clearDataset(datasetId: string) {
-    try {
-      // First, get all documents in the dataset
-      const documents = await this.request(`/datasets/${datasetId}/documents?page=1&limit=1000`, {}, true);
-
-      if (!documents.data || documents.data.length === 0) {
-        console.log(`No documents found in dataset ${datasetId}`);
-        return;
-      }
-
-      // Delete each document
-      for (const doc of documents.data) {
-        try {
-          await this.request(`/datasets/${datasetId}/documents/${doc.id}`, {
-            method: 'DELETE',
-          }, true);
-          console.log(`Deleted document: ${doc.name}`);
-        } catch (error) {
-          console.error(`Failed to delete document ${doc.id}:`, error);
-        }
-      }
-
-      console.log(`Cleared ${documents.data.length} documents from dataset ${datasetId}`);
-    } catch (error) {
-      console.error(`Failed to clear dataset ${datasetId}:`, error);
-      throw error;
-    }
   }
 }
