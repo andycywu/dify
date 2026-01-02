@@ -720,7 +720,7 @@ services:
       - wiki-content:/wiki/data/content
       - ../wiki/config:/wiki/config
       - ../wiki/themes:/wiki/themes
-      - ../wiki/assets/js/chatbot-widget.js:/wiki/assets/js/chatbot-widget.js
+      - ../wiki/assets/js/chatbot-widget-v2.js:/wiki/assets/js/chatbot-widget-v2.js
 
     networks:
       - ssrf_proxy_network
