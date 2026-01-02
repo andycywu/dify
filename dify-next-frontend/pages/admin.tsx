@@ -71,7 +71,7 @@ export default function Admin() {
               }`}
               onClick={() => setActiveTab('chatbot-settings')}
             >
-              Wiki.js Chatbot Settings
+              {t('admin:chatbot_settings')}
             </button>
             <button
               className={`px-6 py-3 font-medium whitespace-nowrap ${

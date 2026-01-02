@@ -4,6 +4,7 @@
   "no_permission": "您沒有管理員權限瀏覽此頁面",
   "loading": "載入中...",
   "overview": "總覽",
+  "chatbot_settings": "Wiki.js 聊天機器人設定",
   "rest_to_soap_proxy": "REST-to-SOAP 代理",
   "wiki_import": "Wiki-Dify Auto Sync",
   "system_status": {
