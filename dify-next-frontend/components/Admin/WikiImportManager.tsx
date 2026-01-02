@@ -45,6 +45,7 @@ const WikiImportManager: React.FC = () => {
       });
       alert(response.data.message);
       fetchSyncStatus();
+      fetchLogs(); // 更新日誌
     } catch (error) {
       console.error(`Failed to sync department ${department}:`, error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
@@ -60,6 +61,7 @@ const WikiImportManager: React.FC = () => {
       });
       alert(response.data.message);
       fetchSyncStatus();
+      fetchLogs(); // 更新日誌
     } catch (error) {
       console.error(`Failed to force sync department ${department}:`, error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
@@ -77,6 +79,7 @@ const WikiImportManager: React.FC = () => {
       });
       alert(response.data.message);
       fetchSyncStatus();
+      fetchLogs(); // 更新日誌
     } catch (error) {
       console.error(`Failed to clear sync status for ${department}:`, error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
@@ -93,8 +96,7 @@ const WikiImportManager: React.FC = () => {
         action: 'clear-dataset'
       });
       alert(response.data.message);
-      fetchSyncStatus();
-    } catch (error) {
+      fetchSyncStatus();      fetchLogs(); // 更新日誌    } catch (error) {
       console.error(`Failed to clear dataset for ${department}:`, error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
       alert(`清除失敗: ${errorMessage}`);
@@ -109,6 +111,7 @@ const WikiImportManager: React.FC = () => {
       });
       alert(response.data.message);
       fetchSyncStatus();
+      fetchLogs(); // 更新日誌
     } catch (error) {
       console.error('Failed to sync all departments:', error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
@@ -139,6 +142,7 @@ const WikiImportManager: React.FC = () => {
       console.log('Setup response:', response.data);
       alert(response.data.message);
       fetchCronStatus();
+      fetchLogs(); // 更新日誌
     } catch (error: any) {
       console.error('Failed to setup auto sync:', error);
       console.error('Error response:', error.response?.data);
@@ -157,6 +161,7 @@ const WikiImportManager: React.FC = () => {
       });
       alert(response.data.message);
       fetchCronStatus();
+      fetchLogs(); // 更新日誌
     } catch (error) {
       console.error('Failed to remove cron job:', error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
@@ -171,6 +176,7 @@ const WikiImportManager: React.FC = () => {
       const response = await axios.post('/api/admin/auto-sync');
       alert(`自動同步測試完成: ${response.data.message}`);
       fetchSyncStatus();
+      fetchLogs(); // 更新日誌
     } catch (error) {
       console.error('Failed to test auto sync:', error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
@@ -202,7 +208,7 @@ const WikiImportManager: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Wiki 批次導入管理</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Wiki-Dify Auto Sync</h2>
       </div>
 
       {/* 全域操作 */}

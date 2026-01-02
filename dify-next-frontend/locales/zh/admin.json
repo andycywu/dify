@@ -5,7 +5,7 @@
   "loading": "載入中...",
   "overview": "總覽",
   "rest_to_soap_proxy": "REST-to-SOAP 代理",
-  "wiki_import": "Wiki 批次匯入",
+  "wiki_import": "Wiki-Dify Auto Sync",
   "system_status": {
     "title": "系統狀態",
     "description": "監控整體系統運行狀況",
