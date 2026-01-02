@@ -295,7 +295,7 @@ const WikiImportManager: React.FC = () => {
                 <tr>
                   <th className="text-left p-3">部門</th>
                   <th className="text-left p-3">總頁數</th>
-                  <th className="text-left p-3">已同步頁數</th>
+                  <th className="text-left p-3">已同步</th>
                   <th className="text-left p-3">狀態</th>
                   <th className="text-left p-3">最後同步時間</th>
                   <th className="text-left p-3">操作</th>

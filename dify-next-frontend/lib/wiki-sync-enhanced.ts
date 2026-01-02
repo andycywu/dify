@@ -587,17 +587,8 @@ export async function getDepartmentPageStats(department?: Department) {
       // 從數據庫獲取同步統計
       const syncStats = await getSyncStats(dept);
 
-      // 確定狀態
-      let status = '未開始';
-      if (syncStats.total > 0) {
-        if (syncStats.failed > 0) {
-          status = '部分失敗';
-        } else if (syncStats.pending > 0) {
-          status = '進行中';
-        } else if (syncStats.success > 0) {
-          status = '完成';
-        }
-      }
+      // 確定狀態 - 簡化為是否進行過同步
+      const status = syncStats.total > 0 ? '已同步' : '未同步';
 
       results[dept] = {
         totalPages,
@@ -672,6 +663,26 @@ export async function clearSyncStatus(department?: Department, clearDataset: boo
       } else {
         console.log(`⚠️  No dataset ID configured for department ${department}, skipping dataset clear`);
         await writeSyncLog(`部門 ${department} 未配置數據集 ID，跳過數據集清除`);
+      }
+    }
+
+    // 如果是清除所有部門且清除數據集，同時清除日誌和設定文件
+    if (!department && clearDataset) {
+      try {
+        // 清除日誌文件
+        const logPath = pathModule.join(process.cwd(), 'logs', 'sync.log');
+        await fs.unlink(logPath).catch(() => {}); // 忽略如果文件不存在的錯誤
+        console.log(`✅ Cleared sync log file`);
+        await writeSyncLog(`已清除同步日誌文件`);
+
+        // 清除設定文件
+        const configPath = pathModule.join(process.cwd(), '.wiki-sync-cron-config');
+        await fs.unlink(configPath).catch(() => {}); // 忽略如果文件不存在的錯誤
+        console.log(`✅ Cleared cron config file`);
+        await writeSyncLog(`已清除自動同步設定文件`);
+      } catch (error) {
+        console.error('Failed to clear log/config files:', error);
+        await writeSyncLog(`清除日誌/設定文件失敗: ${error}`);
       }
     }
 
