@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getSyncStats, type Department } from '../../../lib/wiki-sync-enhanced';
+import { getDepartmentPageStats, type Department } from '../../../lib/wiki-sync-enhanced';
 
 /**
  * API: 獲取同步狀態統計
@@ -18,35 +18,22 @@ export default async function handler(
     const { department } = req.query;
     const departmentStr = Array.isArray(department) ? department[0] : department;
 
-    const stats = await getSyncStats(departmentStr as Department | undefined);
+    const stats = await getDepartmentPageStats(departmentStr as Department | undefined);
 
-    // 轉換為前端期望的格式
-    const response: Record<string, any> = {};
-
+    // 如果指定了特定部門，返回該部門的統計
     if (departmentStr) {
-      // 單個部門
-      response[departmentStr] = {
-        totalPages: stats.total,
-        syncedPages: stats.success,
-        status: stats.failed > 0 ? '部分失敗' : stats.pending > 0 ? '進行中' : '完成',
-        lastSyncTime: new Date().toISOString(), // TODO: 從數據庫獲取實際時間
-      };
-    } else {
-      // 所有部門 - 需要為每個部門調用 getSyncStats
-      const departments: Department[] = ['COMMON', 'DQE', 'DQE_CERTI', 'HW', 'PWR', 'ME_LCM', 'SW', 'PJM', 'ARCH', 'TM'];
-
-      for (const dept of departments) {
-        const deptStats = await getSyncStats(dept);
-        response[dept] = {
-          totalPages: deptStats.total,
-          syncedPages: deptStats.success,
-          status: deptStats.failed > 0 ? '部分失敗' : deptStats.pending > 0 ? '進行中' : '完成',
-          lastSyncTime: new Date().toISOString(),
-        };
+      const deptStats = stats[departmentStr];
+      if (deptStats) {
+        return res.status(200).json({
+          [departmentStr]: deptStats
+        });
+      } else {
+        return res.status(404).json({ error: `Department ${departmentStr} not found` });
       }
     }
 
-    return res.status(200).json(response);
+    // 返回所有部門的統計
+    return res.status(200).json(stats);
   } catch (error) {
     console.error('Sync status API error:', error);
     return res.status(500).json({

@@ -38,6 +38,15 @@ export default async function handler(
         message = `成功同步部門 ${department}`;
         break;
 
+      case 'force-sync':
+        result = await syncWikiToDifyEnhanced({
+          department: department as Department,
+          forceFullSync: true,
+          dryRun: false,
+        });
+        message = `成功強制同步部門 ${department}`;
+        break;
+
       case 'clear-sync':
         if (department === 'all') {
           result = await clearSyncStatus(undefined, false);
@@ -93,19 +102,19 @@ export default async function handler(
           for (const dept of departments) {
             const deptResult = await syncWikiToDifyEnhanced({
               department: dept,
-              forceFullSync: false,
+              forceFullSync: true,
               dryRun: false,
             });
             result.push(deptResult);
           }
-          message = `成功同步所有部門`;
+          message = `成功強制同步所有部門`;
         } else {
           result = await syncWikiToDifyEnhanced({
             department: department as Department,
-            forceFullSync: false,
+            forceFullSync: true,
             dryRun: false,
           });
-          message = `成功同步部門 ${department}`;
+          message = `成功強制同步部門 ${department}`;
         }
         break;
 

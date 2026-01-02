@@ -37,18 +37,18 @@ const WikiImportManager: React.FC = () => {
     }
   }, []);
 
-  const handleManualSync = async (department: string) => {
+  const handleForceSync = async (department: string) => {
     try {
       const response = await axios.post('/api/admin/sync-department', {
         department,
-        action: 'sync'
+        action: 'force-sync'
       });
       alert(response.data.message);
       fetchSyncStatus();
     } catch (error) {
-      console.error(`Failed to sync department ${department}:`, error);
+      console.error(`Failed to force sync department ${department}:`, error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
-      alert(`同步失敗: ${errorMessage}`);
+      alert(`強制同步失敗: ${errorMessage}`);
     }
   };
 
@@ -180,8 +180,13 @@ const WikiImportManager: React.FC = () => {
   useEffect(() => {
     fetchSyncStatus();
     fetchCronStatus();
+    fetchLogs(); // 初始載入日誌
     const interval = setInterval(fetchSyncStatus, 5000); // 每 5 秒更新一次同步狀態
-    return () => clearInterval(interval);
+    const logInterval = setInterval(fetchLogs, 10000); // 每 10 秒更新一次日誌
+    return () => {
+      clearInterval(interval);
+      clearInterval(logInterval);
+    };
   }, [fetchSyncStatus, fetchCronStatus]);
 
   return (
@@ -198,7 +203,7 @@ const WikiImportManager: React.FC = () => {
             onClick={handleSyncAll}
             className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
           >
-            同步所有部門
+            強制同步所有部門
           </button>
           <button
             onClick={() => handleClearSync('all')}
@@ -247,21 +252,19 @@ const WikiImportManager: React.FC = () => {
             測試自動同步
           </button>
         </div>
-        {cronStatus && (
-          <div className="text-sm text-gray-600">
-            <p>當前狀態: {cronStatus.hasWikiSyncCron ? '已設置自動同步' : '未設置自動同步'}</p>
-            {cronStatus.cronJobs.length > 0 && (
-              <div className="mt-2">
-                <p>現有 Cron Jobs:</p>
-                <ul className="list-disc list-inside">
-                  {cronStatus.cronJobs.map((job, index) => (
-                    <li key={index} className="font-mono text-xs">{job}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <span className={`inline-block w-3 h-3 rounded-full ${cronStatus?.hasWikiSyncCron ? 'bg-green-500' : 'bg-red-500'}`}></span>
+            <span className="font-medium">
+              自動同步狀態: {cronStatus?.hasWikiSyncCron ? '已啟用' : '未啟用'}
+            </span>
           </div>
-        )}
+          {cronStatus?.cronJobs && cronStatus.cronJobs.length > 0 && (
+            <div className="mt-2 text-sm text-gray-600">
+              <p>同步時間: {cronStatus.cronJobs[0]}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 部門同步管理 */}
@@ -300,6 +303,12 @@ const WikiImportManager: React.FC = () => {
                           同步
                         </button>
                         <button
+                          onClick={() => handleForceSync(department)}
+                          className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+                        >
+                          強制同步
+                        </button>
+                        <button
                           onClick={() => handleClearSync(department)}
                           className="bg-yellow-600 text-white px-3 py-1 rounded text-xs hover:bg-yellow-700"
                         >
@@ -323,15 +332,9 @@ const WikiImportManager: React.FC = () => {
 
       {/* 同步日誌 */}
       <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 text-gray-700">同步日誌</h3>
-        <button
-          onClick={fetchLogs}
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 mb-4"
-        >
-          取得日誌
-        </button>
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">同步日誌 (自動刷新)</h3>
         <pre className="whitespace-pre-wrap break-words max-h-96 overflow-y-auto bg-gray-50 p-4 rounded text-sm">
-          {logs.length > 0 ? logs.join('\n') : '尚未載入日誌'}
+          {logs.length > 0 ? logs.reverse().join('\n') : '載入日誌中...'}
         </pre>
       </div>
     </div>

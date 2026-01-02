@@ -557,6 +557,68 @@ export async function getSyncStats(department?: Department) {
   };
 }
 
+/**
+ * 獲取部門的實際頁面統計（從 Wiki.js 獲取）
+ */
+export async function getDepartmentPageStats(department?: Department) {
+  const departments = department
+    ? [department]
+    : (Object.keys(DEPARTMENT_CONFIG) as Department[]);
+
+  const results: Record<string, { totalPages: number; syncedPages: number; status: string; lastSyncTime: string }> = {};
+
+  for (const dept of departments) {
+    try {
+      const config = DEPARTMENT_CONFIG[dept];
+      if (!config) continue;
+
+      // 從 Wiki.js 獲取實際頁面總數
+      const allPages = await fetchWikiPages(config.path);
+      const normalize = (s: string) => (s.startsWith('/') ? s.slice(1) : s);
+      const normalizeLower = (s: string) => normalize(s).toLowerCase();
+      const wikiPathLower = normalizeLower(config.path);
+      const deptPages = allPages.filter((p: any) => {
+        const ppLower = normalizeLower(p.path);
+        return ppLower === wikiPathLower || ppLower.startsWith(`${wikiPathLower}/`);
+      });
+
+      const totalPages = deptPages?.length || 0;
+
+      // 從數據庫獲取同步統計
+      const syncStats = await getSyncStats(dept);
+
+      // 確定狀態
+      let status = '未開始';
+      if (syncStats.total > 0) {
+        if (syncStats.failed > 0) {
+          status = '部分失敗';
+        } else if (syncStats.pending > 0) {
+          status = '進行中';
+        } else if (syncStats.success > 0) {
+          status = '完成';
+        }
+      }
+
+      results[dept] = {
+        totalPages,
+        syncedPages: syncStats.success,
+        status,
+        lastSyncTime: syncStats.lastSyncAt ? new Date(syncStats.lastSyncAt).toISOString() : '',
+      };
+    } catch (error) {
+      console.error(`Failed to get page stats for ${dept}:`, error);
+      results[dept] = {
+        totalPages: 0,
+        syncedPages: 0,
+        status: '錯誤',
+        lastSyncTime: '',
+      };
+    }
+  }
+
+  return results;
+}
+
 // 新增同步邏輯的主函數
 export async function syncWikiToDify(department: Department) {
   console.log(`Starting sync for department: ${department}`);
