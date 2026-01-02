@@ -137,7 +137,7 @@ export default async function handler(
 ) {
   // CORS headers for Wiki.js integration
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3002');
+  res.setHeader('Access-Control-Allow-Origin', 'http://172.27.197.100:3002');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Wiki-Session');
 
