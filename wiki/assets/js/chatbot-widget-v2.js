@@ -43,7 +43,7 @@
             console.log('🍪 所有 Cookies:', document.cookie);
 
             // 使用 dify-next-frontend 的代理 API
-            const apiUrl = 'http://localhost:3001/api/wiki-proxy/datasets';
+            const apiUrl = 'http://172.27.197.100:3001/api/wiki-proxy/datasets';
             console.log('📡 API 端點:', apiUrl);
 
             const headers = {
