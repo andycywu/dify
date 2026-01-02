@@ -4,8 +4,9 @@
   "no_permission": "You don't have admin permission to view this page",
   "loading": "Loading...",
   "overview": "Overview",
+  "chatbot_settings": "Wiki.js Chatbot Settings",
   "rest_to_soap_proxy": "REST-to-SOAP Proxy",
-  "wiki_import": "Wiki Batch Import",
+  "wiki_import": "Wiki-Dify Auto Sync",
   "system_status": {
     "title": "System Status",
     "description": "Monitor overall system operation",
@@ -22,9 +23,9 @@
     "manage_service": "Manage Service"
   },
   "wiki_batch_import": {
-    "title": "Wiki Batch Import",
-    "description": "Document batch processing service",
-    "manage_import": "Manage Import"
+    "title": "Wiki-Dify Auto Sync",
+    "description": "Document auto synchronization service",
+    "manage_import": "Manage Sync"
   },
   "user_statistics": {
     "title": "User Statistics",
