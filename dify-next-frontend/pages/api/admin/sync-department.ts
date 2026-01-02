@@ -59,15 +59,24 @@ export default async function handler(
 
       case 'clear-dataset':
         if (department === 'all') {
-          // 清除所有部門的 dataset
+          // 清除所有部門的 dataset 和同步記錄
           const departments: Department[] = ['COMMON', 'DQE', 'DQE_CERTI', 'HW', 'PWR', 'ME_LCM', 'SW', 'PJM', 'ARCH', 'TM'];
           let totalCleared = 0;
           let successCount = 0;
           let errors: string[] = [];
+
+          // 先清除所有數據庫記錄
+          try {
+            const dbResult = await clearSyncStatus(undefined, false);
+            totalCleared += dbResult;
+          } catch (error) {
+            console.error('Failed to clear database records:', error);
+          }
+
+          // 然後清除每個部門的 Dify dataset
           for (const dept of departments) {
             try {
-              const cleared = await clearSyncStatus(dept, true);
-              totalCleared += cleared;
+              await clearSyncStatus(dept, true);
               successCount++;
             } catch (error) {
               // clearSyncStatus 現在不會因為 dataset 清除失敗而拋出錯誤
@@ -77,8 +86,16 @@ export default async function handler(
               errors.push(errorMsg);
             }
           }
+
+          // 最後清除日誌和設定文件
+          try {
+            await clearSyncStatus(undefined, true);
+          } catch (error) {
+            console.error('Failed to clear global files:', error);
+          }
+
           result = { totalCleared, successCount, errors };
-          message = `清除完成：成功處理 ${successCount} 個部門，清除 ${totalCleared} 條記錄${errors.length > 0 ? `，${errors.length} 個部門有錯誤` : ''}`;
+          message = `清除完成：清除 ${totalCleared} 條記錄，成功處理 ${successCount} 個部門的 Dataset${errors.length > 0 ? `，${errors.length} 個部門有錯誤` : ''}`;
           if (errors.length > 0) {
             message += `。注意：數據集文檔可能需要手動刪除。`;
           }

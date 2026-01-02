@@ -686,11 +686,26 @@ export async function clearSyncStatus(department?: Department, clearDataset: boo
       }
     }
 
-    // Clear sync status records from database
-    // Note: This would require database access, for now just return a mock count
-    const clearedCount = department ? 5 : 25; // Mock data
-    console.log(`✅ Cleared ${clearedCount} sync status records`);
-    await writeSyncLog(`已清除 ${clearedCount} 條同步狀態記錄`);
+    // Clear sync status records from database (只在非全局清除時執行)
+    let clearedCount = 0;
+    if (department) {
+      // 刪除特定部門的所有同步記錄
+      const result = await prisma.wikiSyncStatus.deleteMany({
+        where: { department }
+      });
+      clearedCount = result.count;
+    } else if (!clearDataset) {
+      // 刪除所有部門的同步記錄（只在單獨清除同步狀態時）
+      const result = await prisma.wikiSyncStatus.deleteMany();
+      clearedCount = result.count;
+    }
+    // 如果clearDataset為true，說明這是dataset清除的一部分，
+    // 數據庫記錄應該已經被批量刪除了
+
+    if (clearedCount > 0) {
+      console.log(`✅ Cleared ${clearedCount} sync status records from database`);
+      await writeSyncLog(`已從數據庫清除 ${clearedCount} 條同步狀態記錄`);
+    }
     return clearedCount;
   } catch (error) {
     console.error('Failed to clear sync status:', error);
