@@ -771,22 +771,35 @@
 
     // 初始化 TPV 管理中心按鈕（僅管理員可見）
     function initAdminButton() {
+        console.log('🔧 開始初始化 TPV 管理中心按鈕...');
+        console.log('👥 當前用戶群組:', userGroups);
+        
         let retryCount = 0;
         const MAX_RETRIES = 10;
 
         function tryAddButton() {
+            console.log('🔄 嘗試添加管理按鈕 (第', retryCount + 1, '次)');
+            
             // 檢查是否為管理員
             if (!userGroups.includes('administrators')) {
                 console.log('👤 非管理員用戶，跳過管理中心按鈕');
                 return;
             }
+            
+            console.log('✅ 確認為管理員，繼續添加按鈕');
+            
+            console.log('✅ 確認為管理員，繼續添加按鈕');
 
             // 動態獲取當前主機名
             const currentHost = window.location.hostname;
             const adminPanelUrl = `http://${currentHost}:3001`;
+            
+            console.log('🔗 管理中心 URL:', adminPanelUrl);
 
             // 查找導航欄
+            console.log('🔍 尋找導航欄元素: .v-toolbar__items');
             const nav = document.querySelector('.v-toolbar__items');
+            console.log('📍 導航欄元素:', nav);
 
             if (!nav) {
                 retryCount++;
