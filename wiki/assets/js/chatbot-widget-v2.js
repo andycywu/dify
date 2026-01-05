@@ -425,12 +425,27 @@
             selectedGroup = e.target.value;
             console.log('切換到知識庫:', selectedGroup);
 
+            // 更新選定的 Dify token
+            selectedToken = GROUP_TOKEN_MAP[selectedGroup] || GROUP_TOKEN_MAP['Guests'];
+            console.log('🔑 更新 Dify Token:', selectedToken);
+
+            // 更新聊天標題
+            CONFIG.CHAT_TITLE = GROUP_NAME_MAP[selectedGroup] || 'AI 助手';
+            console.log('🤖 更新機器人名稱:', CONFIG.CHAT_TITLE);
+
+            // 動態更新聊天窗口標題顯示
+            const titleElement = document.querySelector('#chatbot-window > div:first-child span:first-child');
+            if (titleElement) {
+                titleElement.textContent = CONFIG.CHAT_TITLE;
+                console.log('✅ 已更新聊天窗口標題顯示');
+            }
+
             // Clear conversation history when switching groups
             conversationHistory[selectedGroup] = conversationHistory[selectedGroup] || [];
 
             // Add system message about group change
             const groupName = availableDatasets[selectedGroup]?.name || '未知知識庫';
-            addMessage(`已切換到 ${groupName}`, 'bot');
+            addMessage(`已切換到 ${groupName}（${CONFIG.CHAT_TITLE}）`, 'bot');
         });
 
         function updateGroupSelector() {
