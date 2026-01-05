@@ -27,17 +27,17 @@
         'DQE': {
             token: 'app-9VgBzkiVSPQzpewclO0VmokX',
             name: 'DQE智能助理',
-            description: '設計品質工程'
+            description: '設計品質工程部門'
         },
         'DQE-Certi': {
             token: 'app-GUXfMHGxh3LCwiXTTO64DO7Z',
             name: 'DQE認證智能助理',
-            description: 'DQE 認證'
+            description: 'DQE認證部門'
         },
         'EE': {
-            token: 'app-9VgBzkiVSPQzpewclO0VmokX',
-            name: '電機工程智能助理',
-            description: '電機工程部門'
+            token: 'app-l5htgvwBGi5WWDLus9alXaCj',
+            name: '硬體工程智能助理',
+            description: '硬體部門'
         },
         'PWR': {
             token: 'app-w3wWfpE590ZTPILJugK0hWKB',
@@ -50,19 +50,19 @@
             description: '軟體部門'
         },
         'ME-LCM': {
-            token: 'app-l5htgvwBGi5WWDLus9alXaCj',
+            token: 'app-whNRjuZJ4H0TltKLVk5W2jZH',
             name: 'ME/LCM智能助理',
-            description: '機械生命週期管理'
+            description: 'ME/LCM部門'
         },
         'PM': {
             token: 'app-HS8g5SVRvGAGOJcOjdfF7EGv',
             name: '專案管理智能助理',
-            description: '專案管理'
+            description: '專案管理部門'
         },
         'TM': {
             token: 'app-TpAELcdUix0YrWTtdOe05a7A',
-            name: '測試管理智能助理',
-            description: '測試管理'
+            name: '技術管理智能助理',
+            description: '技術管理部門'
         },
         'Arch': {
             token: 'app-7vtzhicvHgoX6FmBrtItqnjH',
