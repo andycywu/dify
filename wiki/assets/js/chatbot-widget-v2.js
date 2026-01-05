@@ -1,8 +1,8 @@
-(function() { window.CHATBOT_VERSION = "2.0.3"; })();
+(function() { window.CHATBOT_VERSION = "2.0.4"; })();
 (function() {
     'use strict';
 
-    console.log('🚀 Chatbot Widget v2.0.3 - 載入中...');
+    console.log('🚀 Chatbot Widget v2.0.4 - 載入中...');
 
     // 檢查是否已經加載了聊天機器人
     if (document.getElementById('dify-chatbot-widget')) {
