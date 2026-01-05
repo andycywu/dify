@@ -171,9 +171,33 @@ export default async function handler(
 
     const data = await response.json() as DifyChatResponse;
 
+    // 過濾掉 thinking 過程，只返回最終答案
+    let finalAnswer = data.answer;
+    
+    // 如果 answer 是陣列（某些 Agent 模式會返回陣列）
+    if (Array.isArray(data.answer)) {
+      finalAnswer = data.answer
+        .filter((item: any) => item.type !== 'agent_thought' && item.type !== 'thought')
+        .map((item: any) => item.content || item.text || item)
+        .join('\n\n');
+    }
+
+    // 如果 answer 包含 markdown thinking blocks，移除它們
+    if (typeof finalAnswer === 'string') {
+      // 移除 thinking 標記
+      finalAnswer = finalAnswer
+        .replace(/```thinking[\s\S]*?```/g, '')
+        .replace(/\*\*Thinking:\*\*[\s\S]*?(?=\n\n|\n\*\*|$)/g, '')
+        .replace(/【思考過程】[\s\S]*?(?=\n\n|$)/g, '')
+        .trim();
+    }
+
+    console.log('[chat] Original answer length:', data.answer?.length || 0);
+    console.log('[chat] Filtered answer length:', finalAnswer?.length || 0);
+
     res.status(200).json({
       success: true,
-      answer: data.answer,
+      answer: finalAnswer,
       conversation_id: data.conversation_id,
       message_id: data.message_id,
       metadata: data.metadata || {},

@@ -531,7 +531,23 @@
                     conversationHistory[selectedChatbot.key] = result.conversation_id;
                     console.log('💾 已保存對話 ID:', result.conversation_id);
                 }
-                addMessage(result.answer, 'bot');
+                
+                // 過濾掉 thinking 過程
+                let finalAnswer = result.answer || '';
+                
+                // 移除可能的 thinking 標記
+                finalAnswer = finalAnswer
+                    .replace(/```thinking[\s\S]*?```/g, '')
+                    .replace(/\*\*Thinking:\*\*[\s\S]*?(?=\n\n|\n\*\*|$)/g, '')
+                    .replace(/【思考過程】[\s\S]*?(?=\n\n|$)/g, '')
+                    .replace(/^thinking:[\s\S]*?(?=\n\n|$)/gim, '')
+                    .trim();
+                
+                if (finalAnswer) {
+                    addMessage(finalAnswer, 'bot');
+                } else {
+                    addMessage('⚠️ 未收到有效回應', 'bot');
+                }
             } else {
                 addMessage(`❌ 抱歉，${result.error || '服務暫時不可用'}`, 'bot');
             }
