@@ -248,7 +248,22 @@
                     justify-content: space-between;
                     align-items: center;
                 ">
-                    <span id="chat-title">${CONFIG.CHAT_TITLE}</span>
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                        <span id="chat-title">${CONFIG.CHAT_TITLE}</span>
+                        <a id="admin-panel-link" href="" target="_blank" rel="noopener noreferrer" style="
+                            display: none;
+                            color: #ffd700;
+                            text-decoration: none;
+                            font-size: 12px;
+                            padding: 4px 10px;
+                            background: rgba(255, 215, 0, 0.15);
+                            border-radius: 12px;
+                            transition: all 0.2s ease;
+                            white-space: nowrap;
+                        " title="開啟 TPV 管理中心">
+                            ⚙️ 管理中心
+                        </a>
+                    </div>
                     <span id="close-chat" style="cursor: pointer; font-size: 18px;">✕</span>
                 </div>
 
@@ -361,7 +376,7 @@
         fetchUserData().then(() => {
             updateChatbotSelector();
             setupEventListeners();
-            initAdminButton(); // 在用戶數據載入後初始化管理按鈕
+            setupAdminPanel(); // 設置管理中心按鈕
         });
 
         console.log('✅ Dify AI 聊天機器人已成功加載！');
@@ -769,92 +784,38 @@
         });
     }
 
-    // 初始化 TPV 管理中心按鈕（僅管理員可見）
-    function initAdminButton() {
-        console.log('🔧 開始初始化 TPV 管理中心按鈕...');
-        console.log('👥 當前用戶群組:', userGroups);
+    // 設置管理中心按鈕（僅管理員可見）
+    function setupAdminPanel() {
+        const adminLink = document.getElementById('admin-panel-link');
         
-        let retryCount = 0;
-        const MAX_RETRIES = 10;
+        if (!adminLink) {
+            console.warn('⚠️ 找不到管理中心按鈕元素');
+            return;
+        }
 
-        function tryAddButton() {
-            console.log('🔄 嘗試添加管理按鈕 (第', retryCount + 1, '次)');
-            
-            // 檢查是否為管理員
-            if (!userGroups.includes('administrators')) {
-                console.log('👤 非管理員用戶，跳過管理中心按鈕');
-                return;
-            }
-            
-            console.log('✅ 確認為管理員，繼續添加按鈕');
-            
-            console.log('✅ 確認為管理員，繼續添加按鈕');
-
-            // 動態獲取當前主機名
+        // 檢查是否為管理員
+        if (userGroups.includes('administrators')) {
             const currentHost = window.location.hostname;
             const adminPanelUrl = `http://${currentHost}:3001`;
             
-            console.log('🔗 管理中心 URL:', adminPanelUrl);
-
-            // 查找導航欄
-            console.log('🔍 尋找導航欄元素: .v-toolbar__items');
-            const nav = document.querySelector('.v-toolbar__items');
-            console.log('📍 導航欄元素:', nav);
-
-            if (!nav) {
-                retryCount++;
-                if (retryCount <= MAX_RETRIES) {
-                    console.warn(`⚠️ 找不到導航欄，延遲 500ms 重試 (${retryCount}/${MAX_RETRIES})`);
-                    setTimeout(tryAddButton, 500);
-                } else {
-                    console.error('❌ 已達最大重試次數，無法找到導航欄。請檢查頁面選擇器：.v-toolbar__items');
-                }
-                return;
-            }
-
-            // 檢查按鈕是否已存在
-            if (document.getElementById('tpv-admin-panel-btn')) {
-                console.log('✅ TPV 管理中心按鈕已存在');
-                return;
-            }
-
-            // 創建管理中心按鈕
-            const adminPanelBtn = document.createElement('a');
-            adminPanelBtn.id = 'tpv-admin-panel-btn';
-            adminPanelBtn.href = adminPanelUrl;
-            adminPanelBtn.target = '_blank';
-            adminPanelBtn.rel = 'noopener noreferrer';
-            adminPanelBtn.className = 'v-btn v-btn--flat theme--dark';
-            adminPanelBtn.innerHTML = `
-                <div class="v-btn__content">
-                    <i class="v-icon mdi mdi-cog-outline mr-2"></i>
-                    TPV 管理中心
-                </div>
-            `;
-            adminPanelBtn.style.cssText = `
-                color: #ffd700 !important;
-                margin-left: 8px;
-                transition: all 0.3s ease;
-            `;
-
+            adminLink.href = adminPanelUrl;
+            adminLink.style.display = 'block';
+            
             // 添加 hover 效果
-            adminPanelBtn.addEventListener('mouseenter', function() {
-                this.style.background = 'rgba(255, 215, 0, 0.1)';
+            adminLink.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(255, 215, 0, 0.3)';
                 this.style.transform = 'scale(1.05)';
             });
-            adminPanelBtn.addEventListener('mouseleave', function() {
-                this.style.background = '';
-                this.style.transform = '';
+            adminLink.addEventListener('mouseleave', function() {
+                this.style.background = 'rgba(255, 215, 0, 0.15)';
+                this.style.transform = 'scale(1)';
             });
-
-            // 插入到導航欄
-            nav.appendChild(adminPanelBtn);
-
-            console.log('✅ TPV 管理中心按鈕已添加');
+            
+            console.log('✅ TPV 管理中心按鈕已啟用');
             console.log('🔗 管理中心 URL:', adminPanelUrl);
+        } else {
+            console.log('👤 非管理員用戶，隱藏管理中心按鈕');
         }
-
-        tryAddButton();
     }
 
     // Start initialization
