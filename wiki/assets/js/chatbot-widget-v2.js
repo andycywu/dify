@@ -39,6 +39,22 @@
         'TM': 'app-TpAELcdUix0YrWTtdOe05a7A'
     };
 
+    // 群組到智能助理名稱的映射
+    const GROUP_NAME_MAP = {
+        'administrators': '管理員智能助理',
+        'Guests': '訪客智能助理',
+        'EE': '電機工程智能助理',
+        'ME_LCM': 'ME/LCM智能助理',
+        'PWR': '電源智能助理',
+        'SW': '軟體智能助理',
+        'PJM': '專案管理智能助理',
+        'DQE': 'DQE智能助理',
+        'Certi': '認證智能助理',
+        'HW': 'HW智能助理',
+        'ARCH': 'ARCH智能助理',
+        'TM': 'TM智能助理'
+    };
+
     // Fetch user info and available datasets
     async function fetchUserData() {
         try {
@@ -125,6 +141,10 @@
                     // 根據選擇的群組設定 Dify token
                     selectedToken = GROUP_TOKEN_MAP[selectedGroup] || GROUP_TOKEN_MAP['Guests'];
                     console.log('🔑 選定的 Dify Token:', selectedToken);
+
+                    // 動態更新聊天標題
+                    CONFIG.CHAT_TITLE = GROUP_NAME_MAP[selectedGroup] || 'AI 助手';
+                    console.log('🤖 聊天機器人名稱:', CONFIG.CHAT_TITLE);
                 } else {
                     console.warn('⚠️ 未獲取到用戶組別信息');
                     currentUser = { groups: ['Guests'] };
@@ -154,6 +174,8 @@
         currentUser = { groups: ['Guests'] };
         selectedGroup = 'Guests';
         selectedToken = GROUP_TOKEN_MAP['Guests'];
+        CONFIG.CHAT_TITLE = GROUP_NAME_MAP['Guests'] || 'AI 助手';
+        console.log('🤖 訪客模式 - 聊天機器人名稱:', CONFIG.CHAT_TITLE);
         return false;
     }
 
@@ -471,6 +493,8 @@
 
             console.log('📤 發送訊息:', message);
             console.log('📚 當前選擇的知識庫:', selectedGroup);
+            console.log('🤖 使用的機器人:', CONFIG.CHAT_TITLE);
+            console.log('🔑 使用的 Dify Token:', selectedToken);
             console.log('👤 用戶組別:', currentUser?.groups);
 
             // Add user message to chat
