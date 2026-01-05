@@ -562,6 +562,57 @@
     }
 
     // Helper functions
+    function parseMarkdown(text) {
+        // 簡易 Markdown 解析器
+        let html = text;
+        
+        // 代碼塊 (```...```)
+        html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, lang, code) {
+            return `<pre style="background:#f5f5f5;padding:12px;border-radius:6px;overflow-x:auto;margin:8px 0;"><code>${escapeHtml(code.trim())}</code></pre>`;
+        });
+        
+        // 行內代碼 (`...`)
+        html = html.replace(/`([^`]+)`/g, '<code style="background:#f0f0f0;padding:2px 6px;border-radius:3px;font-family:monospace;font-size:0.9em;">$1</code>');
+        
+        // 標題 (# ## ### 等)
+        html = html.replace(/^### (.*$)/gim, '<h3 style="font-size:16px;font-weight:600;margin:12px 0 6px 0;color:#333;">$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2 style="font-size:18px;font-weight:600;margin:14px 0 8px 0;color:#333;">$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1 style="font-size:20px;font-weight:700;margin:16px 0 10px 0;color:#333;">$1</h1>');
+        
+        // 粗體 (**text** 或 __text__)
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+        
+        // 斜體 (*text* 或 _text_)
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+        
+        // 連結 [text](url)
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:#0066cc;text-decoration:underline;">$1</a>');
+        
+        // 列表項 (* item 或 - item)
+        html = html.replace(/^\* (.+)$/gim, '<li style="margin-left:20px;">$1</li>');
+        html = html.replace(/^- (.+)$/gim, '<li style="margin-left:20px;">$1</li>');
+        
+        // 包裹連續的 <li> 為 <ul>
+        html = html.replace(/(<li.*<\/li>\n?)+/g, function(match) {
+            return '<ul style="margin:8px 0;padding-left:0;list-style-position:inside;">' + match + '</ul>';
+        });
+        
+        // 換行 (兩個空格 + \n 或 \n\n)
+        html = html.replace(/\n\n/g, '<br><br>');
+        html = html.replace(/  \n/g, '<br>');
+        html = html.replace(/\n/g, '<br>');
+        
+        return html;
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
     function addMessage(text, type) {
         const container = document.getElementById('chat-messages');
         const isBot = type === 'bot';
@@ -572,13 +623,17 @@
             padding: 10px 12px;
             border-radius: 12px;
             font-size: 14px;
-            line-height: 1.4;
+            line-height: 1.6;
             max-width: 85%;
             word-break: break-word;
             ${isBot ? 'background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-right: auto;' :
                      `background: ${CONFIG.PRIMARY_COLOR}; color: white; margin-left: auto;`}
         `;
-        div.innerHTML = isBot ? `🤖 ${text}` : text;
+        
+        // 機器人訊息解析 Markdown，使用者訊息保持原樣
+        const content = isBot ? parseMarkdown(text) : escapeHtml(text);
+        div.innerHTML = isBot ? `🤖 ${content}` : content;
+        
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     }
