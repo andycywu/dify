@@ -211,6 +211,28 @@ export default async function handler(
               console.log('[datasets] Wiki JWT detected, user ID:', wikiJwtUserId);
             }
           }
+          
+          // 從 JWT 中提取群組 ID 並映射到群組名稱
+          const jwtGroupIds = payload?.groups;
+          if (Array.isArray(jwtGroupIds) && jwtGroupIds.length > 0) {
+            console.log('[datasets] JWT contains group IDs:', jwtGroupIds);
+            
+            // 從資料庫查詢群組名稱
+            try {
+              const groupNamesQuery = `
+                SELECT id, name FROM groups WHERE id = ANY($1)
+              `;
+              const groupNamesResult = await wikiPool.query(groupNamesQuery, [jwtGroupIds]);
+              const jwtGroupNames = groupNamesResult.rows.map(row => row.name);
+              
+              if (jwtGroupNames.length > 0) {
+                tokenGroups = jwtGroupNames;
+                console.log('[datasets] Mapped JWT group IDs to names:', tokenGroups);
+              }
+            } catch (groupQueryError) {
+              console.error('[datasets] Failed to query group names from JWT IDs:', groupQueryError);
+            }
+          }
         }
       } catch (jwtError) {
         console.warn('[datasets] Failed to decode Wiki JWT:', jwtError);
@@ -220,7 +242,7 @@ export default async function handler(
     if (wikiJwtUserId !== null) {
       tokenUserId = wikiJwtUserId;
       authSource = 'wiki-jwt';
-      tokenGroups = undefined; // Wiki 使用者仍以資料庫為準，不沿用 NextAuth 群組
+      // 保留從 JWT 查詢的群組名稱
     } else if (nextAuthUserId !== null) {
       tokenUserId = nextAuthUserId;
       tokenGroups = nextAuthGroups;

@@ -124,7 +124,29 @@
             };
 
             const sessionToken = getCookie('wiki.sid');
+            const jwtToken = getCookie('jwt');
             console.log('🔑 Session Token:', sessionToken ? '已找到' : '未找到');
+            console.log('🔑 JWT Token:', jwtToken ? '已找到' : '未找到');
+            console.log('🍪 所有 Cookies:', document.cookie);
+
+            // 嘗試從 JWT 解析用戶群組
+            let userGroupsFromJWT = null;
+            if (jwtToken) {
+                try {
+                    const parts = jwtToken.split('.');
+                    if (parts.length === 3) {
+                        const payload = JSON.parse(atob(parts[1]));
+                        console.log('🔓 JWT Payload:', payload);
+                        
+                        if (payload.groups && Array.isArray(payload.groups)) {
+                            userGroupsFromJWT = payload.groups;
+                            console.log('✅ 從 JWT 獲取群組 ID:', userGroupsFromJWT);
+                        }
+                    }
+                } catch (jwtError) {
+                    console.warn('⚠️ JWT 解析失敗:', jwtError);
+                }
+            }
 
             const currentHost = window.location.hostname;
             const apiUrl = `http://${currentHost}:3001/api/wiki-proxy/datasets`;
@@ -138,6 +160,10 @@
                 headers['X-Wiki-Session'] = sessionToken;
             }
 
+            if (jwtToken) {
+                headers['Authorization'] = `Bearer ${jwtToken}`;
+            }
+
             const response = await fetch(apiUrl, {
                 credentials: 'include',
                 headers: headers
@@ -147,9 +173,19 @@
                 const data = await response.json();
                 console.log('📦 API 返回數據:', data);
 
-                if (data.user_groups && Array.isArray(data.user_groups)) {
+                // 優先使用 API 返回的 user_groups，如果沒有則使用 JWT 中的群組 ID
+                if (data.user_groups && Array.isArray(data.user_groups) && data.user_groups.length > 0) {
                     userGroups = data.user_groups;
-                    console.log('👤 用戶群組:', userGroups);
+                    console.log('✅ 使用 API 返回的用戶群組:', userGroups);
+                } else if (userGroupsFromJWT && userGroupsFromJWT.length > 0) {
+                    // JWT 中的 groups 是群組 ID (數字)，需要映射到群組名稱
+                    // 群組 ID 1 = administrators
+                    userGroups = userGroupsFromJWT.map(groupId => {
+                        if (groupId === 1) return 'administrators';
+                        // 其他群組 ID 暫時返回 Guest
+                        return 'Guests';
+                    });
+                    console.log('✅ 使用 JWT 群組 ID 映射:', userGroups);
                 } else {
                     userGroups = ['Guests'];
                     console.log('👥 未登入用戶，設為訪客');
