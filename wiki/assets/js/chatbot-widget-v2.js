@@ -535,12 +535,14 @@
                 // 過濾掉 thinking 過程
                 let finalAnswer = result.answer || '';
                 
-                // 移除可能的 thinking 標記
+                // 移除各種格式的 thinking 標記
                 finalAnswer = finalAnswer
-                    .replace(/```thinking[\s\S]*?```/g, '')
-                    .replace(/\*\*Thinking:\*\*[\s\S]*?(?=\n\n|\n\*\*|$)/g, '')
-                    .replace(/【思考過程】[\s\S]*?(?=\n\n|$)/g, '')
-                    .replace(/^thinking:[\s\S]*?(?=\n\n|$)/gim, '')
+                    .replace(/<think>[\s\S]*?<\/think>/g, '')  // XML: <think>...</think>
+                    .replace(/<thinking>[\s\S]*?<\/thinking>/g, '')  // XML: <thinking>...</thinking>
+                    .replace(/```thinking[\s\S]*?```/g, '')  // Markdown code block
+                    .replace(/\*\*Thinking:\*\*[\s\S]*?(?=\n\n|\n\*\*|$)/g, '')  // Bold heading
+                    .replace(/【思考過程】[\s\S]*?(?=\n\n|$)/g, '')  // 中文標記
+                    .replace(/^thinking:[\s\S]*?(?=\n\n|$)/gim, '')  // Plain text
                     .trim();
                 
                 if (finalAnswer) {

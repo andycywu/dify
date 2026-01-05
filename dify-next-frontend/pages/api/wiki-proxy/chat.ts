@@ -182,13 +182,16 @@ export default async function handler(
         .join('\n\n');
     }
 
-    // 如果 answer 包含 markdown thinking blocks，移除它們
+    // 如果 answer 包含 thinking 內容，移除它們
     if (typeof finalAnswer === 'string') {
-      // 移除 thinking 標記
+      // 移除各種 thinking 標記格式
       finalAnswer = finalAnswer
-        .replace(/```thinking[\s\S]*?```/g, '')
-        .replace(/\*\*Thinking:\*\*[\s\S]*?(?=\n\n|\n\*\*|$)/g, '')
-        .replace(/【思考過程】[\s\S]*?(?=\n\n|$)/g, '')
+        .replace(/<think>[\s\S]*?<\/think>/g, '')  // XML 標籤: <think>...</think>
+        .replace(/<thinking>[\s\S]*?<\/thinking>/g, '')  // XML 標籤: <thinking>...</thinking>
+        .replace(/```thinking[\s\S]*?```/g, '')  // Markdown code block
+        .replace(/\*\*Thinking:\*\*[\s\S]*?(?=\n\n|\n\*\*|$)/g, '')  // Bold heading
+        .replace(/【思考過程】[\s\S]*?(?=\n\n|$)/g, '')  // 中文標記
+        .replace(/^thinking:[\s\S]*?(?=\n\n|$)/gim, '')  // Plain text label
         .trim();
     }
 
