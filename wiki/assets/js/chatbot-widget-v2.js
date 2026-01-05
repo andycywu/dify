@@ -566,43 +566,93 @@
         // 簡易 Markdown 解析器
         let html = text;
         
-        // 代碼塊 (```...```)
-        html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, lang, code) {
-            return `<pre style="background:#f5f5f5;padding:12px;border-radius:6px;overflow-x:auto;margin:8px 0;"><code>${escapeHtml(code.trim())}</code></pre>`;
+        // 1. 先處理代碼塊 (```...```)，避免其中內容被誤處理
+        const codeBlocks = [];
+        html = html.replace(/```(\w+)?\n?([\s\S]*?)```/g, function(match, lang, code) {
+            const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+            codeBlocks.push(`<pre style="background:#f5f5f5;padding:12px;border-radius:6px;overflow-x:auto;margin:8px 0;border-left:3px solid #1976d2;"><code>${escapeHtml(code.trim())}</code></pre>`);
+            return placeholder;
         });
         
-        // 行內代碼 (`...`)
-        html = html.replace(/`([^`]+)`/g, '<code style="background:#f0f0f0;padding:2px 6px;border-radius:3px;font-family:monospace;font-size:0.9em;">$1</code>');
+        // 2. 處理行內代碼 (`...`)
+        const inlineCodes = [];
+        html = html.replace(/`([^`]+)`/g, function(match, code) {
+            const placeholder = `__INLINE_CODE_${inlineCodes.length}__`;
+            inlineCodes.push(`<code style="background:#f0f0f0;padding:2px 6px;border-radius:3px;font-family:monospace;font-size:0.9em;">${escapeHtml(code)}</code>`);
+            return placeholder;
+        });
         
-        // 標題 (# ## ### 等)
-        html = html.replace(/^### (.*$)/gim, '<h3 style="font-size:16px;font-weight:600;margin:12px 0 6px 0;color:#333;">$1</h3>');
-        html = html.replace(/^## (.*$)/gim, '<h2 style="font-size:18px;font-weight:600;margin:14px 0 8px 0;color:#333;">$1</h2>');
-        html = html.replace(/^# (.*$)/gim, '<h1 style="font-size:20px;font-weight:700;margin:16px 0 10px 0;color:#333;">$1</h1>');
+        // 3. 處理標題（必須在行首）
+        html = html.replace(/^### (.+)$/gm, '<h3 style="font-size:15px;font-weight:600;margin:10px 0 6px 0;color:#333;">$1</h3>');
+        html = html.replace(/^## (.+)$/gm, '<h2 style="font-size:16px;font-weight:600;margin:12px 0 6px 0;color:#1976d2;">$1</h2>');
+        html = html.replace(/^# (.+)$/gm, '<h1 style="font-size:18px;font-weight:700;margin:14px 0 8px 0;color:#1976d2;">$1</h1>');
         
-        // 粗體 (**text** 或 __text__)
-        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
-        
-        // 斜體 (*text* 或 _text_)
-        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-        
-        // 連結 [text](url)
+        // 4. 處理連結 [text](url)
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:#0066cc;text-decoration:underline;">$1</a>');
         
-        // 列表項 (* item 或 - item)
-        html = html.replace(/^\* (.+)$/gim, '<li style="margin-left:20px;">$1</li>');
-        html = html.replace(/^- (.+)$/gim, '<li style="margin-left:20px;">$1</li>');
+        // 5. 處理粗體（避免與列表的 * 衝突）
+        html = html.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__([^_]+?)__/g, '<strong>$1</strong>');
         
-        // 包裹連續的 <li> 為 <ul>
-        html = html.replace(/(<li.*<\/li>\n?)+/g, function(match) {
-            return '<ul style="margin:8px 0;padding-left:0;list-style-position:inside;">' + match + '</ul>';
+        // 6. 處理斜體
+        html = html.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+        html = html.replace(/_([^_\n]+?)_/g, '<em>$1</em>');
+        
+        // 7. 處理嵌套列表（支援多層縮排）
+        const lines = html.split('\n');
+        const result = [];
+        let listStack = []; // 追蹤當前列表層級
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const listMatch = line.match(/^(\s*)[-*]\s+(.+)$/);
+            
+            if (listMatch) {
+                const indent = listMatch[1].length;
+                const content = listMatch[2];
+                const level = Math.floor(indent / 2); // 每2個空格為一層
+                
+                // 調整列表層級
+                while (listStack.length > level + 1) {
+                    result.push('</ul>');
+                    listStack.pop();
+                }
+                
+                if (listStack.length === level) {
+                    result.push('<ul style="margin:4px 0;padding-left:20px;list-style-type:disc;">');
+                    listStack.push(level);
+                }
+                
+                result.push(`<li style="margin:2px 0;line-height:1.5;">${content}</li>`);
+            } else {
+                // 非列表行，關閉所有開啟的列表
+                while (listStack.length > 0) {
+                    result.push('</ul>');
+                    listStack.pop();
+                }
+                result.push(line);
+            }
+        }
+        
+        // 關閉所有未關閉的列表
+        while (listStack.length > 0) {
+            result.push('</ul>');
+            listStack.pop();
+        }
+        
+        html = result.join('\n');
+        
+        // 8. 處理換行
+        html = html.replace(/\n\n+/g, '<br><br>');  // 多個空行變成段落間隔
+        html = html.replace(/\n/g, '<br>');  // 單個換行變成 <br>
+        
+        // 9. 還原代碼塊和行內代碼
+        codeBlocks.forEach((block, i) => {
+            html = html.replace(`__CODE_BLOCK_${i}__`, block);
         });
-        
-        // 換行 (兩個空格 + \n 或 \n\n)
-        html = html.replace(/\n\n/g, '<br><br>');
-        html = html.replace(/  \n/g, '<br>');
-        html = html.replace(/\n/g, '<br>');
+        inlineCodes.forEach((code, i) => {
+            html = html.replace(`__INLINE_CODE_${i}__`, code);
+        });
         
         return html;
     }
