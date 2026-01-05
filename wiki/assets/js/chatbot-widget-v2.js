@@ -93,20 +93,18 @@
             return ADMINISTRATORS_CHATBOTS;
         }
 
-        // 如果是訪客或未登入，只返回 COMMON
-        if (userGroups.length === 0 || userGroups.includes('Guests')) {
+        // 過濾掉 Guests，只看實際的業務群組
+        const businessGroups = userGroups.filter(group => group !== 'Guests');
+
+        // 如果沒有任何業務群組（只有 Guests 或空），返回 COMMON
+        if (businessGroups.length === 0) {
             console.log('👥 訪客權限：只能訪問 COMMON');
             return GUESTS_CHATBOTS;
         }
 
-        // 一般用戶：返回其所屬群組對應的 chatbots + COMMON
-        const availableChatbots = [...userGroups.filter(group => CHATBOT_MAP[group])];
+        // 一般用戶：返回其所屬群組對應的 chatbots
+        const availableChatbots = businessGroups.filter(group => CHATBOT_MAP[group]);
         
-        // 確保 COMMON 總是可用
-        if (!availableChatbots.includes('COMMON')) {
-            availableChatbots.push('COMMON');
-        }
-
         console.log('✅ 可訪問的 chatbots:', availableChatbots);
         return availableChatbots;
     }
