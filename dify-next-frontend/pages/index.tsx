@@ -20,7 +20,7 @@ const Home: React.FC = () => {
     }
 
     // 如果是管理員且來自 ?admin=true 參數，顯示管理中心導航
-    const showAdminPanel = user && user.role === 'admin' && router.query.admin === 'true';
+    const showAdminPanel = user && ['admin', 'Administrator'].includes(user.role) && router.query.admin === 'true';
 
     if (showAdminPanel) {
         return (

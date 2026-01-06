@@ -18,7 +18,8 @@ export default function Admin() {
     if (authLoading) return;
 
     // Check admin permissions (using Wiki.js groups)
-    if (!user || user.role !== 'admin') {
+    // Accept both 'admin' and 'Administrator' roles
+    if (!user || !['admin', 'Administrator'].includes(user.role)) {
       setError(t('admin:no_permission'));
       return;
     }

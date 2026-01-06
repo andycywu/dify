@@ -94,7 +94,8 @@ const KnowledgeManagement: React.FC = () => {
   };
 
   // Check if user has admin privileges
-  if (!user || !['admin', 'owner'].includes(user.role)) {
+  // Accept 'admin', 'owner', and 'Administrator' roles
+  if (!user || !['admin', 'owner', 'Administrator'].includes(user.role)) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-64">

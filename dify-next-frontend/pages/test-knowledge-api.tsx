@@ -100,7 +100,7 @@ const TestKnowledgeAPI: React.FC = () => {
                 Navigation Links
               </h2>
               <div className="space-y-2">
-                {user && ['admin', 'owner'].includes(user.role) ? (
+                {user && ['admin', 'owner', 'Administrator'].includes(user.role) ? (
                   <Link
                     href="/knowledge-management"
                     className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"

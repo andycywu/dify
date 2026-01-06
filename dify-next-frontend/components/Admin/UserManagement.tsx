@@ -8,7 +8,7 @@ const UserManagement: React.FC = () => {
   const [form, setForm] = useState({ email: '', name: '', password: '', role: 'user' });
   const [editId, setEditId] = useState<string | null>(null);
 
-  if (!user || (user.role !== 'admin' && user.role !== 'super admin')) {
+  if (!user || !['admin', 'super admin', 'Administrator'].includes(user.role)) {
     return <div className="p-4 text-red-500">No permission.</div>;
   }
 
