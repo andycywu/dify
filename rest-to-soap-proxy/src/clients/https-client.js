@@ -57,7 +57,10 @@ class UrtrackerHttpsClient {
         btnLogin: '登  录'
       });
 
-      // 步驟3: 提交登入請求
+      // 步驟3: 提交登入請求（允許重定向以獲取認證 Cookie）
+      const allCookies = [];
+      
+      // 第一次請求：提交登入表單
       const response = await axios.post(loginURL, postData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -66,23 +69,55 @@ class UrtrackerHttpsClient {
           'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
           'Referer': loginURL
         },
-        maxRedirects: 0,
+        maxRedirects: 5,  // 允許重定向
         validateStatus: (status) => status < 500,
         timeout: this.timeout
       });
 
-      // 步驟4: 保存 Cookie Session
-      const cookies = response.headers['set-cookie'];
-      if (cookies && cookies.length > 0) {
-        this.cookieJar = cookies;
-        this.session = cookies.map(cookie => cookie.split(';')[0]).join('; ');
+      // 收集所有 Set-Cookie 響應頭
+      if (response.headers['set-cookie']) {
+        allCookies.push(...response.headers['set-cookie']);
+      }
+
+      // 檢查是否有重定向歷史
+      if (response.request && response.request._redirectable && response.request._redirectable._redirectCount > 0) {
+        console.log(`   處理了 ${response.request._redirectable._redirectCount} 次重定向`);
+      }
+
+      // 步驟4: 保存所有 Cookie
+      if (allCookies.length > 0) {
+        this.cookieJar = allCookies;
+        // 提取 Cookie 名稱和值，過濾重複
+        const cookieMap = new Map();
+        allCookies.forEach(cookie => {
+          const [nameValue] = cookie.split(';');
+          const [name, value] = nameValue.split('=');
+          if (name && value) {
+            cookieMap.set(name.trim(), nameValue.trim());
+          }
+        });
+        
+        this.session = Array.from(cookieMap.values()).join('; ');
+        
         console.log('✅ Urtracker 登入成功');
-        console.log(`   Session Cookies: ${this.cookieJar.length} 個`);
+        console.log(`   收集到 ${allCookies.length} 個 Cookie`);
+        console.log(`   Cookie 類型: ${Array.from(cookieMap.keys()).join(', ')}`);
+        
+        // 檢查是否有認證 Cookie
+        const hasAuthCookie = Array.from(cookieMap.keys()).some(name => 
+          name.includes('ASPXAUTH') || name.includes('Auth')
+        );
+        
+        if (!hasAuthCookie) {
+          console.warn('   ⚠️  警告: 未檢測到認證 Cookie (.ASPXAUTH)');
+          console.warn('   這可能導致後續請求失敗，請檢查用戶名和密碼');
+        }
         
         return { 
           success: true, 
           session: this.session,
-          cookies: this.cookieJar
+          cookies: this.cookieJar,
+          cookieTypes: Array.from(cookieMap.keys())
         };
       } else {
         throw new Error('登入失敗：未獲得 Session Cookie');
