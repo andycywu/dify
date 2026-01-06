@@ -834,9 +834,9 @@ services:
 
   # rest-to-soap-proxy service
   rest-to-soap-proxy:
-    image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
+    #image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
     platform: linux/amd64
-    # build: ../rest-to-soap-proxy
+    build: ../rest-to-soap-proxy
     restart: always
     env_file:
       - ../rest-to-soap-proxy/.env
