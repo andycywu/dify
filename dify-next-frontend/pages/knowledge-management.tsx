@@ -26,7 +26,7 @@ const KnowledgeManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && (user.role === 'admin' || user.role === 'owner')) {
+    if (user && ['admin', 'owner', 'Administrator'].includes(user.role)) {
       fetchKnowledgeBases();
     }
   }, [user]);
