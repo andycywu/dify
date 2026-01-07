@@ -123,12 +123,23 @@ router.get('/projects', (req, res) => {
 router.get('/download/:projectId', async (req, res) => {
   const client = getClient(req);
   
+  // 如果未登入，自動使用默認憑證登入（模擬VBA行為）
   if (!client.isLoggedIn()) {
-    return res.status(401).json({ 
-      success: false,
-      error: '未登入',
-      message: '請先調用 /api/https/login 登入' 
-    });
+    console.log('⚠️  未登入，嘗試使用默認憑證自動登入...');
+    try {
+      // 使用環境變數或默認憑證
+      const username = process.env.URTRACKER_USERNAME || 'andycy.wu';
+      const password = process.env.URTRACKER_PASSWORD || 'XrnkE$F4S.kAuyV1';
+      await client.login(username, password);
+      console.log('✅ 自動登入成功');
+    } catch (error) {
+      console.error('❌ 自動登入失敗:', error.message);
+      return res.status(401).json({ 
+        success: false,
+        error: '未登入且自動登入失敗',
+        message: `請先調用 /api/https/login 登入，或檢查默認憑證: ${error.message}` 
+      });
+    }
   }
 
   const { projectId } = req.params;
@@ -169,12 +180,22 @@ router.get('/download/:projectId', async (req, res) => {
 router.post('/download/:projectId', async (req, res) => {
   const client = getClient(req);
   
+  // 如果未登入，自動使用默認憑證登入（模擬VBA行為）
   if (!client.isLoggedIn()) {
-    return res.status(401).json({ 
-      success: false,
-      error: '未登入',
-      message: '請先調用 /api/https/login 登入' 
-    });
+    console.log('⚠️  未登入，嘗試使用默認憑證自動登入...');
+    try {
+      const username = process.env.URTRACKER_USERNAME || 'andycy.wu';
+      const password = process.env.URTRACKER_PASSWORD || 'XrnkE$F4S.kAuyV1';
+      await client.login(username, password);
+      console.log('✅ 自動登入成功');
+    } catch (error) {
+      console.error('❌ 自動登入失敗:', error.message);
+      return res.status(401).json({ 
+        success: false,
+        error: '未登入且自動登入失敗',
+        message: `請先調用 /api/https/login 登入，或檢查默認憑證: ${error.message}` 
+      });
+    }
   }
 
   const { projectId } = req.params;
@@ -262,12 +283,22 @@ router.get('/download-all', async (req, res) => {
 router.get('/download-by-name/:projectKey', async (req, res) => {
   const client = getClient(req);
   
+  // 如果未登入，自動使用默認憑證登入（模擬VBA行為）
   if (!client.isLoggedIn()) {
-    return res.status(401).json({ 
-      success: false,
-      error: '未登入',
-      message: '請先調用 /api/https/login 登入' 
-    });
+    console.log('⚠️  未登入，嘗試使用默認憑證自動登入...');
+    try {
+      const username = process.env.URTRACKER_USERNAME || 'andycy.wu';
+      const password = process.env.URTRACKER_PASSWORD || 'XrnkE$F4S.kAuyV1';
+      await client.login(username, password);
+      console.log('✅ 自動登入成功');
+    } catch (error) {
+      console.error('❌ 自動登入失敗:', error.message);
+      return res.status(401).json({ 
+        success: false,
+        error: '未登入且自動登入失敗',
+        message: `請先調用 /api/https/login 登入，或檢查默認憑證: ${error.message}` 
+      });
+    }
   }
 
   const { projectKey } = req.params;

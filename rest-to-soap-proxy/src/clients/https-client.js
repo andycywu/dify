@@ -32,62 +32,174 @@ class UrtrackerHttpsClient {
    * @returns {Object} 登入結果
    */
   async login(username, password) {
-    const loginURL = `${this.baseURL}/Accounts/Login.aspx`;
+    // 使用完整的登入 URL（包含 ReturnUrl）
+    const loginURL = `${this.baseURL}/Accounts/login.aspx?ReturnUrl=%2fdefault.aspx`;
     
     console.log('🔐 開始登入 Urtracker...');
     console.log(`   用戶: ${username}`);
     
     try {
-      // 步驟1: 獲取登入頁面的 ViewState
-      console.log('   獲取登入頁面 ViewState...');
-      const { viewState, viewStateGenerator } = await this.getViewState(loginURL);
+      // 步驟1: 先訪問登入頁面，獲取初始 session cookie 和 ViewState
+      console.log('   步驟1: 訪問登入頁面獲取初始 session...');
+      const initialResponse = await axios.get(loginURL, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        },
+        validateStatus: () => true,
+        timeout: this.timeout
+      });
       
-      // 步驟2: 構建登入 POST 數據
+      // 收集初始 cookies
+      const initialCookies = initialResponse.headers['set-cookie'] || [];
+      let sessionCookie = '';
+      
+      if (initialCookies.length > 0) {
+        initialCookies.forEach(cookie => {
+          const cookiePair = cookie.split(';')[0];
+          if (cookiePair.startsWith('ASP.NET_SessionId=')) {
+            sessionCookie = cookiePair;
+          }
+        });
+        console.log(`   ✓ 獲得初始 Session: ${sessionCookie}`);
+      }
+      
+      // 步驟2: 從頁面中提取 ViewState
+      console.log('   步驟2: 提取 ViewState...');
+      const $ = cheerio.load(initialResponse.data);
+      const viewState = $('#__VIEWSTATE').val() || '';
+      const viewStateGenerator = $('#__VIEWSTATEGENERATOR').val() || 'FE418D8E';
+      console.log(`   ✓ ViewState 長度: ${viewState.length}`);
+      
+      if (!viewState) {
+        throw new Error('無法獲取 ViewState');
+      }
+      
+      // 步驟3: 構建登入POST數據（完全模擬Chrome的請求）
       const postData = qs.stringify({
         ScriptManager1: 'UpdatePanel1|btnLogin',
         __EVENTTARGET: '',
         __EVENTARGUMENT: '',
         __LASTFOCUS: '',
         __VIEWSTATE: viewState,
-        __VIEWSTATEGENERATOR: viewStateGenerator || 'FE418D8E',
+        __VIEWSTATEGENERATOR: viewStateGenerator,
         'LanguageSelector1$ddlLanguage': 'auto',
         txtEmail: username,
         txtPassword: password,
-        __ASYNCPOST: 'false',
-        btnLogin: '登  录'
+        __ASYNCPOST: 'true',          // ← 關鍵：AJAX請求
+        btnLogin: '登  录'             // ← 注意：兩個空格
       });
 
-      // 步驟3: 提交登入請求（允許重定向以獲取認證 Cookie）
-      const allCookies = [];
+      // 步驟4: 提交登入請求（添加關鍵的 X-MicrosoftAjax header）
+      console.log('   步驟4: 提交登入表單...');
+      const allCookies = [...initialCookies];  // 包含初始 cookies
       
-      // 第一次請求：提交登入表單
-      const response = await axios.post(loginURL, postData, {
+      // 創建臨時 axios 實例並添加響應攔截器
+      const axiosInstance = axios.create();
+      axiosInstance.interceptors.response.use(
+        (response) => {
+          // 收集每次響應的 Set-Cookie
+          console.log(`   🔍 響應狀態 ${response.status}, headers類型: ${typeof response.headers}`);
+          console.log(`   🔍 Set-Cookie類型: ${typeof response.headers['set-cookie']}, 是否為數組: ${Array.isArray(response.headers['set-cookie'])}`);
+          
+          if (response.headers['set-cookie']) {
+            const cookies = response.headers['set-cookie'];
+            console.log(`   🔍 原始cookies: ${JSON.stringify(cookies).substring(0, 200)}`);
+            allCookies.push(...(Array.isArray(cookies) ? cookies : [cookies]));
+            console.log(`   📍 收集到 ${Array.isArray(cookies) ? cookies.length : 1} 個 Cookie (狀態: ${response.status})`);
+            // 詳細打印每個 cookie 的名稱和前50個字元
+            const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
+            cookieArray.forEach((c, i) => {
+              const cookieName = c.split('=')[0];
+              const cookieValue = c.split('=')[1]?.split(';')[0] || '';
+              console.log(`      Cookie ${i+1}: ${cookieName}=${cookieValue.substring(0, 50)}${cookieValue.length > 50 ? '...' : ''}`);
+            });
+          } else {
+            console.log(`   📍 無 Set-Cookie header (狀態: ${response.status})`);
+          }
+          return response;
+        },
+        (error) => {
+          // 即使錯誤也收集 Cookie
+          if (error.response && error.response.headers['set-cookie']) {
+            allCookies.push(...error.response.headers['set-cookie']);
+          }
+          return Promise.reject(error);
+        }
+      );
+      
+      // 提交登入表單（禁用自動重定向，手動處理以捕獲所有 cookies）
+      const loginResponse = await axiosInstance.post(loginURL, postData, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',  // ← 添加 charset
+          'X-MicrosoftAjax': 'Delta=true',                                      // ← 關鍵 header！
+          'Cookie': sessionCookie,     // 使用初始 session cookie
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept': '*/*',             // AJAX 請求使用 */*
           'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
           'Referer': loginURL
         },
-        maxRedirects: 5,  // 允許重定向
-        validateStatus: (status) => status < 500,
+        maxRedirects: 0,  // 禁用自動重定向，手動處理
+        validateStatus: (status) => status < 500,  // 接受所有狀態包括302
         timeout: this.timeout
       });
+      
+      console.log(`   📊 登入響應狀態: ${loginResponse.status}`);
+      
+      // 步驟5: 如果是302重定向，手動跟隨並收集 cookies
+      if (loginResponse.status === 302 || loginResponse.status === 301) {
+        const redirectURL = loginResponse.headers['location'];
+        console.log(`   🔄 檢測到重定向: ${redirectURL}`);
+        
+        // 構建完整的重定向 URL
+        const fullRedirectURL = redirectURL.startsWith('http') 
+          ? redirectURL 
+          : `${this.baseURL}${redirectURL.startsWith('/') ? '' : '/'}${redirectURL}`;
+        
+        console.log(`   📍 跟隨重定向到: ${fullRedirectURL}`);
+        
+        // 構建當前的 cookie 字符串（包含所有已收集的 cookies）
+        const currentCookieMap = new Map();
+        allCookies.forEach(cookie => {
+          const [nameValue] = cookie.split(';');
+          const [name, value] = nameValue.split('=');
+          if (name && value) {
+            currentCookieMap.set(name.trim(), nameValue.trim());
+          }
+        });
+        const currentCookieStr = Array.from(currentCookieMap.values()).join('; ');
+        
+        // 跟隨重定向
+        const redirectResponse = await axiosInstance.get(fullRedirectURL, {
+          headers: {
+            'Cookie': currentCookieStr,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Referer': loginURL
+          },
+          maxRedirects: 0,
+          validateStatus: (status) => status < 500,
+          timeout: this.timeout
+        });
+        
+        console.log(`   📊 重定向響應狀態: ${redirectResponse.status}`);
+      }
+      
+      const response = loginResponse;
+      
+      console.log(`   📊 最終響應狀態: ${response.status}`);
 
-      // 收集所有 Set-Cookie 響應頭
-      if (response.headers['set-cookie']) {
-        allCookies.push(...response.headers['set-cookie']);
+      // 登入成功的標誌：200 OK 或 302 重定向（表示登入後跳轉）
+      // VBA 不檢查響應內容，我們也接受這兩種狀態
+      if (response.status !== 200 && response.status !== 302) {
+        throw new Error(`登入請求失敗: HTTP ${response.status}`);
       }
 
-      // 檢查是否有重定向歷史
-      if (response.request && response.request._redirectable && response.request._redirectable._redirectCount > 0) {
-        console.log(`   處理了 ${response.request._redirectable._redirectCount} 次重定向`);
-      }
-
-      // 步驟4: 保存所有 Cookie
+      // 步驟6: 保存所有 Cookie (包括 .URTracker 認證cookie)
+      console.log(`   步驟6: 整理和保存 cookies...`);
       if (allCookies.length > 0) {
         this.cookieJar = allCookies;
-        // 提取 Cookie 名稱和值，過濾重複
+        // 提取 Cookie 名稱和值，過濾重複（保留最新的值）
         const cookieMap = new Map();
         allCookies.forEach(cookie => {
           const [nameValue] = cookie.split(';');
@@ -102,15 +214,47 @@ class UrtrackerHttpsClient {
         console.log('✅ Urtracker 登入成功');
         console.log(`   收集到 ${allCookies.length} 個 Cookie`);
         console.log(`   Cookie 類型: ${Array.from(cookieMap.keys()).join(', ')}`);
+        console.log(`   完整 Session: ${this.session.substring(0, 200)}...`);
         
-        // 檢查是否有認證 Cookie
+        // 檢查是否有認證 Cookie (.URTracker 或 .ASPXAUTH)
         const hasAuthCookie = Array.from(cookieMap.keys()).some(name => 
-          name.includes('ASPXAUTH') || name.includes('Auth')
+          name.includes('URTracker') || name.includes('ASPXAUTH') || name.includes('Auth')
         );
         
         if (!hasAuthCookie) {
-          console.warn('   ⚠️  警告: 未檢測到認證 Cookie (.ASPXAUTH)');
-          console.warn('   這可能導致後續請求失敗，請檢查用戶名和密碼');
+          console.warn('   ⚠️  警告: 未檢測到認證 Cookie (.URTracker 或 .ASPXAUTH)');
+          console.warn('   可用的 Cookie: ' + Array.from(cookieMap.keys()).join(', '));
+          console.warn('   這可能導致後續請求失敗');
+          
+          // 嘗試訪問主頁來獲取認證 cookie
+          console.log('   🔄 嘗試訪問主頁以獲取完整認證...');
+          try {
+            const homeResponse = await axiosInstance.get(`${this.baseURL}/`, {
+              headers: {
+                'Cookie': this.session,
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+              },
+              maxRedirects: 5,
+              validateStatus: (status) => status < 500
+            });
+            
+            // 更新 cookies
+            if (allCookies.length > 0) {
+              this.cookieJar = allCookies;
+              const updatedCookieMap = new Map();
+              allCookies.forEach(cookie => {
+                const [nameValue] = cookie.split(';');
+                const [name, value] = nameValue.split('=');
+                if (name && value) {
+                  updatedCookieMap.set(name.trim(), nameValue.trim());
+                }
+              });
+              this.session = Array.from(updatedCookieMap.values()).join('; ');
+              console.log(`   ✅ 主頁訪問完成，Cookie 更新: ${Array.from(updatedCookieMap.keys()).join(', ')}`);
+            }
+          } catch (homeError) {
+            console.warn(`   ⚠️  主頁訪問失敗: ${homeError.message}`);
+          }
         }
         
         return { 
@@ -141,6 +285,7 @@ class UrtrackerHttpsClient {
    */
   async getViewState(url) {
     console.log(`   獲取 ViewState: ${url.substring(0, 80)}...`);
+    console.log(`   📍 使用 Session: ${this.session ? this.session.substring(0, 50) + '...' : '(無)'}`);
     
     try {
       const response = await axios.get(url, {
@@ -187,7 +332,8 @@ class UrtrackerHttpsClient {
    */
   async downloadProjectData(projectId, projectName = 'Data', options = {}) {
     // 構建導出 URL (對應 VBA getDownloadURL)
-    const exportURL = `${this.baseURL}/Pts/ProblemListExport.aspx?project=${projectId}&FilterType=1&procName=State_1&Title=%u8ddf%u8e2a%u4e2d%u7684%u4e8b%u52a1`;
+    // 修正: 使用 Title=Open+issues 而不是舊的中文 Unicode
+    const exportURL = `${this.baseURL}/Pts/ProblemListExport.aspx?project=${projectId}&FilterType=1&procName=State_1&Title=Open+issues`;
     
     console.log(`\n📥 下載專案: ${projectName} (ID: ${projectId})`);
     console.log(`   URL: ${exportURL}`);
@@ -233,6 +379,7 @@ class UrtrackerHttpsClient {
 
       // 步驟3: 提交導出請求並下載 Excel
       console.log('   步驟3: 提交導出請求...');
+      console.log(`   📍 使用 Session Cookie: ${this.session.substring(0, 60)}...`);
       const response = await axios.post(exportURL, postData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
