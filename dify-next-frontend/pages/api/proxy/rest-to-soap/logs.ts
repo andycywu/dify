@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
-const REST_TO_SOAP_URL = process.env.REST_TO_SOAP_PROXY_URL || 'http://rest-to-soap-proxy:8080';
+const REST_TO_SOAP_URL = process.env.REST_TO_SOAP_PROXY_URL || 'http://rest-to-soap-proxy:5001';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {

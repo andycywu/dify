@@ -802,6 +802,9 @@ services:
       DATABASE_URL: "postgresql://postgres:difyai123456@db:5432/wiki"
       WIKI_GRAPHQL_URL: http://wiki:3000/graphql
 
+      # === REST-to-SOAP 代理服務 ===
+      REST_TO_SOAP_PROXY_URL: http://rest-to-soap-proxy:5001
+
       # === 外部服務（本地 Ollama）===
       OLLAMA_BASE_URL: http://host.docker.internal:11434
 
