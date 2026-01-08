@@ -263,26 +263,41 @@ async function checkRedis(): Promise<ServiceStatus> {
   const startTime = Date.now();
 
   try {
-    // Redis 檢查 - 這裡簡化處理，實際可能需要根據配置調整
-    const redisUrl = process.env.REDIS_URL;
+    const redisHost = process.env.REDIS_HOST || 'redis';
+    const redisPort = process.env.REDIS_PORT || '6379';
+    const redisPassword = process.env.REDIS_PASSWORD || 'difyai123456';
 
-    if (!redisUrl) {
-      return {
-        name: 'Redis',
-        status: 'error',
-        message: 'Redis not configured',
-        responseTime: Date.now() - startTime
-      };
-    }
+    // 嘗試連接 Redis
+    const redis = await import('ioredis');
+    const client = new redis.default({
+      host: redisHost,
+      port: parseInt(redisPort),
+      password: redisPassword,
+      connectTimeout: 3000,
+      retryStrategy: () => null, // 不重試
+    });
 
-    // 這裡可以添加實際的 Redis 連接檢查
-    // 暫時返回未配置狀態
+    // 執行 PING 命令
+    await client.ping();
+    await client.quit();
+
+    const responseTime = Date.now() - startTime;
+
     return {
       name: 'Redis',
-      status: 'error',
-      message: 'Redis check not implemented',
+      status: 'running',
+      message: 'Connected',
+      responseTime
+    };
+  } catch (error: any) {
+    return {
+      name: 'Redis',
+      status: 'stopped',
+      message: error.message || 'Connection failed',
       responseTime: Date.now() - startTime
     };
+  }
+}
   } catch (error: any) {
     return {
       name: 'Redis',
