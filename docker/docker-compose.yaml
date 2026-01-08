@@ -1535,6 +1535,8 @@ services:
       URTRACKER_USERNAME: ${URTRACKER_USERNAME:-andycy.wu}
       URTRACKER_PASSWORD: ${URTRACKER_PASSWORD:-}
       NODE_ENV: ${NODE_ENV:-production}
+      # Tell Puppeteer where to find the browser
+      PUPPETEER_EXECUTABLE_PATH: /app/chrome-headless-shell/linux-125.0.6422.60/chrome-headless-shell
     volumes:
       # Mount logs directory
       - ./volumes/rest-to-soap-proxy/logs:/app/logs

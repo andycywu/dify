@@ -46,6 +46,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+# 安裝 Puppeteer 推薦的無頭瀏覽器版本
+RUN npx puppeteer browsers install chrome-headless-shell
+
 # 複製應用代碼
 COPY . .
 
