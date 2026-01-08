@@ -123,13 +123,22 @@ router.get('/projects', (req, res) => {
 router.get('/download/:projectId', async (req, res) => {
   const client = getClient(req);
 
-  // 如果未登入，自動使用默認憑證登入（模擬VBA行為）
+  // 如果未登入，自動使用環境變數中的憑證登入
   if (!client.isLoggedIn()) {
-    console.log('⚠️  未登入，嘗試使用默認憑證自動登入...');
+    console.log('⚠️  未登入，嘗試使用環境變數憑證自動登入...');
     try {
-      // 使用環境變數或默認憑證
-      const username = process.env.URTRACKER_USERNAME || 'andycy.wu';
-      const password = process.env.URTRACKER_PASSWORD || 'XrnkE$F4S.kAuyV1';
+      const username = process.env.URTRACKER_USERNAME;
+      const password = process.env.URTRACKER_PASSWORD;
+
+      if (!username || !password) {
+        console.error('❌ 缺少 URTRACKER_USERNAME 或 URTRACKER_PASSWORD 環境變數');
+        return res.status(401).json({
+          success: false,
+          error: '未配置認證信息',
+          message: '請在環境變數中設置 URTRACKER_USERNAME 和 URTRACKER_PASSWORD'
+        });
+      }
+
       await client.login(username, password);
       console.log('✅ 自動登入成功');
     } catch (error) {
@@ -137,7 +146,7 @@ router.get('/download/:projectId', async (req, res) => {
       return res.status(401).json({
         success: false,
         error: '未登入且自動登入失敗',
-        message: `請先調用 /api/https/login 登入，或檢查默認憑證: ${error.message}`
+        message: `請先調用 /api/https/login 登入: ${error.message}`
       });
     }
   }
@@ -180,12 +189,22 @@ router.get('/download/:projectId', async (req, res) => {
 router.post('/download/:projectId', async (req, res) => {
   const client = getClient(req);
 
-  // 如果未登入，自動使用默認憑證登入（模擬VBA行為）
+  // 如果未登入，自動使用環境變數中的憑證登入
   if (!client.isLoggedIn()) {
-    console.log('⚠️  未登入，嘗試使用默認憑證自動登入...');
+    console.log('⚠️  未登入，嘗試使用環境變數憑證自動登入...');
     try {
-      const username = process.env.URTRACKER_USERNAME || 'andycy.wu';
-      const password = process.env.URTRACKER_PASSWORD || 'XrnkE$F4S.kAuyV1';
+      const username = process.env.URTRACKER_USERNAME;
+      const password = process.env.URTRACKER_PASSWORD;
+
+      if (!username || !password) {
+        console.error('❌ 缺少 URTRACKER_USERNAME 或 URTRACKER_PASSWORD 環境變數');
+        return res.status(401).json({
+          success: false,
+          error: '未配置認證信息',
+          message: '請在環境變數中設置 URTRACKER_USERNAME 和 URTRACKER_PASSWORD'
+        });
+      }
+
       await client.login(username, password);
       console.log('✅ 自動登入成功');
     } catch (error) {
@@ -283,12 +302,22 @@ router.get('/download-all', async (req, res) => {
 router.get('/download-by-name/:projectKey', async (req, res) => {
   const client = getClient(req);
 
-  // 如果未登入，自動使用默認憑證登入（模擬VBA行為）
+  // 如果未登入，自動使用環境變數中的憑證登入
   if (!client.isLoggedIn()) {
-    console.log('⚠️  未登入，嘗試使用默認憑證自動登入...');
+    console.log('⚠️  未登入，嘗試使用環境變數憑證自動登入...');
     try {
-      const username = process.env.URTRACKER_USERNAME || 'andycy.wu';
-      const password = process.env.URTRACKER_PASSWORD || 'XrnkE$F4S.kAuyV1';
+      const username = process.env.URTRACKER_USERNAME;
+      const password = process.env.URTRACKER_PASSWORD;
+
+      if (!username || !password) {
+        console.error('❌ 缺少 URTRACKER_USERNAME 或 URTRACKER_PASSWORD 環境變數');
+        return res.status(401).json({
+          success: false,
+          error: '未配置認證信息',
+          message: '請在環境變數中設置 URTRACKER_USERNAME 和 URTRACKER_PASSWORD'
+        });
+      }
+
       await client.login(username, password);
       console.log('✅ 自動登入成功');
     } catch (error) {
@@ -320,7 +349,7 @@ router.get('/download-by-name/:projectKey', async (req, res) => {
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.setHeader('Content-Length', result.size);
-    res.send(result.buffer);
+    res.end(result.buffer);
   } catch (error) {
     console.error('Download by name error:', error);
     res.status(500).json({
