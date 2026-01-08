@@ -298,12 +298,3 @@ async function checkRedis(): Promise<ServiceStatus> {
     };
   }
 }
-  } catch (error: any) {
-    return {
-      name: 'Redis',
-      status: 'stopped',
-      message: error.message || 'Connection failed',
-      responseTime: Date.now() - startTime
-    };
-  }
-}
