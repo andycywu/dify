@@ -170,26 +170,35 @@ class UrtrackerHttpsClient {
         }
       });
 
-      // 最終解決方案：不再模擬點擊，而是直接提交表單。
-      console.log('   🚀 終極手段：直接提交表單...');
+// 最終解決方案：模擬 ASP.NET 的 PostBack 機制
+      console.log('   🚀 終極手段：模擬 ASP.NET PostBack...');
 
       try {
-        // 提交表單並等待可能的導航
-        await Promise.race([
-          this.page.evaluate(() => {
-            const form = document.getElementById('aspnetForm');
-            if (form) {
-              form.submit();
-            } else {
-              throw new Error('找不到頁面主表單 (aspnetForm)');
-            }
-          }),
-          this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 }).catch(() => {
-            console.log('   ℹ️  無導航事件發生（這可能是正常的）');
-          })
-        ]);
+        // 在提交前，設置 ASP.NET 所需的隱藏欄位
+        await this.page.evaluate(() => {
+          // 設置 __EVENTTARGET 來告訴伺服器是哪個控件觸發的
+          const eventTarget = document.getElementById('__EVENTTARGET');
+          const eventArgument = document.getElementById('__EVENTARGUMENT');
 
-        // 等待 5 秒讓頁面完成所有操作
+          if (eventTarget) {
+            eventTarget.value = 'ctl00$CP1$btnExport';
+          }
+          if (eventArgument) {
+            eventArgument.value = '';
+          }
+
+          console.log('__EVENTTARGET 已設置為: ctl00$CP1$btnExport');
+
+          // 現在提交表單
+          const form = document.getElementById('aspnetForm');
+          if (form) {
+            form.submit();
+          } else {
+            throw new Error('找不到頁面主表單 (aspnetForm)');
+          }
+        });
+
+        // 等待可能的導航或響應
         await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Debug: 提交後截圖
