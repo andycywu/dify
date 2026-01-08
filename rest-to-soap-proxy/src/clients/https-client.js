@@ -119,6 +119,7 @@ class UrtrackerHttpsClient {
       // 連結的 ID 格式為 ctl00_CP1_rptProject_ctlXX_lnkProject, 我們需要找到對應 projectId 的那一個
       console.log(`   步驟2: 尋找並點擊專案 ID ${projectId} 的連結...`);
       const projectLinkSelector = `a[href*="issuelist.aspx?pid=${projectId}"]`;
+      await this.page.waitForSelector(projectLinkSelector, { timeout: 10000 }); // 等待元素出現
       await Promise.all([
         this.page.waitForNavigation({ waitUntil: 'networkidle2' }),
         this.page.click(projectLinkSelector)
