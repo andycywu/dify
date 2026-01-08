@@ -246,21 +246,73 @@ const RestToSoapManager: React.FC = () => {
       {/* API 文檔連結 */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4 text-blue-800">API 使用說明</h3>
-        <div className="space-y-2 text-sm">
-          <div><strong>服務端點：</strong> http://localhost:{config?.port || 3002}</div>
-          <div><strong>健康檢查：</strong> GET /health</div>
-          <div><strong>SOAP 代理：</strong> POST /soap/:method</div>
-          <div><strong>狀態查詢：</strong> GET /status</div>
+
+        <div className="mb-4">
+          <div className="text-sm font-semibold text-gray-700 mb-2">🔧 服務端點</div>
+          <div className="text-sm ml-4">
+            <code className="bg-white px-2 py-1 rounded border">http://rest-to-soap-proxy:5001</code>
+            <span className="text-gray-600 ml-2">(容器內部)</span>
+          </div>
+          <div className="text-sm ml-4 mt-1">
+            <code className="bg-white px-2 py-1 rounded border">http://172.27.197.100:5100</code>
+            <span className="text-gray-600 ml-2">(外部訪問)</span>
+          </div>
         </div>
-        <div className="mt-4">
-          <a
-            href={`http://localhost:${config?.port || 3002}/health`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 underline"
-          >
-            檢查服務健康狀態
-          </a>
+
+        <div className="mb-4">
+          <div className="text-sm font-semibold text-gray-700 mb-2">📊 管理端點 (Admin API)</div>
+          <div className="space-y-1 text-sm ml-4">
+            <div><code className="bg-white px-2 py-1 rounded border text-green-600">GET</code> <code className="bg-white px-2 py-1 rounded border">/health</code> - 健康檢查</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-green-600">GET</code> <code className="bg-white px-2 py-1 rounded border">/status</code> - 服務狀態</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-green-600">GET</code> <code className="bg-white px-2 py-1 rounded border">/config</code> - 獲取配置</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-blue-600">PUT</code> <code className="bg-white px-2 py-1 rounded border">/config</code> - 更新配置</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-green-600">GET</code> <code className="bg-white px-2 py-1 rounded border">/logs</code> - 獲取日誌</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-orange-600">POST</code> <code className="bg-white px-2 py-1 rounded border">/restart</code> - 重啟服務</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-orange-600">POST</code> <code className="bg-white px-2 py-1 rounded border">/test</code> - 測試連接</div>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <div className="text-sm font-semibold text-gray-700 mb-2">🌐 HTTPS API (Urtracker VBA 模式)</div>
+          <div className="space-y-1 text-sm ml-4">
+            <div><code className="bg-white px-2 py-1 rounded border text-orange-600">POST</code> <code className="bg-white px-2 py-1 rounded border">/api/https/login</code> - 登入 Urtracker</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-orange-600">POST</code> <code className="bg-white px-2 py-1 rounded border">/api/https/logout</code> - 登出</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-green-600">GET</code> <code className="bg-white px-2 py-1 rounded border">/api/https/status</code> - 登入狀態</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-green-600">GET</code> <code className="bg-white px-2 py-1 rounded border">/api/https/projects</code> - 專案列表</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-green-600">GET</code> <code className="bg-white px-2 py-1 rounded border">/api/https/download/:projectId</code> - 下載專案數據</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-green-600">GET</code> <code className="bg-white px-2 py-1 rounded border">/api/https/download-by-name/:key</code> - 按代號下載 (TV/PD/MNT/AVA)</div>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <div className="text-sm font-semibold text-gray-700 mb-2">🧼 SOAP API (傳統 REST-to-SOAP 代理)</div>
+          <div className="space-y-1 text-sm ml-4">
+            <div><code className="bg-white px-2 py-1 rounded border text-orange-600">POST</code> <code className="bg-white px-2 py-1 rounded border">/:method</code> - 簡化 JSON 回應</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-orange-600">POST</code> <code className="bg-white px-2 py-1 rounded border">/:method/full</code> - 完整 SOAP 回應</div>
+            <div><code className="bg-white px-2 py-1 rounded border text-orange-600">POST</code> <code className="bg-white px-2 py-1 rounded border">/soap12/:method</code> - 原始 XML 回應</div>
+            <div className="text-xs text-gray-600 mt-2">支援方法: GetIssueInfo, GetProjectPRList, GetProjectIssues 等</div>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-blue-300">
+          <div className="flex gap-2">
+            <a
+              href="http://172.27.197.100:5100/health"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+            >
+              🔍 檢查服務健康狀態
+            </a>
+            <a
+              href="http://172.27.197.100:5100/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
+            >
+              📖 查看完整 API 文檔
+            </a>
+          </div>
         </div>
       </div>
     </div>
