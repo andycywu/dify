@@ -155,6 +155,7 @@ class UrtrackerHttpsClient {
 
       // Debug: 監聽所有響應，特別是下載相關的
       let downloadResponseDetected = false;
+      let downloadResponse = null;
       this.page.on('response', async (response) => {
         const headers = response.headers();
         const contentType = headers['content-type'] || '';
@@ -167,6 +168,7 @@ class UrtrackerHttpsClient {
           console.log(`   📋 Content-Type: ${contentType}`);
           console.log(`   📋 Content-Disposition: ${contentDisposition}`);
           downloadResponseDetected = true;
+          downloadResponse = response;  // 保存響應對象
         }
       });
 
@@ -213,7 +215,31 @@ class UrtrackerHttpsClient {
         console.error(`   ⚠️  表單提交過程出現異常: ${error.message}`);
       }
 
-      // 等待下載完成
+      // 檢查是否偵測到下載響應
+      if (downloadResponseDetected && downloadResponse) {
+        console.log('   ✅ 下載響應已偵測到，直接從響應中讀取檔案...');
+
+        try {
+          const buffer = await downloadResponse.buffer();
+          console.log(`   📦 文件大小: ${buffer.length} bytes`);
+
+          if (buffer.length < 1024) {
+            throw new Error(`下載失敗: 文件大小只有 ${buffer.length} bytes`);
+          }
+
+          return {
+            buffer,
+            filename: `${projectName}-Data-${new Date().toISOString().split('T')[0]}.xls`,
+            size: buffer.length,
+            contentType: 'application/vnd.ms-excel'
+          };
+        } catch (error) {
+          console.error(`   ❌ 從響應讀取檔案失敗: ${error.message}`);
+          throw error;
+        }
+      }
+
+      // 如果沒有偵測到下載響應，回退到原來的邏輯
       console.log('   ⏳ 等待下載完成...');
       await downloadPromise;
 
