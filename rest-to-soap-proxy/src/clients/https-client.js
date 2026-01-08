@@ -144,20 +144,39 @@ class UrtrackerHttpsClient {
       // 根據您提供的最新截圖，使用 name 屬性來精準定位按鈕
       const finalExportButtonSelector = 'input[name="ctl00$CP1$btnExport"]';
 
-      // 在點擊前，先等待按鈕載入
       console.log('   ⏳ 等待最終的導出按鈕完全載入...');
       await this.page.waitForSelector(finalExportButtonSelector, { timeout: 10000 });
+      console.log('   ✅ 導出按鈕已找到。');
 
-      console.log('   ✅ 導出按鈕已找到，準備點擊...');
+      let downloadStarted = false;
+      client.on('Page.downloadWillBegin', () => {
+        downloadStarted = true;
+      });
 
-      // 使用 Promise.all 來同時執行點擊並等待網路回應
-      // 這是確保點擊事件能被完整處理的關鍵
-      await Promise.all([
-        this.page.waitForNetworkIdle({ idleTime: 500, timeout: 90000 }), // 等待點擊後的所有網路活動結束
-        this.page.click(finalExportButtonSelector)
-      ]);
+      // 實施重試機制，並使用更底層的點擊方法
+      for (let i = 1; i <= 3; i++) {
+        console.log(`\n   [第 ${i} 次嘗試] 準備點擊導出按鈕...`);
 
-      console.log('   📡 點擊事件已發送，網路已空閒，現在檢查下載結果...');
+        // 列印出點擊的動作內容 (按鈕的 HTML)
+        const buttonHTML = await this.page.evaluate(sel => document.querySelector(sel)?.outerHTML, finalExportButtonSelector);
+        console.log(`   🖱️  點擊目標內容: ${buttonHTML}`);
+
+        // 使用 evaluate 執行點擊，這比 page.click 更可靠
+        await this.page.evaluate(sel => document.querySelector(sel).click(), finalExportButtonSelector);
+        console.log(`   📡 第 ${i} 次點擊事件已發送。`);
+
+        // 等待 3 秒，檢查下載是否已開始
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        if (downloadStarted) {
+          console.log('   👍 偵測到下載已開始！');
+          break;
+        } else {
+          console.log('   ...3秒後下載未開始，準備重試...');
+        }
+        if (i === 3 && !downloadStarted) {
+            throw new Error('重試 3 次後，點擊導出按鈕仍未觸發下載。');
+        }
+      }
 
       // 等待下載完成
       console.log('   ⏳ 等待下載完成...');
