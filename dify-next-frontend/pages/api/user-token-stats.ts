@@ -107,9 +107,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         COUNT(*) as message_count,
         SUM(
           COALESCE(m.answer_tokens, 0) +
-          COALESCE(m.message_tokens, 0) +
-          COALESCE(m.message_unit_price, 0) +
-          COALESCE(m.answer_unit_price, 0)
+          COALESCE(m.message_tokens, 0)
         ) as total_tokens,
         SUM(
           COALESCE(m.total_price, 0)
