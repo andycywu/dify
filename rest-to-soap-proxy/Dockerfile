@@ -46,8 +46,11 @@ RUN apt-get update && apt-get install -y \
 # 複製 package 文件
 COPY package*.json ./
 
-# 安裝依賴（Puppeteer 會自動下載對應版本的 Chrome）
+# 安裝依賴
 RUN npm install
+
+# 明確安裝 Puppeteer 需要的 Chrome 瀏覽器
+RUN npx puppeteer browsers install chrome
 
 # 複製應用代碼
 COPY . .
