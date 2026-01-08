@@ -852,8 +852,6 @@ services:
       URTRACKER_USERNAME: ${URTRACKER_USERNAME:-andycy.wu}
       URTRACKER_PASSWORD: ${URTRACKER_PASSWORD:-}
       NODE_ENV: ${NODE_ENV:-production}
-      # 指定 Puppeteer 的緩存目錄
-      PUPPETEER_CACHE_DIR: /home/pptruser/.cache/puppeteer
     volumes:
       # Mount logs directory
       - ./volumes/rest-to-soap-proxy/logs:/app/logs

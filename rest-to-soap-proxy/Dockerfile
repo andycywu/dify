@@ -1,23 +1,59 @@
-# 使用包含 Puppeteer 依賴的 Node.js 20 基礎鏡像
-FROM ghcr.io/puppeteer/puppeteer:22.10.0
+FROM node:20
 
-# 將工作目錄從 /home/pptruser 切換到 /app
-# pptruser 是基礎鏡像中預設的非 root 用戶
 WORKDIR /app
 
-# 將 package.json 和 package-lock.json 複製到工作目錄
-# 並將所有者設置為 pptruser
-COPY --chown=pptruser:pptruser package*.json ./
+# 安裝 Puppeteer 需要的所有系統依賴
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    fonts-liberation \
+    libappindicator3-1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libc6 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libfontconfig1 \
+    libgbm1 \
+    libgcc1 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    lsb-release \
+    wget \
+    xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
 
-# 以 pptruser 的身份安裝 npm 依賴
-# 基礎鏡像已包含瀏覽器，所以 npm install 會跳過下載
+# 複製 package 文件
+COPY package*.json ./
+
+# 安裝依賴（Puppeteer 會自動下載對應版本的 Chrome）
 RUN npm install
 
-# 將所有應用代碼複製到工作目錄
-COPY --chown=pptruser:pptruser . .
+# 複製應用代碼
+COPY . .
 
-# 創建下載臨時目錄並設置權限
-RUN mkdir -p /app/src/clients/temp_downloads && chown -R pptruser:pptruser /app/src/clients/temp_downloads
+# 創建臨時下載目錄
+RUN mkdir -p /app/src/clients/temp_downloads && chmod 777 /app/src/clients/temp_downloads
 
 # 暴露服務端口
 EXPOSE 5001

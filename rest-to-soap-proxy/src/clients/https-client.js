@@ -28,7 +28,9 @@ class UrtrackerHttpsClient {
   async _initialize() {
     if (this.browser) return;
     console.log('🚀 啟動 Puppeteer 瀏覽器...');
-    this.browser = await puppeteer.launch({
+
+    // 配置瀏覽器啟動選項
+    const launchOptions = {
       headless: true, // 使用無頭模式
       args: [
         '--no-sandbox',
@@ -40,7 +42,16 @@ class UrtrackerHttpsClient {
         '--single-process', // linux only
         '--disable-gpu'
       ]
-    });
+    };
+
+    // 在 Docker 環境中，使用系統提供的 Chrome
+    // Puppeteer 官方鏡像將 Chrome 安裝在 /usr/bin/google-chrome-stable
+    if (process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_BIN) {
+      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_BIN;
+      console.log(`   📍 使用指定的瀏覽器: ${launchOptions.executablePath}`);
+    }
+
+    this.browser = await puppeteer.launch(launchOptions);
     this.page = await this.browser.newPage();
     await this.page.setDefaultNavigationTimeout(this.timeout);
     console.log('✅ 瀏覽器和頁面已準備就緒');
