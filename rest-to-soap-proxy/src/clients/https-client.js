@@ -141,8 +141,8 @@ class UrtrackerHttpsClient {
       });
 
       // 點擊最終的導出按鈕
-      // 根據您提供的最新截圖，使用 name 屬性來精準定位按鈕
-      const finalExportButtonSelector = 'input[name="ctl00$CP1$btnExport"]';
+      // 根據您提供的最新截圖和指示，使用 id 屬性來精準定位按鈕
+      const finalExportButtonSelector = '#ctl00_CP1_btnExport';
 
       console.log('   ⏳ 等待最終的導出按鈕完全載入...');
       await this.page.waitForSelector(finalExportButtonSelector, { timeout: 10000 });
