@@ -92,6 +92,8 @@ fi
 # 檢查 end_users 表
 echo "檢查 end_users 表..."
 ENDUSER_COUNT=$(docker exec $DB_CONTAINER psql -U postgres -d dify -t -c "SELECT COUNT(*) FROM end_users;" 2>/dev/null | xargs)
+
+if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ end_users 表存在${NC}"
     echo "  記錄數: $ENDUSER_COUNT"
 
