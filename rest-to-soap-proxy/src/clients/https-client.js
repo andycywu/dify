@@ -142,7 +142,13 @@ class UrtrackerHttpsClient {
 
       // 點擊最終的導出按鈕
       const finalExportButtonSelector = 'input#ctl00_CP1_btnExport';
+      const excelRadioButtonSelector = 'input#ctl00_CP1_radlExportFormat_0'; // Excel 選項的 ID
+
+      // 在點擊前，先等待關鍵元素載入
+      console.log('   ⏳ 等待導出選項和按鈕完全載入...');
+      await this.page.waitForSelector(excelRadioButtonSelector, { timeout: 10000 });
       await this.page.waitForSelector(finalExportButtonSelector, { timeout: 10000 });
+
       await this.page.click(finalExportButtonSelector);
 
       // 等待下載完成
