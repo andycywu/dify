@@ -832,18 +832,41 @@ services:
     networks:
       - default
 
-  # rest-to-soap-proxy service
+  # REST to SOAP Proxy with Puppeteer
+  # Provides both legacy SOAP proxy and new HTTPS download functionality
   rest-to-soap-proxy:
-    #image: ${REST_TO_SOAP_PROXY_IMAGE:-andywu719/rest-to-soap-proxy:latest}
-    platform: linux/amd64
-    build: ../rest-to-soap-proxy
+    build:
+      context: ../rest-to-soap-proxy
+      dockerfile: Dockerfile
+    container_name: rest-to-soap-proxy
     restart: always
-    env_file:
-      - ../rest-to-soap-proxy/.env
+    # 增加共享內存大小，這對 Chrome 穩定運行至關重要
+    shm_size: '2gb'
     ports:
-      - "${REST_TO_SOAP_PROXY_PORT:-5100}:5001"
+      - "${REST_TO_SOAP_PORT:-5100}:5001"
+    environment:
+      # SOAP API credentials (legacy mode)
+      APP_ID: ${URTRACKER_APP_ID:-}
+      API_PWD: ${URTRACKER_API_PWD:-}
+      # HTTPS mode credentials (new Puppeteer-based download)
+      URTRACKER_USERNAME: ${URTRACKER_USERNAME:-andycy.wu}
+      URTRACKER_PASSWORD: ${URTRACKER_PASSWORD:-}
+      NODE_ENV: ${NODE_ENV:-production}
+      # 指定 Puppeteer 的緩存目錄
+      PUPPETEER_CACHE_DIR: /home/pptruser/.cache/puppeteer
+    volumes:
+      # Mount logs directory
+      - ./volumes/rest-to-soap-proxy/logs:/app/logs
+      # Mount temp downloads directory for debugging
+      - ./volumes/rest-to-soap-proxy/temp:/app/src/clients/temp_downloads
     networks:
       - default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # The postgres database.
   db:
@@ -1516,42 +1539,6 @@ services:
     restart: always
     volumes:
       - ./volumes/unstructured:/app/data
-
-  # REST to SOAP Proxy with Puppeteer
-  # Provides both legacy SOAP proxy and new HTTPS download functionality
-  rest-to-soap-proxy:
-    build:
-      context: ../rest-to-soap-proxy
-      dockerfile: Dockerfile
-    container_name: rest-to-soap-proxy
-    restart: always
-    # 增加共享內存大小，這對 Chrome 穩定運行至關重要
-    shm_size: '2gb'
-    ports:
-      - "${REST_TO_SOAP_PORT:-5100}:5001"
-    environment:
-      # SOAP API credentials (legacy mode)
-      APP_ID: ${URTRACKER_APP_ID:-}
-      API_PWD: ${URTRACKER_API_PWD:-}
-      # HTTPS mode credentials (new Puppeteer-based download)
-      URTRACKER_USERNAME: ${URTRACKER_USERNAME:-andycy.wu}
-      URTRACKER_PASSWORD: ${URTRACKER_PASSWORD:-}
-      NODE_ENV: ${NODE_ENV:-production}
-      # 指定 Puppeteer 的緩存目錄
-      PUPPETEER_CACHE_DIR: /home/pptruser/.cache/puppeteer
-    volumes:
-      # Mount logs directory
-      - ./volumes/rest-to-soap-proxy/logs:/app/logs
-      # Mount temp downloads directory for debugging
-      - ./volumes/rest-to-soap-proxy/temp:/app/src/clients/temp_downloads
-    networks:
-      - default
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 networks:
   # create a network between sandbox, api and ssrf_proxy, and can not access outside.
