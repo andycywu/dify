@@ -177,10 +177,31 @@ router.get('/download/:projectId', async (req, res) => {
     res.end(result.buffer);
   } catch (error) {
     console.error('Download error:', error);
-    res.status(500).json({
+
+    // 根據錯誤訊息返回更具體的 HTTP 狀態碼
+    let statusCode = 500;
+    let errorType = '下載失敗';
+
+    if (error.message.includes('權限') || error.message.includes('permission')) {
+      statusCode = 403;
+      errorType = '權限不足';
+    } else if (error.message.includes('不存在') || error.message.includes('not found') || error.message.includes('找不到')) {
+      statusCode = 404;
+      errorType = '專案不存在';
+    } else if (error.message.includes('Session') || error.message.includes('登入')) {
+      statusCode = 401;
+      errorType = '未授權';
+    } else if (error.message.includes('超時') || error.message.includes('timeout')) {
+      statusCode = 408;
+      errorType = '請求超時';
+    }
+
+    res.status(statusCode).json({
       success: false,
-      error: '下載失敗',
-      message: error.message
+      error: errorType,
+      message: error.message,
+      projectId: req.params.projectId,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -370,10 +391,32 @@ router.get('/download-by-name/:projectKey', async (req, res) => {
     res.end(result.buffer);
   } catch (error) {
     console.error('Download by name error:', error);
-    res.status(500).json({
+
+    // 根據錯誤訊息返回更具體的 HTTP 狀態碼
+    let statusCode = 500;
+    let errorType = '下載失敗';
+
+    if (error.message.includes('權限') || error.message.includes('permission')) {
+      statusCode = 403;
+      errorType = '權限不足';
+    } else if (error.message.includes('不存在') || error.message.includes('not found') || error.message.includes('找不到')) {
+      statusCode = 404;
+      errorType = '專案不存在';
+    } else if (error.message.includes('Session') || error.message.includes('登入')) {
+      statusCode = 401;
+      errorType = '未授權';
+    } else if (error.message.includes('超時') || error.message.includes('timeout')) {
+      statusCode = 408;
+      errorType = '請求超時';
+    }
+
+    res.status(statusCode).json({
       success: false,
-      error: '下載失敗',
-      message: error.message
+      error: errorType,
+      message: error.message,
+      projectKey: req.params.projectKey,
+      projectId: project.id,
+      timestamp: new Date().toISOString()
     });
   }
 });

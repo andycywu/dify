@@ -129,7 +129,38 @@ class UrtrackerHttpsClient {
       const exportPageUrl = `${this.baseURL}/Pts/ProblemListExport.aspx?project=${projectId}&FilterType=1&procName=${filter.procName}&Title=${filter.title}`;
       console.log(`   步驟1: 直接導航到導出頁面...`);
       await this.page.goto(exportPageUrl, { waitUntil: 'networkidle2' });
-      console.log(`   ✓ 成功到達導出頁面: ${await this.page.title()}`);
+
+      const pageTitle = await this.page.title();
+      console.log(`   ✓ 成功到達導出頁面: ${pageTitle}`);
+
+      // 檢查是否被重定向到登入頁面（Session 過期）
+      if (pageTitle.includes('Login') || pageTitle.includes('登入')) {
+        throw new Error('Session 已過期，請重新登入');
+      }
+
+      // 檢查頁面是否有錯誤訊息
+      const pageContent = await this.page.content();
+      const errorChecks = [
+        { pattern: /access denied|沒有權限|無權限|permission denied/i, message: '沒有權限訪問此專案' },
+        { pattern: /project not found|專案不存在|找不到專案/i, message: '專案不存在或ID錯誤' },
+        { pattern: /error|錯誤|失敗/i, message: '頁面載入時發生錯誤' }
+      ];
+
+      for (const check of errorChecks) {
+        if (check.pattern.test(pageContent)) {
+          throw new Error(`${check.message} (Project ID: ${projectId})`);
+        }
+      }
+
+      // 檢查導出按鈕是否存在
+      const exportButtonExists = await this.page.evaluate(() => {
+        const btn = document.querySelector('[id*="btnExport"]');
+        return btn !== null;
+      });
+
+      if (!exportButtonExists) {
+        throw new Error(`找不到導出按鈕，可能是專案 ID (${projectId}) 無效或沒有資料可匯出`);
+      }
 
       // 步驟 2: 配置下載行為並點擊按鈕
       console.log('   步驟2: 配置下載行為並觸發下載...');
@@ -192,7 +223,15 @@ class UrtrackerHttpsClient {
       }
 
       if (!downloadedFile) {
-        throw new Error(`下載超時：${maxWaitTime / 1000} 秒內未檢測到文件`);
+        // 檢查是否真的沒有文件，還是下載被阻擋
+        const currentUrl = this.page.url();
+        const currentTitle = await this.page.title();
+
+        if (currentTitle.includes('Error') || currentTitle.includes('錯誤')) {
+          throw new Error(`下載失敗：頁面顯示錯誤 (${currentTitle})`);
+        }
+
+        throw new Error(`下載超時：${maxWaitTime / 1000} 秒內未檢測到文件。這可能表示專案沒有資料可匯出或沒有匯出權限。`);
       }
 
       // 讀取下載的文件
@@ -208,9 +247,13 @@ class UrtrackerHttpsClient {
         throw new Error(`下載失敗: 文件大小只有 ${downloadBuffer.length} bytes`);
       }
 
+      // 生成包含狀態的檔名
+      const stateLabel = filterState.charAt(0).toUpperCase() + filterState.slice(1); // Open, Closed, All
+      const dateStr = new Date().toISOString().split('T')[0]; // 2026-01-08
+
       return {
         buffer: downloadBuffer,
-        filename: `${projectName}-Data-${new Date().toISOString().split('T')[0]}.xls`,
+        filename: `${projectName}-${stateLabel}-${dateStr}.xls`,
         size: downloadBuffer.length,
         contentType: 'application/vnd.ms-excel'
       };
