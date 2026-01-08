@@ -149,7 +149,15 @@ class UrtrackerHttpsClient {
       await this.page.waitForSelector(finalExportButtonSelector, { timeout: 10000 });
 
       console.log('   ✅ 導出按鈕已找到，準備點擊...');
-      await this.page.click(finalExportButtonSelector);
+
+      // 使用 Promise.all 來同時執行點擊並等待網路回應
+      // 這是確保點擊事件能被完整處理的關鍵
+      await Promise.all([
+        this.page.waitForNetworkIdle({ idleTime: 500, timeout: 90000 }), // 等待點擊後的所有網路活動結束
+        this.page.click(finalExportButtonSelector)
+      ]);
+
+      console.log('   📡 點擊事件已發送，網路已空閒，現在檢查下載結果...');
 
       // 等待下載完成
       console.log('   ⏳ 等待下載完成...');
