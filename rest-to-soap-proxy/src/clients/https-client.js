@@ -114,30 +114,37 @@ class UrtrackerHttpsClient {
 
       // 步驟 2: 在導出頁面，配置下載並觸發
       console.log('   步驟2: 配置下載並點擊最終導出按鈕...');
-      const downloadPath = path.resolve(__dirname, 'downloads');
-      await fs.mkdir(downloadPath, { recursive: true });
 
-      const client = await this.page.target().createCDPSession();
-      await client.send('Page.setDownloadBehavior', {
-          behavior: 'allow',
-          downloadPath: downloadPath,
+      // 啟用請求攔截，以便我們可以捕獲下載響應
+      await this.page.setRequestInterception(true);
+
+      let downloadBuffer = null;
+      let downloadHeaders = null;
+
+      // 攔截請求並捕獲下載響應
+      this.page.on('request', interceptedRequest => {
+        // 放行所有請求
+        interceptedRequest.continue();
       });
 
-      // 監聽下載事件
-      const downloadPromise = new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('下載超時 (90秒)')), 90000);
-        client.on('Page.downloadWillBegin', (data) => {
-            console.log(`   📥 偵測到下載: ${data.suggestedFilename}`);
-        });
-        client.on('Page.downloadProgress', (data) => {
-            if (data.state === 'completed') {
-                clearTimeout(timeout);
-                resolve();
-            } else if (data.state === 'canceled') {
-                clearTimeout(timeout);
-                reject(new Error('下載被伺服器取消'));
-            }
-        });
+      this.page.on('response', async (response) => {
+        const headers = response.headers();
+        const contentDisposition = headers['content-disposition'] || '';
+
+        if (contentDisposition.includes('attachment') && contentDisposition.includes('ProblemList.xls')) {
+          console.log(`   🔍 偵測到下載響應: ${response.url()}`);
+          console.log(`   📋 Content-Type: ${headers['content-type']}`);
+          console.log(`   📋 Content-Disposition: ${contentDisposition}`);
+
+          try {
+            // 嘗試直接讀取響應體
+            downloadBuffer = await response.buffer();
+            downloadHeaders = headers;
+            console.log(`   ✅ 成功捕獲下載內容，大小: ${downloadBuffer.length} bytes`);
+          } catch (error) {
+            console.log(`   ⚠️  無法直接讀取響應: ${error.message}`);
+          }
+        }
       });
 
       // 點擊最終的導出按鈕
@@ -152,25 +159,6 @@ class UrtrackerHttpsClient {
       const beforeSubmitScreenshot = path.resolve(__dirname, `debug_before_submit_${Date.now()}.png`);
       await this.page.screenshot({ path: beforeSubmitScreenshot, fullPage: true });
       console.log(`   📸 提交前截圖: ${beforeSubmitScreenshot}`);
-
-      // Debug: 監聽所有響應，特別是下載相關的
-      let downloadResponseDetected = false;
-      let downloadResponse = null;
-      this.page.on('response', async (response) => {
-        const headers = response.headers();
-        const contentType = headers['content-type'] || '';
-        const contentDisposition = headers['content-disposition'] || '';
-
-        if (contentDisposition.includes('attachment') ||
-            contentType.includes('application/vnd.ms-excel') ||
-            contentType.includes('application/octet-stream')) {
-          console.log(`   🔍 偵測到下載響應: ${response.url()}`);
-          console.log(`   📋 Content-Type: ${contentType}`);
-          console.log(`   📋 Content-Disposition: ${contentDisposition}`);
-          downloadResponseDetected = true;
-          downloadResponse = response;  // 保存響應對象
-        }
-      });
 
 // 最終解決方案：模擬 ASP.NET 的 PostBack 機制
       console.log('   🚀 終極手段：模擬 ASP.NET PostBack...');
@@ -209,70 +197,28 @@ class UrtrackerHttpsClient {
         console.log(`   📸 提交後截圖: ${afterSubmitScreenshot}`);
         console.log(`   📍 當前頁面 URL: ${this.page.url()}`);
         console.log(`   📍 當前頁面標題: ${await this.page.title()}`);
-        console.log(`   🔍 是否偵測到下載響應: ${downloadResponseDetected ? '是' : '否'}`);
 
       } catch (error) {
         console.error(`   ⚠️  表單提交過程出現異常: ${error.message}`);
       }
 
-      // 檢查是否偵測到下載響應
-      if (downloadResponseDetected && downloadResponse) {
-        console.log('   ✅ 下載響應已偵測到，直接從響應中讀取檔案...');
+      // 檢查是否成功捕獲下載內容
+      if (downloadBuffer) {
+        console.log('   ✅ 下載完成！');
 
-        try {
-          const buffer = await downloadResponse.buffer();
-          console.log(`   📦 文件大小: ${buffer.length} bytes`);
-
-          if (buffer.length < 1024) {
-            throw new Error(`下載失敗: 文件大小只有 ${buffer.length} bytes`);
-          }
-
-          return {
-            buffer,
-            filename: `${projectName}-Data-${new Date().toISOString().split('T')[0]}.xls`,
-            size: buffer.length,
-            contentType: 'application/vnd.ms-excel'
-          };
-        } catch (error) {
-          console.error(`   ❌ 從響應讀取檔案失敗: ${error.message}`);
-          throw error;
+        if (downloadBuffer.length < 1024) {
+          throw new Error(`下載失敗: 文件大小只有 ${downloadBuffer.length} bytes`);
         }
+
+        return {
+          buffer: downloadBuffer,
+          filename: `${projectName}-Data-${new Date().toISOString().split('T')[0]}.xls`,
+          size: downloadBuffer.length,
+          contentType: 'application/vnd.ms-excel'
+        };
+      } else {
+        throw new Error('未能捕獲下載內容');
       }
-
-      // 如果沒有偵測到下載響應，回退到原來的邏輯
-      console.log('   ⏳ 等待下載完成...');
-      await downloadPromise;
-
-      // 尋找下載目錄中最新的檔案
-      const files = await fs.readdir(downloadPath);
-      if (files.length === 0) throw new Error('下載目錄為空，找不到下載的檔案');
-
-      const downloadedFilePath = path.join(downloadPath, files.sort((a, b) => {
-        return fs.statSync(path.join(downloadPath, b)).mtime.getTime() -
-               fs.statSync(path.join(downloadPath, a)).mtime.getTime();
-      })[0]);
-
-      console.log(`   ✅ 文件已下載到: ${downloadedFilePath}`);
-
-      const buffer = await fs.readFile(downloadedFilePath);
-      const stats = await fs.stat(downloadedFilePath);
-
-      // 刪除臨時文件
-      await fs.unlink(downloadedFilePath);
-
-      if (buffer.length < 1024) { // 小於 1KB 的文件很可能是錯誤頁面
-        throw new Error(`下載失敗: 文件大小只有 ${buffer.length} bytes`);
-      }
-
-      return {
-        buffer,
-        filename: `${projectName}-Data-${new Date().toISOString().split('T')[0]}.xls`,
-        size: stats.size,
-        contentType: 'application/vnd.ms-excel'
-      };
-
-    } catch (error) {
-      console.error(`   ❌ ${projectName} 下載失敗: ${error.message}`);
       // 增加錯誤截圖，方便除錯
       const errorScreenshotPath = path.resolve(__dirname, `error_${projectName}_${Date.now()}.png`);
       await this.page.screenshot({ path: errorScreenshotPath, fullPage: true });
