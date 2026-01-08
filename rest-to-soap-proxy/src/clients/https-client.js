@@ -148,35 +148,17 @@ class UrtrackerHttpsClient {
       await this.page.waitForSelector(finalExportButtonSelector, { timeout: 10000 });
       console.log('   ✅ 導出按鈕已找到。');
 
-      let downloadStarted = false;
-      client.on('Page.downloadWillBegin', () => {
-        downloadStarted = true;
-      });
-
-      // 實施重試機制，並使用更底層的點擊方法
-      for (let i = 1; i <= 3; i++) {
-        console.log(`\n   [第 ${i} 次嘗試] 準備點擊導出按鈕...`);
-
-        // 列印出點擊的動作內容 (按鈕的 HTML)
-        const buttonHTML = await this.page.evaluate(sel => document.querySelector(sel)?.outerHTML, finalExportButtonSelector);
-        console.log(`   🖱️  點擊目標內容: ${buttonHTML}`);
-
-        // 使用 evaluate 執行點擊，這比 page.click 更可靠
-        await this.page.evaluate(sel => document.querySelector(sel).click(), finalExportButtonSelector);
-        console.log(`   📡 第 ${i} 次點擊事件已發送。`);
-
-        // 等待 3 秒，檢查下載是否已開始
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        if (downloadStarted) {
-          console.log('   👍 偵測到下載已開始！');
-          break;
+      // 最終解決方案：不再模擬點擊，而是直接提交表單。
+      // 這能繞過所有前端點擊事件的干擾，強制觸發後端 PostBack。
+      console.log('   🚀 終極手段：直接提交表單...');
+      await this.page.evaluate(() => {
+        const form = document.getElementById('aspnetForm');
+        if (form) {
+          form.submit();
         } else {
-          console.log('   ...3秒後下載未開始，準備重試...');
+          throw new Error('找不到頁面主表單 (aspnetForm)');
         }
-        if (i === 3 && !downloadStarted) {
-            throw new Error('重試 3 次後，點擊導出按鈕仍未觸發下載。');
-        }
-      }
+      });
 
       // 等待下載完成
       console.log('   ⏳ 等待下載完成...');
