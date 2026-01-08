@@ -151,6 +151,12 @@ class UrtrackerHttpsClient {
       const cookieString = cookies.map(c => `${c.name}=${c.value}`).join('; ');
 
       console.log('   📋 表單數據已提取');
+      console.log(`   📊 表單欄位數量: ${Object.keys(formData).length}`);
+      console.log(`   🔑 關鍵欄位檢查:`);
+      console.log(`      - __VIEWSTATE: ${formData['__VIEWSTATE'] ? formData['__VIEWSTATE'].substring(0, 50) + '...' : '❌ 缺失'}`);
+      console.log(`      - __VIEWSTATEGENERATOR: ${formData['__VIEWSTATEGENERATOR'] || '❌ 缺失'}`);
+      console.log(`      - __EVENTVALIDATION: ${formData['__EVENTVALIDATION'] ? formData['__EVENTVALIDATION'].substring(0, 50) + '...' : '❌ 缺失'}`);
+      console.log(`      - __EVENTTARGET: ${formData['__EVENTTARGET']}`);
       console.log('   🍪 Cookies 已獲取');
 
       // 使用 Node.js 的 https 模組發送請求
@@ -187,6 +193,14 @@ class UrtrackerHttpsClient {
           res.on('end', () => {
             const buffer = Buffer.concat(chunks);
             console.log(`   ✅ 成功接收數據，大小: ${buffer.length} bytes`);
+
+            // 如果不是 Excel 文件，顯示前 500 個字符以便調試
+            const contentType = res.headers['content-type'] || '';
+            if (!contentType.includes('excel') && !contentType.includes('application/vnd.ms-excel')) {
+              console.log(`   ⚠️  警告：返回的不是 Excel 文件！`);
+              console.log(`   📄 響應內容預覽:\n${buffer.toString('utf-8').substring(0, 500)}`);
+            }
+
             resolve(buffer);
           });
         });
