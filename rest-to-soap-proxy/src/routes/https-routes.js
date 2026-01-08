@@ -116,9 +116,7 @@ router.get('/projects', (req, res) => {
  *
  * Query:
  *   - name: 專案名稱 (可選)
- *   - format: 輸出格式，默認 xls (可選)
- *   - fieldStart: 起始字段編號，默認 2 (可選)
- *   - fieldEnd: 結束字段編號，默認 68 (可選)
+ *   - state: Issue 狀態 (可選: 'open', 'closed', 'all', 預設: 'all')
  */
 router.get('/download/:projectId', async (req, res) => {
   const client = getClient(req);
@@ -153,24 +151,30 @@ router.get('/download/:projectId', async (req, res) => {
 
   const { projectId } = req.params;
   const projectName = req.query.name || `Project-${projectId}`;
-  const options = {
-    format: req.query.format || 'xls',
-    fieldStart: parseInt(req.query.fieldStart) || 2,
-    fieldEnd: parseInt(req.query.fieldEnd) || 68
-  };
+  const filterState = req.query.state || 'all';
+
+  // 驗證 state 參數
+  const validStates = ['open', 'closed', 'all'];
+  if (!validStates.includes(filterState)) {
+    return res.status(400).json({
+      success: false,
+      error: '無效的 state 參數',
+      message: `state 必須是: ${validStates.join(', ')}`
+    });
+  }
 
   try {
     const result = await client.downloadProjectData(
       parseInt(projectId),
       projectName,
-      options
+      filterState
     );
 
     // 設置 HTTP 響應頭，讓瀏覽器下載文件
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.setHeader('Content-Length', result.size);
-    res.send(result.data);
+    res.end(result.buffer);
   } catch (error) {
     console.error('Download error:', error);
     res.status(500).json({
@@ -298,6 +302,9 @@ router.get('/download-all', async (req, res) => {
  *
  * Params:
  *   - projectKey: 專案代號 (TV, PD, MNT, AVA)
+ *
+ * Query:
+ *   - state: Issue 狀態 (可選: 'open', 'closed', 'all', 預設: 'all')
  */
 router.get('/download-by-name/:projectKey', async (req, res) => {
   const client = getClient(req);
@@ -331,6 +338,7 @@ router.get('/download-by-name/:projectKey', async (req, res) => {
   }
 
   const { projectKey } = req.params;
+  const filterState = req.query.state || 'all';
   const projects = client.getProjects();
   const project = projects[projectKey.toUpperCase()];
 
@@ -343,8 +351,18 @@ router.get('/download-by-name/:projectKey', async (req, res) => {
     });
   }
 
+  // 驗證 state 參數
+  const validStates = ['open', 'closed', 'all'];
+  if (!validStates.includes(filterState)) {
+    return res.status(400).json({
+      success: false,
+      error: '無效的 state 參數',
+      message: `state 必須是: ${validStates.join(', ')}`
+    });
+  }
+
   try {
-    const result = await client.downloadProjectData(project.id, project.name);
+    const result = await client.downloadProjectData(project.id, project.name, filterState);
 
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);

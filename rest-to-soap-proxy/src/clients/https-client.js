@@ -105,20 +105,28 @@ class UrtrackerHttpsClient {
    * 下載專案數據 (Excel 格式) - PTS 系統版本
    * @param {number} projectId - 專案 ID, 例如 2561 代表 MNT
    * @param {string} projectName - 專案名稱, 用於日誌和檔名
+   * @param {string} filterState - Issue 狀態過濾: 'open', 'closed', 'all' (預設: 'all')
    * @returns {Object} 下載結果 { buffer, filename, size, contentType }
    */
-  async downloadProjectData(projectId, projectName = 'Data') {
+  async downloadProjectData(projectId, projectName = 'Data', filterState = 'all') {
     if (!this.page) {
       throw new Error('未登入，請先調用 login() 方法');
     }
 
-    console.log(`\n📥 開始下載專案: ${projectName} (ID: ${projectId}) - 採用簡化流程`);
+    // 根據 filterState 決定 procName 和 Title
+    const filterConfig = {
+      'open': { procName: 'State_1', title: 'Open+issues' },
+      'closed': { procName: 'State_2', title: 'Closed' },
+      'all': { procName: 'State_3', title: 'All+Issues' }
+    };
+
+    const filter = filterConfig[filterState] || filterConfig['all'];
+    console.log(`\n📥 開始下載專案: ${projectName} (ID: ${projectId}, 狀態: ${filterState}) - 採用簡化流程`);
 
     try {
       // 步驟 1: 直接導航到導出頁面
-      // 根據您提供的最新錄製檔，這是一個更直接的路徑
       // FilterType=1 代表 "跟蹤中"
-      const exportPageUrl = `${this.baseURL}/Pts/ProblemListExport.aspx?project=${projectId}&FilterType=1&procName=State_3&Title=All+Issues`;
+      const exportPageUrl = `${this.baseURL}/Pts/ProblemListExport.aspx?project=${projectId}&FilterType=1&procName=${filter.procName}&Title=${filter.title}`;
       console.log(`   步驟1: 直接導航到導出頁面...`);
       await this.page.goto(exportPageUrl, { waitUntil: 'networkidle2' });
       console.log(`   ✓ 成功到達導出頁面: ${await this.page.title()}`);
