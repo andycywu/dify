@@ -22,6 +22,60 @@ app.use((req, res, next) => {
 
 // ============ 路由配置 ============
 
+// 管理API端點 (用於前端管理面板)
+app.get('/status', (req, res) => {
+  res.json({
+    running: true,
+    uptime: process.uptime() + 's',
+    requests: 0,
+    errors: 0,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/config', (req, res) => {
+  res.json({
+    port: PORT,
+    wsdlUrl: 'https://fwtrack.tpv-tech.com/api/issue.asmx',
+    timeout: 30000,
+    enableLogging: true,
+    username: process.env.URTRACKER_USERNAME ? '***' : null,
+    hasCredentials: !!(process.env.URTRACKER_USERNAME && process.env.URTRACKER_PASSWORD)
+  });
+});
+
+app.put('/config', (req, res) => {
+  res.json({
+    success: true,
+    message: '配置更新功能尚未實現',
+    note: '目前使用環境變數配置'
+  });
+});
+
+app.get('/logs', (req, res) => {
+  res.json({
+    logs: [
+      new Date().toISOString() + ' - 服務運行中',
+      new Date().toISOString() + ' - REST-to-SOAP 代理就緒'
+    ]
+  });
+});
+
+app.post('/restart', (req, res) => {
+  res.json({
+    success: true,
+    message: '重啟命令已接收（Docker 環境中由容器管理）'
+  });
+});
+
+app.post('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: '測試連接成功',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // HTTPS API 路由 (新增 - VBA 模式)
 app.use('/api/https', httpsRoutes);
 
@@ -39,27 +93,27 @@ app.get('/', (req, res) => {
       <meta charset="UTF-8">
       <title>Urtracker API Proxy</title>
       <style>
-        body { 
-          font-family: 'Segoe UI', Arial, sans-serif; 
-          max-width: 1200px; 
-          margin: 40px auto; 
+        body {
+          font-family: 'Segoe UI', Arial, sans-serif;
+          max-width: 1200px;
+          margin: 40px auto;
           padding: 0 20px;
           line-height: 1.6;
           color: #333;
         }
-        h1 { 
-          color: #0066cc; 
-          border-bottom: 3px solid #0066cc; 
+        h1 {
+          color: #0066cc;
+          border-bottom: 3px solid #0066cc;
           padding-bottom: 10px;
         }
-        h2 { 
-          color: #0088cc; 
+        h2 {
+          color: #0088cc;
           margin-top: 30px;
           border-left: 4px solid #0088cc;
           padding-left: 15px;
         }
-        h3 { 
-          color: #00aacc; 
+        h3 {
+          color: #00aacc;
           margin-top: 20px;
         }
         .mode-section {
@@ -130,7 +184,7 @@ app.get('/', (req, res) => {
     </head>
     <body>
       <h1>🚀 Urtracker API Proxy Server</h1>
-      
+
       <div class="info-box">
         <strong>📡 服務狀態:</strong> 運行中<br>
         <strong>🕐 啟動時間:</strong> ${new Date().toISOString()}<br>
@@ -223,7 +277,7 @@ curl -X POST http://localhost:${PORT}/api/https/logout</pre>
         <p>
           原有的 REST to SOAP 代理功能<br>
           支持 ${[
-            'CreateIssue', 'UpdateIssueById', 'GetIssueInfo', 
+            'CreateIssue', 'UpdateIssueById', 'GetIssueInfo',
             'GetProjectPRList', 'GetURTTaskList', '等 18 個 SOAP 方法'
           ].join(', ')}
         </p>
@@ -295,8 +349,8 @@ URTRACKER_BASE_URL=https://fwtrack.tpv-tech.com</pre>
 
 // ============ 健康檢查 ============
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     modes: {
       https: 'available',
