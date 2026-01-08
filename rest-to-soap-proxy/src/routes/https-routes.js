@@ -320,7 +320,7 @@ router.get('/download-by-name/:projectKey', async (req, res) => {
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.setHeader('Content-Length', result.size);
-    res.send(result.data);
+    res.send(result.buffer);
   } catch (error) {
     console.error('Download by name error:', error);
     res.status(500).json({ 
