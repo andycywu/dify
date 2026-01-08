@@ -148,17 +148,61 @@ class UrtrackerHttpsClient {
       await this.page.waitForSelector(finalExportButtonSelector, { timeout: 10000 });
       console.log('   ✅ 導出按鈕已找到。');
 
-      // 最終解決方案：不再模擬點擊，而是直接提交表單。
-      // 這能繞過所有前端點擊事件的干擾，強制觸發後端 PostBack。
-      console.log('   🚀 終極手段：直接提交表單...');
-      await this.page.evaluate(() => {
-        const form = document.getElementById('aspnetForm');
-        if (form) {
-          form.submit();
-        } else {
-          throw new Error('找不到頁面主表單 (aspnetForm)');
+      // Debug: 截圖並記錄當前頁面狀態
+      const beforeSubmitScreenshot = path.resolve(__dirname, `debug_before_submit_${Date.now()}.png`);
+      await this.page.screenshot({ path: beforeSubmitScreenshot, fullPage: true });
+      console.log(`   📸 提交前截圖: ${beforeSubmitScreenshot}`);
+
+      // Debug: 監聽所有響應，特別是下載相關的
+      let downloadResponseDetected = false;
+      this.page.on('response', async (response) => {
+        const headers = response.headers();
+        const contentType = headers['content-type'] || '';
+        const contentDisposition = headers['content-disposition'] || '';
+
+        if (contentDisposition.includes('attachment') ||
+            contentType.includes('application/vnd.ms-excel') ||
+            contentType.includes('application/octet-stream')) {
+          console.log(`   🔍 偵測到下載響應: ${response.url()}`);
+          console.log(`   📋 Content-Type: ${contentType}`);
+          console.log(`   📋 Content-Disposition: ${contentDisposition}`);
+          downloadResponseDetected = true;
         }
       });
+
+      // 最終解決方案：不再模擬點擊，而是直接提交表單。
+      console.log('   🚀 終極手段：直接提交表單...');
+
+      try {
+        // 提交表單並等待可能的導航
+        await Promise.race([
+          this.page.evaluate(() => {
+            const form = document.getElementById('aspnetForm');
+            if (form) {
+              form.submit();
+            } else {
+              throw new Error('找不到頁面主表單 (aspnetForm)');
+            }
+          }),
+          this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 }).catch(() => {
+            console.log('   ℹ️  無導航事件發生（這可能是正常的）');
+          })
+        ]);
+
+        // 等待 5 秒讓頁面完成所有操作
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        // Debug: 提交後截圖
+        const afterSubmitScreenshot = path.resolve(__dirname, `debug_after_submit_${Date.now()}.png`);
+        await this.page.screenshot({ path: afterSubmitScreenshot, fullPage: true });
+        console.log(`   📸 提交後截圖: ${afterSubmitScreenshot}`);
+        console.log(`   📍 當前頁面 URL: ${this.page.url()}`);
+        console.log(`   📍 當前頁面標題: ${await this.page.title()}`);
+        console.log(`   🔍 是否偵測到下載響應: ${downloadResponseDetected ? '是' : '否'}`);
+
+      } catch (error) {
+        console.error(`   ⚠️  表單提交過程出現異常: ${error.message}`);
+      }
 
       // 等待下載完成
       console.log('   ⏳ 等待下載完成...');
