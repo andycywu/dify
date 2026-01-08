@@ -117,6 +117,16 @@ class UrtrackerHttpsClient {
       // 步驟 2: 提取表單數據並使用 HTTP 請求下載
       console.log('   步驟2: 提取表單數據並發送 HTTP 請求...');
 
+      // Debug: 保存頁面 HTML 來檢查 __EVENTVALIDATION
+      const pageHtml = await this.page.content();
+      const htmlPath = path.resolve(__dirname, `debug_page_${Date.now()}.html`);
+      await fs.writeFile(htmlPath, pageHtml);
+      console.log(`   🔍 頁面 HTML 已保存: ${htmlPath}`);
+
+      // 檢查 __EVENTVALIDATION 是否存在於頁面中
+      const hasEventValidation = pageHtml.includes('__EVENTVALIDATION');
+      console.log(`   🔍 頁面中是否包含 __EVENTVALIDATION: ${hasEventValidation ? '✅ 是' : '❌ 否'}`);
+
       // 提取頁面中的所有表單數據
       const formData = await this.page.evaluate(() => {
         const form = document.getElementById('aspnetForm');
