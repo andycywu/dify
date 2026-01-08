@@ -1,6 +1,8 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs').promises;
+const https = require('https');
+const { URL, URLSearchParams } = require('url');
 
 /**
  * Urtracker HTTPS 客戶端 (Puppeteer 版本)
@@ -112,113 +114,102 @@ class UrtrackerHttpsClient {
       await this.page.goto(exportPageUrl, { waitUntil: 'networkidle2' });
       console.log(`   ✓ 成功到達導出頁面: ${await this.page.title()}`);
 
-      // 步驟 2: 在導出頁面，配置下載並觸發
-      console.log('   步驟2: 配置下載並點擊最終導出按鈕...');
+      // 步驟 2: 提取表單數據並使用 HTTP 請求下載
+      console.log('   步驟2: 提取表單數據並發送 HTTP 請求...');
 
-      // 啟用請求攔截，以便我們可以捕獲下載響應
-      await this.page.setRequestInterception(true);
+      // 提取頁面中的所有表單數據
+      const formData = await this.page.evaluate(() => {
+        const form = document.getElementById('aspnetForm');
+        if (!form) return null;
 
-      let downloadBuffer = null;
-      let downloadHeaders = null;
-
-      // 攔截請求並捕獲下載響應
-      this.page.on('request', interceptedRequest => {
-        // 放行所有請求
-        interceptedRequest.continue();
-      });
-
-      this.page.on('response', async (response) => {
-        const headers = response.headers();
-        const contentDisposition = headers['content-disposition'] || '';
-
-        if (contentDisposition.includes('attachment') && contentDisposition.includes('ProblemList.xls')) {
-          console.log(`   🔍 偵測到下載響應: ${response.url()}`);
-          console.log(`   📋 Content-Type: ${headers['content-type']}`);
-          console.log(`   📋 Content-Disposition: ${contentDisposition}`);
-
-          try {
-            // 嘗試直接讀取響應體
-            downloadBuffer = await response.buffer();
-            downloadHeaders = headers;
-            console.log(`   ✅ 成功捕獲下載內容，大小: ${downloadBuffer.length} bytes`);
-          } catch (error) {
-            console.log(`   ⚠️  無法直接讀取響應: ${error.message}`);
-          }
-        }
-      });
-
-      // 點擊最終的導出按鈕
-      // 根據您提供的最新截圖和指示，使用 id 屬性來精準定位按鈕
-      const finalExportButtonSelector = '#ctl00_CP1_btnExport';
-
-      console.log('   ⏳ 等待最終的導出按鈕完全載入...');
-      await this.page.waitForSelector(finalExportButtonSelector, { timeout: 10000 });
-      console.log('   ✅ 導出按鈕已找到。');
-
-      // Debug: 截圖並記錄當前頁面狀態
-      const beforeSubmitScreenshot = path.resolve(__dirname, `debug_before_submit_${Date.now()}.png`);
-      await this.page.screenshot({ path: beforeSubmitScreenshot, fullPage: true });
-      console.log(`   📸 提交前截圖: ${beforeSubmitScreenshot}`);
-
-// 最終解決方案：模擬 ASP.NET 的 PostBack 機制
-      console.log('   🚀 終極手段：模擬 ASP.NET PostBack...');
-
-      try {
-        // 在提交前，設置 ASP.NET 所需的隱藏欄位
-        await this.page.evaluate(() => {
-          // 設置 __EVENTTARGET 來告訴伺服器是哪個控件觸發的
-          const eventTarget = document.getElementById('__EVENTTARGET');
-          const eventArgument = document.getElementById('__EVENTARGUMENT');
-
-          if (eventTarget) {
-            eventTarget.value = 'ctl00$CP1$btnExport';
-          }
-          if (eventArgument) {
-            eventArgument.value = '';
-          }
-
-          console.log('__EVENTTARGET 已設置為: ctl00$CP1$btnExport');
-
-          // 現在提交表單
-          const form = document.getElementById('aspnetForm');
-          if (form) {
-            form.submit();
-          } else {
-            throw new Error('找不到頁面主表單 (aspnetForm)');
+        const data = {};
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+          if (input.name) {
+            if (input.type === 'checkbox' || input.type === 'radio') {
+              if (input.checked) {
+                data[input.name] = input.value || 'on';
+              }
+            } else {
+              data[input.name] = input.value || '';
+            }
           }
         });
+        return data;
+      });
 
-        // 等待可能的導航或響應
-        await new Promise(resolve => setTimeout(resolve, 5000));
-
-        // Debug: 提交後截圖
-        const afterSubmitScreenshot = path.resolve(__dirname, `debug_after_submit_${Date.now()}.png`);
-        await this.page.screenshot({ path: afterSubmitScreenshot, fullPage: true });
-        console.log(`   📸 提交後截圖: ${afterSubmitScreenshot}`);
-        console.log(`   📍 當前頁面 URL: ${this.page.url()}`);
-        console.log(`   📍 當前頁面標題: ${await this.page.title()}`);
-
-      } catch (error) {
-        console.error(`   ⚠️  表單提交過程出現異常: ${error.message}`);
+      if (!formData) {
+        throw new Error('無法提取表單數據');
       }
 
-      // 檢查是否成功捕獲下載內容
-      if (downloadBuffer) {
-        console.log('   ✅ 下載完成！');
+      // 設置 __EVENTTARGET 來觸發導出按鈕
+      formData['__EVENTTARGET'] = 'ctl00$CP1$btnExport';
+      formData['__EVENTARGUMENT'] = '';
 
-        if (downloadBuffer.length < 1024) {
-          throw new Error(`下載失敗: 文件大小只有 ${downloadBuffer.length} bytes`);
+      // 獲取當前頁面的 cookies
+      const cookies = await this.page.cookies();
+      const cookieString = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+
+      console.log('   📋 表單數據已提取');
+      console.log('   🍪 Cookies 已獲取');
+
+      // 使用 Node.js 的 https 模組發送請求
+      const https = require('https');
+      const { URLSearchParams } = require('url');
+
+      const postData = new URLSearchParams(formData).toString();
+      const url = new URL(exportPageUrl);
+
+      const options = {
+        hostname: url.hostname,
+        port: 443,
+        path: url.pathname + url.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(postData),
+          'Cookie': cookieString,
+          'User-Agent': await this.page.evaluate(() => navigator.userAgent),
+          'Referer': exportPageUrl
         }
+      };
 
-        return {
-          buffer: downloadBuffer,
-          filename: `${projectName}-Data-${new Date().toISOString().split('T')[0]}.xls`,
-          size: downloadBuffer.length,
-          contentType: 'application/vnd.ms-excel'
-        };
-      } else {
-        throw new Error('未能捕獲下載內容');
+      console.log('   🚀 發送 HTTP POST 請求...');
+
+      const downloadBuffer = await new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+          console.log(`   📡 響應狀態: ${res.statusCode}`);
+          console.log(`   📋 Content-Type: ${res.headers['content-type']}`);
+          console.log(`   📋 Content-Disposition: ${res.headers['content-disposition']}`);
+
+          const chunks = [];
+          res.on('data', (chunk) => chunks.push(chunk));
+          res.on('end', () => {
+            const buffer = Buffer.concat(chunks);
+            console.log(`   ✅ 成功接收數據，大小: ${buffer.length} bytes`);
+            resolve(buffer);
+          });
+        });
+
+        req.on('error', (error) => {
+          console.error(`   ❌ 請求失敗: ${error.message}`);
+          reject(error);
+        });
+
+        req.write(postData);
+        req.end();
+      });
+
+      if (!downloadBuffer || downloadBuffer.length < 1024) {
+        throw new Error(`下載失敗: 文件大小只有 ${downloadBuffer ? downloadBuffer.length : 0} bytes`);
       }
+
+      return {
+        buffer: downloadBuffer,
+        filename: `${projectName}-Data-${new Date().toISOString().split('T')[0]}.xls`,
+        size: downloadBuffer.length,
+        contentType: 'application/vnd.ms-excel'
+      };
 
     } catch (error) {
       console.error(`   ❌ ${projectName} 下載失敗: ${error.message}`);
