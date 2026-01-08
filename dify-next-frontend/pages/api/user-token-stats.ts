@@ -28,34 +28,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const wikiUserId = parseInt(userId as string);
-    
+
     if (isNaN(wikiUserId)) {
       return res.status(400).json({ error: 'Invalid userId format' });
     }
 
     console.log('查詢 Wiki.js 用戶 ID:', wikiUserId, '在 Dify 中的真實對話記錄');
 
-    // 第一步：從 Wiki.js 獲取用戶的 email
+    // 第一步：從 Wiki.js 獲取用戶的 email（用於顯示）
     const wikiUserQuery = 'SELECT email FROM users WHERE id = $1';
     const wikiUserResult = await wikiPool.query(wikiUserQuery, [wikiUserId]);
-    
+
     if (wikiUserResult.rows.length === 0) {
       return res.status(404).json({ error: 'Wiki user not found' });
     }
-    
+
     const userEmail = wikiUserResult.rows[0].email;
     console.log('Wiki.js 用戶 email:', userEmail);
 
     // 第二步：在 Dify 中查找對應的 end_users 記錄
+    // 使用 session_id 映射：Wiki userId -> Dify session_id
+    // 主要映射邏輯：session_id = Wiki userId（對於數字 session_id）
+    const possibleSessionIds = [
+      wikiUserId.toString(),  // 直接使用 userId
+      `user_${wikiUserId}`,   // user_ 前綴
+    ];
+
+    // 特殊映射規則：如果需要 userId-1 的映射，可以加上
+    // possibleSessionIds.push((wikiUserId - 1).toString());
+
     const endUserQuery = `
-      SELECT id, external_user_id, session_id 
-      FROM end_users 
-      WHERE external_user_id LIKE $1 OR session_id LIKE $2
+      SELECT id, external_user_id, session_id
+      FROM end_users
+      WHERE session_id = ANY($1)
     `;
-    const endUserResult = await difyPool.query(endUserQuery, [`%${userEmail}%`, `%${userEmail}%`]);
-    
+    const endUserResult = await difyPool.query(endUserQuery, [possibleSessionIds]);
+
     console.log('在 Dify 中找到的 end_users:', endUserResult.rows.length, '條記錄');
-    
+    console.log('查詢的 session_ids:', possibleSessionIds);
+
     if (endUserResult.rows.length === 0) {
       // 如果沒有找到對應的 end_users，返回空數據
       const emptyUsage = [];
@@ -70,33 +81,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           source: 'dify-db'
         });
       }
-      
+
       return res.status(200).json({
         dailyUsage: emptyUsage,
         source: 'dify-db',
         note: 'No Dify end_users found for this Wiki user',
         userId: wikiUserId,
         userEmail: userEmail,
-        queryMethod: 'dify-end-user-mapping'
+        possibleSessionIds: possibleSessionIds,
+        queryMethod: 'dify-session-id-mapping'
       });
     }
 
     // 第三步：查詢這些 end_users 的對話記錄
     const endUserIds = endUserResult.rows.map(row => row.id);
     console.log('查詢的 end_user IDs:', endUserIds);
-    
+
     // 查詢過去30天的消息記錄
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const messagesQuery = `
-      SELECT 
+      SELECT
         DATE(m.created_at) as date,
         COUNT(*) as message_count,
         SUM(
-          COALESCE(m.answer_tokens, 0) + 
-          COALESCE(m.message_tokens, 0) + 
-          COALESCE(m.message_unit_price, 0) + 
+          COALESCE(m.answer_tokens, 0) +
+          COALESCE(m.message_tokens, 0) +
+          COALESCE(m.message_unit_price, 0) +
           COALESCE(m.answer_unit_price, 0)
         ) as total_tokens,
         SUM(
@@ -133,7 +145,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().slice(0, 10);
-      
+
       const existingData = dailyUsage.find(item => item.date === dateStr);
       completeUsage.push({
         date: dateStr,
@@ -149,11 +161,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       dailyUsage: completeUsage,
       source: 'dify-db',
-      note: 'Data queried from Dify messages table',
+      note: 'Data queried from Dify messages table using session_id mapping',
       userId: wikiUserId,
       userEmail: userEmail,
       endUserIds: endUserIds,
-      queryMethod: 'dify-end-user-mapping'
+      sessionIds: endUserResult.rows.map(row => row.session_id),
+      queryMethod: 'dify-session-id-mapping'
     });
 
   } catch (error) {
