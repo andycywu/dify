@@ -104,10 +104,14 @@ class UrtrackerHttpsClient {
     console.log(`\n📥 開始下載專案: ${projectName} (ID: ${projectId}) from PTS system`);
 
     try {
-      // 步驟 1: 導航到 PTS 專案列表頁面
-      const projectListUrl = `${this.baseURL}/pts/ProjectList.aspx`;
-      console.log(`   步驟1: 導航到 PTS 專案列表頁面...`);
-      await this.page.goto(projectListUrl, { waitUntil: 'networkidle2' });
+      // 步驟 1: 點擊頂部導覽列的 "項目" 連結，以確保我們在專案列表頁面
+      // 這是根據上次的錯誤截圖分析出的關鍵步驟
+      console.log(`   步驟1: 導航到 PTS 專案列表頁面 (點擊 '項目' 連結)...`);
+      const projectListLinkSelector = 'a[href="/pts/ProjectList.aspx"]';
+      await Promise.all([
+        this.page.waitForNavigation({ waitUntil: 'networkidle2' }),
+        this.page.click(projectListLinkSelector)
+      ]);
       console.log(`   ✓ 成功到達 ${await this.page.title()}`);
 
       // 步驟 2: 點擊指定的專案連結
