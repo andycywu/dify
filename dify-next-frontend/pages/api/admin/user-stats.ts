@@ -1,49 +1,20 @@
 /**
  * User Statistics API
- * 從 Wiki.js 獲取真實的用戶統計數據
+ * 從 Wiki.js PostgreSQL 資料庫獲取真實的用戶統計數據
  *
  * GET /api/admin/user-stats
  *
- * 數據來源：Wiki.js GraphQL API
+ * 數據來源：Wiki.js PostgreSQL Database
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { Pool } from 'pg';
 
 interface UserStats {
   totalUsers: number;
   activeUsers: number;
   administrators: number;
   lastUpdated: string;
-}
-
-interface WikiJsGraphQLResponse {
-  data?: {
-    users?: {
-      list?: Array<{
-        id: number;
-        name: string;
-        email: string;
-        isActive: boolean;
-        isSystem: boolean;
-        isVerified: boolean;
-        createdAt: string;
-        lastLoginAt: string;
-      }>;
-    };
-    groups?: {
-      list?: Array<{
-        id: number;
-        name: string;
-        isSystem: boolean;
-        userCount: number;
-      }>;
-    };
-  };
-  errors?: Array<{
-    message: string;
-    locations?: Array<{ line: number; column: number }>;
-    path?: string[];
-  }>;
 }
 
 export default async function handler(
@@ -54,85 +25,55 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  let pool: Pool | null = null;
+
   try {
-    const wikiGraphqlUrl = process.env.WIKI_GRAPHQL_URL || 'http://172.27.197.100:3002/graphql';
-    const wikiApiKey = process.env.WIKI_API_KEY || '';
-
-    // GraphQL Query 獲取用戶列表和群組資訊
-    const query = `
-      query {
-        users {
-          list {
-            id
-            name
-            email
-            isActive
-            isSystem
-            isVerified
-            createdAt
-            lastLoginAt
-          }
-        }
-        groups {
-          list {
-            id
-            name
-            isSystem
-            userCount
-          }
-        }
-      }
-    `;
-
-    const response = await fetch(wikiGraphqlUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': wikiApiKey ? `Bearer ${wikiApiKey}` : '',
-      },
-      body: JSON.stringify({ query }),
-      signal: AbortSignal.timeout(10000) // 10秒超時
+    // 連接到 Wiki.js 資料庫
+    pool = new Pool({
+      host: process.env.POSTGRES_HOST || 'db',
+      port: parseInt(process.env.POSTGRES_PORT || '5432'),
+      database: 'wiki',
+      user: process.env.POSTGRES_USER || 'postgres',
+      password: process.env.POSTGRES_PASSWORD || 'difyai123456',
+      connectionTimeoutMillis: 5000,
     });
 
-    if (!response.ok) {
-      throw new Error(`Wiki.js GraphQL API returned ${response.status}: ${response.statusText}`);
-    }
-
-    const data: WikiJsGraphQLResponse = await response.json();
-
-    if (data.errors && data.errors.length > 0) {
-      console.error('Wiki.js GraphQL errors:', data.errors);
-      throw new Error(`GraphQL errors: ${data.errors.map(e => e.message).join(', ')}`);
-    }
-
-    // 處理用戶數據
-    const users = data.data?.users?.list || [];
-    const groups = data.data?.groups?.list || [];
-
-    // 過濾掉系統用戶
-    const realUsers = users.filter(user => !user.isSystem);
-
-    // 計算活躍用戶（最近30天有登入）
+    // 計算 30 天前的時間戳
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // 查詢 1: 總用戶數（排除系統帳號 guest 和 isSystem = true）
+    const totalUsersQuery = `
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE "providerKey" != 'local' OR email != 'guest'
+    `;
+    const totalUsersResult = await pool.query(totalUsersQuery);
+    const totalUsers = parseInt(totalUsersResult.rows[0]?.count || '0');
 
-    const activeUsers = realUsers.filter(user => {
-      if (!user.lastLoginAt) return false;
-      const lastLogin = new Date(user.lastLoginAt);
-      return lastLogin >= thirtyDaysAgo;
-    });
+    // 查詢 2: 活躍用戶（最近30天有登入）
+    const activeUsersQuery = `
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE ("providerKey" != 'local' OR email != 'guest')
+        AND "lastLoginAt" >= $1
+    `;
+    const activeUsersResult = await pool.query(activeUsersQuery, [thirtyDaysAgo]);
+    const activeUsers = parseInt(activeUsersResult.rows[0]?.count || '0');
 
-    // 查找管理員群組
-    const adminGroup = groups.find(group =>
-      group.name.toLowerCase() === 'administrators' ||
-      group.name.toLowerCase() === 'admins' ||
-      group.id === 1 // Wiki.js 預設管理員群組 ID 為 1
-    );
+    // 查詢 3: 管理員數量（從 userGroups 和 groups 關聯查詢）
+    const adminQuery = `
+      SELECT COUNT(DISTINCT ug."userId") as count
+      FROM "userGroups" ug
+      INNER JOIN groups g ON ug."groupId" = g.id
+      WHERE g.name = 'Administrators' OR g.id = 1
+    `;
+    const adminResult = await pool.query(adminQuery);
+    const administrators = parseInt(adminResult.rows[0]?.count || '0');
 
     const stats: UserStats = {
-      totalUsers: realUsers.length,
-      activeUsers: activeUsers.length,
-      administrators: adminGroup?.userCount || 0,
+      totalUsers,
+      activeUsers,
+      administrators,
       lastUpdated: new Date().toISOString()
     };
 
@@ -140,7 +81,12 @@ export default async function handler(
   } catch (error: any) {
     console.error('Failed to fetch user statistics:', error);
     return res.status(500).json({
-      error: error.message || 'Failed to fetch user statistics from Wiki.js'
+      error: error.message || 'Failed to fetch user statistics from Wiki.js database'
     });
+  } finally {
+    // 關閉資料庫連線
+    if (pool) {
+      await pool.end();
+    }
   }
 }

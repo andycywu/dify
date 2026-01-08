@@ -70,25 +70,28 @@ GET /api/admin/system-status
 
 ### 數據來源 / Data Source
 
-所有用戶統計數據來自 **Wiki.js GraphQL API**：
-- Endpoint: `${WIKI_GRAPHQL_URL}` (default: http://172.27.197.100:3002/graphql)
-- 認證: 使用環境變數 `WIKI_API_KEY` (Bearer Token)
+所有用戶統計數據直接來自 **Wiki.js PostgreSQL 資料庫**：
+- Database: `wiki`
+- Host: `${POSTGRES_HOST}` (default: db)
+- Port: `${POSTGRES_PORT}` (default: 5432)
+- 查詢表: `users`, `groups`, `userGroups`
 
 ### 統計項目 / Statistics
 
 1. **總用戶數 / Total Users**
-   - 計算方式: 過濾掉系統用戶（`isSystem: false`）的總數
+   - 計算方式: 查詢 `users` 表，排除系統帳號（guest）
+   - SQL: `SELECT COUNT(*) FROM users WHERE providerKey != 'local' OR email != 'guest'`
    - 包含: 所有非系統用戶
 
 2. **活躍用戶 / Active Users**
    - 定義: 最近 30 天內有登入的用戶
-   - 計算方式: 檢查 `lastLoginAt` 欄位
+   - SQL: `SELECT COUNT(*) FROM users WHERE lastLoginAt >= (NOW() - INTERVAL '30 days')`
    - 時間範圍: 當前時間 - 30 天
 
 3. **管理員 / Administrators**
-   - 來源: Wiki.js 群組資訊
-   - 識別方式: 群組名稱為 "Administrators"、"Admins" 或 ID 為 1
-   - 顯示: 管理員群組的用戶數量
+   - 來源: `userGroups` 和 `groups` 關聯查詢
+   - SQL: `SELECT COUNT(DISTINCT userId) FROM userGroups JOIN groups WHERE name = 'Administrators'`
+   - 顯示: Administrators 群組的用戶數量
 
 ### API Endpoint
 
@@ -109,7 +112,7 @@ GET /api/admin/user-stats
 ### 刷新頻率 / Refresh Rate
 
 - 自動刷新: 每 5 分鐘
-- 初次載入: 頁面載入時
+- 查詢超時: 5載入時
 - 超時時間: 10 秒
 
 ---
@@ -141,12 +144,12 @@ dify-next-frontend/
 ### Required 必要
 
 ```env
-# Dify API
-NEXT_PUBLIC_DIFY_API_BASE_URL=http://172.27.197.100/v1
-
-# Wiki.js GraphQL
-WIKI_GRAPHQL_URL=http://172.27.197.100:3002/graphql
-WIKI_API_KEY=your_wiki_api_key_here
+# PostgreSQL
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=difyai123456
+DATABASE_URL=postgresql://postgres:difyai123456@db:5432/wiki
 
 # REST-to-SOAP Proxy
 REST_TO_SOAP_PROXY_URL=http://rest-to-soap-proxy:5001
@@ -247,8 +250,8 @@ admin.tsx (Frontend)
     │
     └─→ /api/admin/user-stats
             ↓
-        Wiki.js GraphQL API
-        (Query users & groups)
+        Wiki.js PostgreSQL Database
+        (Query users, groups, userGroups tables)
 ```
 
 ---
@@ -259,13 +262,15 @@ admin.tsx (Frontend)
    - 只有管理員（admin / Administrator）可訪問
    - 在前端和後端都有驗證
 
-2. **API 認證 / API Authentication**
-   - Wiki.js API 使用 Bearer Token
-   - Token 儲存在環境變數中
+2. **資料庫連接 / Database Connection**
+   - 使用連接池管理資料庫連線
+   - 查詢完成後自動關閉連線
+   - 設定連線超時時間（5 秒）
 
 3. **敏感資訊 / Sensitive Information**
    - 不暴露內部 IP 或端口
    - 錯誤訊息不包含敏感資訊
+   - 資料庫密碼存儲在環境變數中
 
 ---
 
