@@ -25,13 +25,18 @@ echo "======================================"
 echo "1. 檢查 Docker 容器狀態"
 echo "======================================"
 
-# 檢查 db 容器
-if docker ps --format '{{.Names}}' | grep -q '^db$'; then
-    echo -e "${GREEN}✓ PostgreSQL 容器 (db) 正在運行${NC}"
-else
-    echo -e "${RED}✗ PostgreSQL 容器 (db) 未運行${NC}"
-    echo "請先啟動容器: docker-compose up -d db"
+# 自動檢測 PostgreSQL 容器名稱
+DB_CONTAINER=$(docker ps --format '{{.Names}}' | grep -E '(^db$|db-1$|docker-db-1$|postgres)' | head -1)
+
+if [ -z "$DB_CONTAINER" ]; then
+    echo -e "${RED}✗ PostgreSQL 容器未運行${NC}"
+    echo "請先啟動容器: docker-compose up -d"
+    echo ""
+    echo "可用的容器:"
+    docker ps --format '{{.Names}}'
     exit 1
+else
+    echo -e "${GREEN}✓ PostgreSQL 容器正在運行: $DB_CONTAINER${NC}"
 fi
 
 # 檢查 dify-next-frontend 容器
@@ -48,7 +53,7 @@ echo "======================================"
 
 # 測試 Dify 資料庫
 echo "檢查 Dify 資料庫..."
-if docker exec db psql -U postgres -d dify -c "SELECT 1;" > /dev/null 2>&1; then
+if docker exec $DB_CONTAINER psql -U postgres -d dify -c "SELECT 1;" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Dify 資料庫連接成功${NC}"
 else
     echo -e "${RED}✗ Dify 資料庫連接失敗${NC}"
@@ -57,7 +62,7 @@ fi
 
 # 測試 Wiki.js 資料庫
 echo "檢查 Wiki.js 資料庫..."
-if docker exec db psql -U postgres -d wiki -c "SELECT 1;" > /dev/null 2>&1; then
+if docker exec $DB_CONTAINER psql -U postgres -d wiki -c "SELECT 1;" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Wiki.js 資料庫連接成功${NC}"
 else
     echo -e "${RED}✗ Wiki.js 資料庫連接失敗${NC}"
@@ -71,7 +76,7 @@ echo "======================================"
 
 # 檢查 messages 表
 echo "檢查 messages 表..."
-MESSAGE_COUNT=$(docker exec db psql -U postgres -d dify -t -c "SELECT COUNT(*) FROM messages;" 2>/dev/null | xargs)
+MESSAGE_COUNT=$(docker exec $DB_CONTAINER psql -U postgres -d dify -t -c "SELECT COUNT(*) FROM messages;" 2>/dev/null | xargs)
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ messages 表存在${NC}"
@@ -86,9 +91,7 @@ fi
 
 # 檢查 end_users 表
 echo "檢查 end_users 表..."
-ENDUSER_COUNT=$(docker exec db psql -U postgres -d dify -t -c "SELECT COUNT(*) FROM end_users;" 2>/dev/null | xargs)
-
-if [ $? -eq 0 ]; then
+ENDUSER_COUNT=$(docker exec $DB_CONTAINER psql -U postgres -d dify -t -c "SELECT COUNT(*) FROM end_users;" 2>/dev/null | xargs)
     echo -e "${GREEN}✓ end_users 表存在${NC}"
     echo "  記錄數: $ENDUSER_COUNT"
 
@@ -104,7 +107,7 @@ echo "======================================"
 echo "4. 檢查 Wiki.js 用戶"
 echo "======================================"
 
-WIKI_USER_COUNT=$(docker exec db psql -U postgres -d wiki -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | xargs)
+WIKI_USER_COUNT=$(docker exec $DB_CONTAINER psql -U postgres -d wiki -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | xargs)
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Wiki.js users 表存在${NC}"
@@ -119,7 +122,7 @@ echo "5. 檢查用戶映射"
 echo "======================================"
 
 echo "查詢前 3 個 Wiki.js 用戶的 Dify 映射..."
-docker exec db psql -U postgres -d wiki -t -c "
+docker exec $DB_CONTAINER psql -U postgres -d wiki -t -c "
     SELECT id, email, name FROM users LIMIT 3;
 " | while read -r line; do
     if [ ! -z "$line" ]; then
@@ -127,7 +130,7 @@ docker exec db psql -U postgres -d wiki -t -c "
         EMAIL=$(echo $line | awk '{print $3}')
 
         if [ ! -z "$EMAIL" ]; then
-            MATCH_COUNT=$(docker exec db psql -U postgres -d dify -t -c "
+            MATCH_COUNT=$(docker exec $DB_CONTAINER psql -U postgres -d dify -t -c "
                 SELECT COUNT(*) FROM end_users
                 WHERE external_user_id LIKE '%$EMAIL%' OR session_id LIKE '%$EMAIL%';
             " 2>/dev/null | xargs)
@@ -147,7 +150,7 @@ echo "6. 最近 7 天使用統計"
 echo "======================================"
 
 echo "查詢最近 7 天的對話記錄..."
-docker exec db psql -U postgres -d dify -c "
+docker exec $DB_CONTAINER psql -U postgres -d dify -c "
     SELECT
         DATE(created_at) as date,
         COUNT(*) as messages,
@@ -170,7 +173,7 @@ echo "7. 測試 API 端點"
 echo "======================================"
 
 # 獲取第一個用戶 ID
-TEST_USER_ID=$(docker exec db psql -U postgres -d wiki -t -c "SELECT id FROM users LIMIT 1;" 2>/dev/null | xargs)
+TEST_USER_ID=$(docker exec $DB_CONTAINER psql -U postgres -d wiki -t -c "SELECT id FROM users LIMIT 1;" 2>/dev/null | xargs)
 
 if [ ! -z "$TEST_USER_ID" ]; then
     echo "測試用戶 ID: $TEST_USER_ID"
