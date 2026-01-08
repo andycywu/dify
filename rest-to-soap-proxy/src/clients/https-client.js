@@ -141,14 +141,14 @@ class UrtrackerHttpsClient {
       });
 
       // 點擊最終的導出按鈕
-      const finalExportButtonSelector = 'input#ctl00_CP1_btnExport';
-      const excelRadioButtonSelector = 'input#ctl00_CP1_radlExportFormat_0'; // Excel 選項的 ID
+      // 根據您提供的最新截圖，使用 name 屬性來精準定位按鈕
+      const finalExportButtonSelector = 'input[name="ctl00$CP1$btnExport"]';
 
-      // 在點擊前，先等待關鍵元素載入
-      console.log('   ⏳ 等待導出選項和按鈕完全載入...');
-      await this.page.waitForSelector(excelRadioButtonSelector, { timeout: 10000 });
+      // 在點擊前，先等待按鈕載入
+      console.log('   ⏳ 等待最終的導出按鈕完全載入...');
       await this.page.waitForSelector(finalExportButtonSelector, { timeout: 10000 });
 
+      console.log('   ✅ 導出按鈕已找到，準備點擊...');
       await this.page.click(finalExportButtonSelector);
 
       // 等待下載完成
