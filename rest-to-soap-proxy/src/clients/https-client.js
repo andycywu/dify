@@ -18,7 +18,7 @@ class UrtrackerHttpsClient {
       TV: { id: 2558, name: 'TV-Data' },
       PD: { id: 2559, name: 'PD-Data' },
       MNT: { id: 2561, name: 'MNT-Data' },
-      AVA: { id: 2560, name: 'AVA-Data' }
+      AVA: { id: 2337, name: 'AVA-Data' }
     };
   }
 
