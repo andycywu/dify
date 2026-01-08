@@ -219,6 +219,9 @@ class UrtrackerHttpsClient {
       } else {
         throw new Error('未能捕獲下載內容');
       }
+
+    } catch (error) {
+      console.error(`   ❌ ${projectName} 下載失敗: ${error.message}`);
       // 增加錯誤截圖，方便除錯
       const errorScreenshotPath = path.resolve(__dirname, `error_${projectName}_${Date.now()}.png`);
       await this.page.screenshot({ path: errorScreenshotPath, fullPage: true });
