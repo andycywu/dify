@@ -101,52 +101,19 @@ class UrtrackerHttpsClient {
       throw new Error('未登入，請先調用 login() 方法');
     }
 
-    console.log(`\n📥 開始下載專案: ${projectName} (ID: ${projectId}) from PTS system`);
+    console.log(`\n📥 開始下載專案: ${projectName} (ID: ${projectId}) - 採用簡化流程`);
 
     try {
-      // 步驟 1: 點擊頂部導覽列的 "項目" 連結，以確保我們在專案列表頁面
-      // 這是根據上次的錯誤截圖分析出的關鍵步驟
-      console.log(`   步驟1: 導航到 PTS 專案列表頁面 (點擊 '項目' 連結)...`);
-      const projectListLinkSelector = 'a[href*="ProjectList.aspx"]'; // 使用包含選擇器以應對動態 URL
-      await this.page.waitForSelector(projectListLinkSelector, { timeout: 10000 }); // 等待元素出現
-      await Promise.all([
-        this.page.waitForNavigation({ waitUntil: 'networkidle2' }),
-        this.page.click(projectListLinkSelector)
-      ]);
-      console.log(`   ✓ 成功到達 ${await this.page.title()}`);
-
-      // 步驟 2: 點擊指定的專案連結
-      // 連結的 ID 格式為 ctl00_CP1_rptProject_ctlXX_lnkProject, 我們需要找到對應 projectId 的那一個
-      console.log(`   步驟2: 尋找並點擊專案 ID ${projectId} 的連結...`);
-      const projectLinkSelector = `a[href*="issuelist.aspx?pid=${projectId}"]`;
-      await this.page.waitForSelector(projectLinkSelector, { timeout: 10000 }); // 等待元素出現
-      await Promise.all([
-        this.page.waitForNavigation({ waitUntil: 'networkidle2' }),
-        this.page.click(projectLinkSelector)
-      ]);
-      console.log(`   ✓ 成功進入專案 ${projectName} 的問題列表`);
-
-      // 步驟 3: 點擊 "跟蹤中" 篩選器
-      // 這是一個 JavaScript postback, 所以我們需要等待頁面重新載入
-      console.log(`   步驟3: 點擊 '跟蹤中' 篩選器...`);
-      const trackingFilterSelector = 'a[title="跟蹤中"]'; // 根據錄製檔分析
-      await Promise.all([
-        this.page.waitForNavigation({ waitUntil: 'networkidle2' }),
-        this.page.click(trackingFilterSelector)
-      ]);
-      console.log(`   ✓ 已篩選出 '跟蹤中' 的問題`);
-
-      // 步驟 4: 點擊 "導出" 連結進入導出頁面
-      console.log(`   步驟4: 點擊 '導出' 連結...`);
-      const exportLinkSelector = 'a#ctl00_CP1_lnkExport';
-      await Promise.all([
-        this.page.waitForNavigation({ waitUntil: 'networkidle2' }),
-        this.page.click(exportLinkSelector)
-      ]);
+      // 步驟 1: 直接導航到導出頁面
+      // 根據您提供的最新錄製檔，這是一個更直接的路徑
+      // FilterType=1 代表 "跟蹤中"
+      const exportPageUrl = `${this.baseURL}/Pts/ProblemListExport.aspx?project=${projectId}&FilterType=1&procName=State_3&Title=All+Issues`;
+      console.log(`   步驟1: 直接導航到導出頁面...`);
+      await this.page.goto(exportPageUrl, { waitUntil: 'networkidle2' });
       console.log(`   ✓ 成功到達導出頁面: ${await this.page.title()}`);
 
-      // 步驟 5: 在導出頁面，配置下載並觸發
-      console.log('   步驟5: 配置下載並點擊最終導出按鈕...');
+      // 步驟 2: 在導出頁面，配置下載並觸發
+      console.log('   步驟2: 配置下載並點擊最終導出按鈕...');
       const downloadPath = path.resolve(__dirname, 'downloads');
       await fs.mkdir(downloadPath, { recursive: true });
 
@@ -157,19 +124,14 @@ class UrtrackerHttpsClient {
       });
 
       // 監聽下載事件
-      let downloadedFilePath = '';
       const downloadPromise = new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('下載超時 (90秒)')), 90000);
         client.on('Page.downloadWillBegin', (data) => {
             console.log(`   📥 偵測到下載: ${data.suggestedFilename}`);
-            // 注意: suggestedFilename 可能不含路徑
         });
         client.on('Page.downloadProgress', (data) => {
             if (data.state === 'completed') {
                 clearTimeout(timeout);
-                // 在 Puppeteer v22+ 中, data.url 是 blob URL, 我們需要 guid 來找到檔案
-                // 為了相容性，我們假設 downloadPath 是可靠的，並在該目錄下尋找最新檔案
-                // 這是一個更穩健的後備方案
                 resolve();
             } else if (data.state === 'canceled') {
                 clearTimeout(timeout);
@@ -180,6 +142,7 @@ class UrtrackerHttpsClient {
 
       // 點擊最終的導出按鈕
       const finalExportButtonSelector = 'input#ctl00_CP1_btnExport';
+      await this.page.waitForSelector(finalExportButtonSelector, { timeout: 10000 });
       await this.page.click(finalExportButtonSelector);
 
       // 等待下載完成
@@ -190,7 +153,7 @@ class UrtrackerHttpsClient {
       const files = await fs.readdir(downloadPath);
       if (files.length === 0) throw new Error('下載目錄為空，找不到下載的檔案');
 
-      downloadedFilePath = path.join(downloadPath, files.sort((a, b) => {
+      const downloadedFilePath = path.join(downloadPath, files.sort((a, b) => {
         return fs.statSync(path.join(downloadPath, b)).mtime.getTime() -
                fs.statSync(path.join(downloadPath, a)).mtime.getTime();
       })[0]);
