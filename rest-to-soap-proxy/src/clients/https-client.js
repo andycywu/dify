@@ -107,7 +107,8 @@ class UrtrackerHttpsClient {
       // 步驟 1: 點擊頂部導覽列的 "項目" 連結，以確保我們在專案列表頁面
       // 這是根據上次的錯誤截圖分析出的關鍵步驟
       console.log(`   步驟1: 導航到 PTS 專案列表頁面 (點擊 '項目' 連結)...`);
-      const projectListLinkSelector = 'a[href="/pts/ProjectList.aspx"]';
+      const projectListLinkSelector = 'a[href*="ProjectList.aspx"]'; // 使用包含選擇器以應對動態 URL
+      await this.page.waitForSelector(projectListLinkSelector, { timeout: 10000 }); // 等待元素出現
       await Promise.all([
         this.page.waitForNavigation({ waitUntil: 'networkidle2' }),
         this.page.click(projectListLinkSelector)
