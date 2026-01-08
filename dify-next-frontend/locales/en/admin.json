@@ -30,6 +30,7 @@
   "user_statistics": {
     "title": "User Statistics",
     "description": "Wiki.js user management stats",
+    "total_users": "Total Users",
     "active_users": "Active Users",
     "administrators": "Administrators"
   },

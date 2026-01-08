@@ -7,11 +7,38 @@ import RestToSoapManager from '../components/Admin/RestToSoapManager';
 import WikiImportManager from '../components/Admin/WikiImportManager';
 import WikiChatbotSettings from '../components/Admin/WikiChatbotSettings';
 
+// Types for API responses
+interface ServiceStatus {
+  name: string;
+  status: 'running' | 'stopped' | 'error';
+  message?: string;
+  responseTime?: number;
+}
+
+interface SystemStatusData {
+  services: ServiceStatus[];
+  timestamp: string;
+  overallStatus: 'healthy' | 'degraded' | 'down';
+}
+
+interface UserStatsData {
+  totalUsers: number;
+  activeUsers: number;
+  administrators: number;
+  lastUpdated: string;
+}
+
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation(['admin', 'auth']);
   const [activeTab, setActiveTab] = useState<'overview' | 'rest-to-soap' | 'wiki-import' | 'chatbot-settings'>('overview');
   const [error, setError] = useState<string | null>(null);
+
+  // State for system status and user statistics
+  const [systemStatus, setSystemStatus] = useState<SystemStatusData | null>(null);
+  const [userStats, setUserStats] = useState<UserStatsData | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     console.log('[Admin] useEffect', { user, authLoading });
@@ -24,6 +51,62 @@ export default function Admin() {
       return;
     }
   }, [user, authLoading, t]);
+
+  // Fetch system status
+  useEffect(() => {
+    if (authLoading || error) return;
+
+    const fetchSystemStatus = async () => {
+      try {
+        setLoadingStatus(true);
+        const response = await fetch('/api/admin/system-status');
+        if (response.ok) {
+          const data: SystemStatusData = await response.json();
+          setSystemStatus(data);
+        } else {
+          console.error('Failed to fetch system status:', response.statusText);
+        }
+      } catch (err) {
+        console.error('Error fetching system status:', err);
+      } finally {
+        setLoadingStatus(false);
+      }
+    };
+
+    fetchSystemStatus();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchSystemStatus, 30000);
+    return () => clearInterval(interval);
+  }, [authLoading, error]);
+
+  // Fetch user statistics
+  useEffect(() => {
+    if (authLoading || error) return;
+
+    const fetchUserStats = async () => {
+      try {
+        setLoadingStats(true);
+        const response = await fetch('/api/admin/user-stats');
+        if (response.ok) {
+          const data: UserStatsData = await response.json();
+          setUserStats(data);
+        } else {
+          console.error('Failed to fetch user stats:', response.statusText);
+        }
+      } catch (err) {
+        console.error('Error fetching user stats:', err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchUserStats();
+
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchUserStats, 300000);
+    return () => clearInterval(interval);
+  }, [authLoading, error]);
 
   // Admin permission check
   if (authLoading) {
@@ -106,20 +189,44 @@ export default function Admin() {
                   <h3 className="text-lg font-semibold text-blue-800">{t('admin:system_status.title')}</h3>
                 </div>
                 <p className="text-blue-700">{t('admin:system_status.description')}</p>
-                <div className="mt-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>{t('admin:system_status.dify_api')}：</span>
-                    <span className="text-green-600">{t('admin:system_status.running')}</span>
+
+                {loadingStatus ? (
+                  <div className="mt-3 text-sm text-gray-500">Loading...</div>
+                ) : systemStatus ? (
+                  <div className="mt-3 space-y-2 text-sm">
+                    {systemStatus.services.map((service) => (
+                      <div key={service.name} className="flex justify-between items-center">
+                        <span>{service.name}：</span>
+                        <div className="flex items-center">
+                          <span className={
+                            service.status === 'running'
+                              ? 'text-green-600'
+                              : service.status === 'error'
+                              ? 'text-orange-500'
+                              : 'text-red-600'
+                          }>
+                            {service.status === 'running'
+                              ? t('admin:system_status.running')
+                              : service.status === 'error'
+                              ? 'Warning'
+                              : t('admin:system_status.stopped')
+                            }
+                          </span>
+                          {service.responseTime && (
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({service.responseTime}ms)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="pt-2 mt-2 border-t border-blue-200 text-xs text-gray-500">
+                      Last updated: {new Date(systemStatus.timestamp).toLocaleTimeString()}
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span>{t('admin:system_status.postgresql')}：</span>
-                    <span className="text-green-600">{t('admin:system_status.running')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('admin:system_status.redis')}：</span>
-                    <span className="text-green-600">{t('admin:system_status.running')}</span>
-                  </div>
-                </div>
+                ) : (
+                  <div className="mt-3 text-sm text-red-500">Failed to load status</div>
+                )}
               </div>
 
               {/* REST-to-SOAP status */}
@@ -159,16 +266,30 @@ export default function Admin() {
                   <h3 className="text-lg font-semibold text-yellow-800">{t('admin:user_statistics.title')}</h3>
                 </div>
                 <p className="text-yellow-700">{t('admin:user_statistics.description')}</p>
-                <div className="mt-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>{t('admin:user_statistics.active_users')}：</span>
-                    <span className="font-semibold">-</span>
+
+                {loadingStats ? (
+                  <div className="mt-3 text-sm text-gray-500">Loading...</div>
+                ) : userStats ? (
+                  <div className="mt-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>{t('admin:user_statistics.total_users')}：</span>
+                      <span className="font-semibold">{userStats.totalUsers}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t('admin:user_statistics.active_users')}：</span>
+                      <span className="font-semibold">{userStats.activeUsers}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t('admin:user_statistics.administrators')}：</span>
+                      <span className="font-semibold">{userStats.administrators}</span>
+                    </div>
+                    <div className="pt-2 mt-2 border-t border-yellow-200 text-xs text-gray-500">
+                      Last updated: {new Date(userStats.lastUpdated).toLocaleTimeString()}
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span>{t('admin:user_statistics.administrators')}：</span>
-                    <span className="font-semibold">-</span>
-                  </div>
-                </div>
+                ) : (
+                  <div className="mt-3 text-sm text-red-500">Failed to load statistics</div>
+                )}
               </div>
 
               {/* Knowledge base management */}

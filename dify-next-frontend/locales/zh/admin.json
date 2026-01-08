@@ -30,6 +30,7 @@
   "user_statistics": {
     "title": "用戶統計",
     "description": "Wiki.js 用戶管理統計",
+    "total_users": "總用戶數",
     "active_users": "活躍用戶",
     "administrators": "管理員"
   },
