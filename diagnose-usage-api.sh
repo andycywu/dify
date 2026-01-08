@@ -24,7 +24,15 @@ else
 fi
 
 # 設定資料庫連接參數
-DB_HOST=${POSTGRES_HOST:-db}
+# 如果在主機上運行，使用 localhost；如果在容器內，使用 db
+if [ -f "/.dockerenv" ]; then
+    # 在容器內
+    DB_HOST=${POSTGRES_HOST:-db}
+else
+    # 在主機上，嘗試 localhost 或 127.0.0.1
+    DB_HOST="localhost"
+fi
+
 DB_PORT=${POSTGRES_PORT:-5432}
 DB_USER=${POSTGRES_USER:-postgres}
 DB_PASS=${POSTGRES_PASSWORD:-difyai123456}
@@ -33,15 +41,38 @@ echo ""
 echo "======================================"
 echo "1. 檢查資料庫連接"
 echo "======================================"
+echo "環境: $(if [ -f '/.dockerenv' ]; then echo '容器內'; else echo '主機上'; fi)"
+echo "資料庫主機: $DB_HOST:$DB_PORT"
+echo ""
 
 # 檢查 Dify 資料庫
-echo "檢查 Dify 資料庫連接 ($DB_HOST:$DB_PORT)..."
+echo "檢查 Dify 資料庫連接..."
 if PGPASSWORD=$DB_PASS psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d dify -c "SELECT 1;" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Dify 資料庫連接成功${NC}"
 else
-    echo -e "${RED}✗ Dify 資料庫連接失敗${NC}"
-    echo "請檢查資料庫服務是否運行中"
-    exit 1
+    echo -e "${RED}✗ Dify 資料庫連接失敗 (使用 $DB_HOST)${NC}"
+
+    # 如果 localhost 失敗，嘗試其他方式
+    echo "嘗試其他連接方式..."
+
+    # 嘗試通過 Docker 容器直接連接
+    if docker exec -it db psql -U $DB_USER -d dify -c "SELECT 1;" > /dev/null 2>&1; then
+        echo -e "${GREEN}✓ 透過 Docker 容器連接成功${NC}"
+        echo -e "${YELLOW}建議: 請使用 'docker exec' 方式執行資料庫查詢${NC}"
+        USE_DOCKER_EXEC=true
+    else
+        echo -e "${RED}✗ 所有連接方式都失敗${NC}"
+        echo ""
+        echo "可能的原因:"
+        echo "1. PostgreSQL 未在 localhost:5432 監聽"
+        echo "2. Docker 容器 'db' 未運行"
+        echo "3. 防火牆阻擋連接"
+        echo ""
+        echo "建議檢查:"
+        echo "  docker ps | grep postgres"
+        echo "  docker logs db"
+        exit 1
+    fi
 fi
 
 # 檢查 Wiki.js 資料庫
