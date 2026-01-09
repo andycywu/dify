@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-const REST_TO_SOAP_BASE_URL = process.env.REST_TO_SOAP_BASE_URL || 'http://rest-to-soap-proxy:5001';
+const REST_TO_SOAP_BASE_URL = process.env.REST_TO_SOAP_PROXY_URL || 'http://rest-to-soap-proxy:5001';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
