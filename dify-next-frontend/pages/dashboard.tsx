@@ -6,7 +6,7 @@ import { useTranslation } from '../lib/mockTranslation';
 
 export default function Dashboard() {
   const { t } = useTranslation('auth');
-  
+
   return (
     <MainLayout title={t('dashboard') || 'Dashboard'}>
       <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -33,6 +33,12 @@ export default function Dashboard() {
           <h2 className="text-xl font-semibold mb-1">{t('dashboard_cards.reports.title')}</h2>
           <p className="text-gray-600 mb-2 text-center">{t('dashboard_cards.reports.description')}</p>
           <Link href="/usage" className="text-purple-600 hover:underline">{t('dashboard_cards.reports.go')}</Link>
+        </div>
+        <div className="bg-red-50 rounded-lg p-6 shadow flex flex-col items-center">
+          <span className="text-4xl mb-2">🎯</span>
+          <h2 className="text-xl font-semibold mb-1">AIC 戰情室</h2>
+          <p className="text-gray-600 mb-2 text-center">查詢 Urtracker 專案數據</p>
+          <Link href="/aic-dashboard" className="text-red-600 hover:underline">前往戰情室</Link>
         </div>
       </div>
     </MainLayout>
