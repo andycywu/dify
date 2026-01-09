@@ -113,6 +113,7 @@ export async function fetchProjectData(
       columns: result.columns || [],
       rows: result.data || [],
       totalRows: result.totalRows || 0
+    };
   } catch (error) {
     console.error(`獲取 ${projectKey} 專案數據錯誤:`, error);
     throw error;
