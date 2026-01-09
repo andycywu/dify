@@ -82,48 +82,53 @@ const UsageCostTable: React.FC<UsageCostTableProps> = ({ usageData: propUsageDat
             <p className="text-2xl font-bold text-blue-600">{totalStats.totalMessages}</p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <h4 className="text-sm text-gray-600 mb-1">我的 Tokens</h4>
-            <p className="text-2xl font-bold text-green-600">{totalStats.totalTokens.toLocaleString()}</p>
+            <h4 className="text-sm text-gray-600 mb-1">模型類型</h4>
+            <p className="text-lg font-bold text-green-600">Ollama 本地</p>
+            <p className="text-xs text-gray-500 mt-1">無 Token 計費</p>
           </div>
           <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-            <h4 className="text-sm text-gray-600 mb-1">我的費用</h4>
-            <p className="text-2xl font-bold text-purple-600">${totalStats.totalCost.toFixed(4)}</p>
+            <h4 className="text-sm text-gray-600 mb-1">總費用</h4>
+            <p className="text-2xl font-bold text-purple-600">$0.00</p>
+            <p className="text-xs text-gray-500 mt-1">本地模型無計費</p>
           </div>
           <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-            <h4 className="text-sm text-gray-600 mb-1">平均費用/對話</h4>
-            <p className="text-2xl font-bold text-orange-600">
-              ${totalStats.totalMessages > 0 ? (totalStats.totalCost / totalStats.totalMessages).toFixed(4) : '0.0000'}
-            </p>
+            <h4 className="text-sm text-gray-600 mb-1">平均響應時間</h4>
+            <p className="text-2xl font-bold text-orange-600">N/A</p>
+            <p className="text-xs text-gray-500 mt-1">未統計</p>
           </div>
         </div>
 
         {/* 個人使用詳細表格 */}
         <div className="overflow-x-auto">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-700">📅 每日對話紀錄（最新 30 天）</h3>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">使用 Ollama 本地模型，無 Token 計費</span>
+          </div>
           <table className="min-w-full bg-white border border-gray-200 rounded-lg">
             <thead className="bg-gray-100">
               <tr>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">日期</th>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">對話數</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Tokens</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">費用</th>
               </tr>
             </thead>
             <tbody>
               {usageData.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={2} className="px-4 py-8 text-center text-gray-500">
                     暫無使用數據
                   </td>
                 </tr>
               ) : (
-                usageData.slice(0, 10).map((item) => (
-                  <tr key={item.id} className="border-t hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm">{item.date}</td>
-                    <td className="px-4 py-2 text-sm">{item.messages || 0}</td>
-                    <td className="px-4 py-2 text-sm">{item.usage.toLocaleString()}</td>
-                    <td className="px-4 py-2 text-sm">${item.cost.toFixed(4)}</td>
-                  </tr>
-                ))
+                usageData
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .filter(item => item.messages && item.messages > 0)
+                  .slice(0, 30)
+                  .map((item) => (
+                    <tr key={item.id} className="border-t hover:bg-gray-50">
+                      <td className="px-4 py-2 text-sm">{item.date}</td>
+                      <td className="px-4 py-2 text-sm font-medium text-blue-600">{item.messages || 0} 則</td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>
@@ -131,7 +136,7 @@ const UsageCostTable: React.FC<UsageCostTableProps> = ({ usageData: propUsageDat
       </div>
 
       {/* 管理員統計區塊 - 只有 admin 用戶才能看到 */}
-      {user?.role === 'admin' && appStats && (
+      {(user?.role === 'admin' || user?.role === 'Administrator') && appStats && (
         <div className="mt-8 pt-8 border-t-4 border-indigo-200">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <span className="mr-2">📊</span>

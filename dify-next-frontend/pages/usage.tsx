@@ -68,7 +68,7 @@ function UsageStats() {
         })));
 
         // 如果是 admin 用戶，嘗試獲取應用級統計（可選）
-        if (user.role === 'admin') {
+        if (user.role === 'admin' || user.role === 'Administrator') {
           try {
             console.log('Fetching app stats for admin user');
             const appStatsResponse = await axios.get('/api/app-stats');
@@ -107,14 +107,20 @@ function UsageStats() {
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-purple-50 rounded p-6 shadow flex flex-col items-center">
-          <span className="text-3xl mb-2">🔢</span>
+          <span className="text-3xl mb-2">�</span>
           <div className="font-semibold mb-1">{t('usage_page.today_api_usage')}</div>
-          <div className="text-gray-700">{todayStat ? todayStat.usage : 0} tokens<br/>${todayStat ? todayStat.cost.toFixed(4) : '0.0000'}</div>
+          <div className="text-gray-700">
+            {todayStat ? todayStat.messages : 0} 則對話<br/>
+            <span className="text-sm text-gray-500">Token/費用：N/A (本地模型)</span>
+          </div>
         </div>
         <div className="bg-purple-50 rounded p-6 shadow flex flex-col items-center">
           <span className="text-3xl mb-2">📅</span>
           <div className="font-semibold mb-1">{t('usage_page.monthly_api_usage')}</div>
-          <div className="text-gray-700">{thisMonthStat ? thisMonthStat.usage : 0} tokens<br/>${thisMonthStat ? thisMonthStat.cost.toFixed(4) : '0.0000'}</div>
+          <div className="text-gray-700">
+            {monthStats.reduce((sum, m) => sum + (usageData.filter(d => d.date.startsWith(m.date)).reduce((s, d) => s + (d.messages || 0), 0)), 0)} 則對話<br/>
+            <span className="text-sm text-gray-500">Token/費用：N/A (本地模型)</span>
+          </div>
         </div>
       </div>
       <UsageCostTable usageData={usageData} appStats={appStats} />
