@@ -41,7 +41,7 @@
   },
   "system_logs": {
     "title": "系統日志",
-    "description": "查看系統運行日志",
+    "description": "查看 Docker 容器的即時運行日誌",
     "view_logs": "查看日志"
   }
 }

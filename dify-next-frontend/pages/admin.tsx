@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import RestToSoapManager from '../components/Admin/RestToSoapManager';
 import WikiImportManager from '../components/Admin/WikiImportManager';
 import WikiChatbotSettings from '../components/Admin/WikiChatbotSettings';
+import SystemLogs from '../components/Admin/SystemLogs';
 
 // Types for API responses
 interface ServiceStatus {
@@ -31,7 +32,7 @@ interface UserStatsData {
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation(['admin', 'auth']);
-  const [activeTab, setActiveTab] = useState<'overview' | 'rest-to-soap' | 'wiki-import' | 'chatbot-settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'rest-to-soap' | 'wiki-import' | 'chatbot-settings' | 'system-logs'>('overview');
   const [error, setError] = useState<string | null>(null);
 
   // State for system status and user statistics
@@ -177,6 +178,16 @@ export default function Admin() {
             >
               {t('admin:wiki_import')}
             </button>
+            <button
+              className={`px-6 py-3 font-medium whitespace-nowrap ${
+                activeTab === 'system-logs'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-blue-600'
+              }`}
+              onClick={() => setActiveTab('system-logs')}
+            >
+              {t('admin:system_logs.title')}
+            </button>
           </div>
 
           {/* Content area */}
@@ -310,11 +321,14 @@ export default function Admin() {
               {/* System logs */}
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
                 <div className="flex items-center mb-3">
-                  <span className="text-2xl mr-3">📋</span>
+                  <span className="text-2xl mr-3">�</span>
                   <h3 className="text-lg font-semibold text-gray-800">{t('admin:system_logs.title')}</h3>
                 </div>
                 <p className="text-gray-700">{t('admin:system_logs.description')}</p>
-                <button className="mt-3 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors">
+                <button
+                  onClick={() => setActiveTab('system-logs')}
+                  className="mt-3 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors"
+                >
                   {t('admin:system_logs.view_logs')}
                 </button>
               </div>
@@ -327,6 +341,10 @@ export default function Admin() {
 
           {activeTab === 'wiki-import' && (
             <WikiImportManager />
+          )}
+
+          {activeTab === 'system-logs' && (
+            <SystemLogs />
           )}
 
           {activeTab === 'chatbot-settings' && (

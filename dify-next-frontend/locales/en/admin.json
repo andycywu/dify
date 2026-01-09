@@ -41,7 +41,7 @@
   },
   "system_logs": {
     "title": "System Logs",
-    "description": "View system operation logs",
+    "description": "View real-time Docker container logs",
     "view_logs": "View Logs"
   }
 }
