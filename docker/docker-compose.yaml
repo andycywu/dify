@@ -789,6 +789,7 @@ services:
   dify-next-frontend:
     #image: ${DIFY_NEXT_FRONTEND_IMAGE:-andywu719/dify-next-frontend:latest}
     platform: linux/amd64
+    user: root
     build:
       context: ../dify-next-frontend
       args:
