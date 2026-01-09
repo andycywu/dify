@@ -138,16 +138,18 @@ class UrtrackerHttpsClient {
         throw new Error('Session 已過期，請重新登入');
       }
 
-      // 檢查頁面是否有錯誤訊息
+      // 檢查頁面是否有錯誤訊息（更精確的檢查）
       const pageContent = await this.page.content();
       const errorChecks = [
         { pattern: /access denied|沒有權限|無權限|permission denied/i, message: '沒有權限訪問此專案' },
         { pattern: /project not found|專案不存在|找不到專案/i, message: '專案不存在或ID錯誤' },
-        { pattern: /error|錯誤|失敗/i, message: '頁面載入時發生錯誤' }
+        // 移除過於寬泛的錯誤檢查，只保留更具體的錯誤模式
+        { pattern: /<div[^>]*class="[^"]*error[^"]*"[^>]*>|<span[^>]*class="[^"]*error[^"]*"[^>]*>/i, message: '頁面包含錯誤元素' }
       ];
 
       for (const check of errorChecks) {
         if (check.pattern.test(pageContent)) {
+          console.log(`   ⚠️  檢測到錯誤模式: ${check.message}`);
           throw new Error(`${check.message} (Project ID: ${projectId})`);
         }
       }

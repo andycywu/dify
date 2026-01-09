@@ -43,38 +43,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log(`[Urtracker Parse] 開始處理請求: ${projectKey}, state: ${state}`);
+    console.log(`[Urtracker Parse] REST_TO_SOAP_BASE_URL: ${REST_TO_SOAP_BASE_URL}`);
+
     // 從 rest-to-soap-proxy 下載 Excel 文件
-    const response = await fetch(
-      `${REST_TO_SOAP_BASE_URL}/api/https/download-by-name/${projectKey}?state=${state}`
-    );
+    const downloadUrl = `${REST_TO_SOAP_BASE_URL}/api/https/download-by-name/${projectKey}?state=${state}`;
+    console.log(`[Urtracker Parse] 正在請求: ${downloadUrl}`);
+
+    const response = await fetch(downloadUrl);
+    console.log(`[Urtracker Parse] 響應狀態: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({
         message: `下載失敗: ${response.statusText}`
       }));
 
+      console.error(`[Urtracker Parse] 下載失敗:`, errorData);
+
       return res.status(response.status).json({
         success: false,
         error: errorData.error || '下載失敗',
-        message: errorData.message
+        message: errorData.message,
+        details: {
+          projectKey,
+          state,
+          url: downloadUrl,
+          statusCode: response.status
+        }
       });
     }
 
     // 獲取 Excel 文件
     const buffer = await response.arrayBuffer();
+    console.log(`[Urtracker Parse] Excel 文件大小: ${buffer.byteLength} bytes`);
 
     // 使用 xlsx 解析 Excel
     const workbook = XLSX.read(buffer, { type: 'array' });
+    console.log(`[Urtracker Parse] 工作表數量: ${workbook.SheetNames.length}`);
 
     // 獲取第一個工作表
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
+    console.log(`[Urtracker Parse] 使用工作表: ${sheetName}`);
 
     // 轉換為 JSON
     const jsonData = XLSX.utils.sheet_to_json<UrtrackerIssue>(worksheet);
+    console.log(`[Urtracker Parse] 解析出 ${jsonData.length} 筆數據`);
 
     // 獲取欄位名稱
     const columns = jsonData.length > 0 ? Object.keys(jsonData[0]) : [];
+    console.log(`[Urtracker Parse] 欄位: ${columns.join(', ')}`);
 
     return res.status(200).json({
       success: true,
@@ -86,13 +104,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('解析 Excel 錯誤:', error);
+    console.error('[Urtracker Parse] 錯誤:', error);
+    console.error('[Urtracker Parse] 錯誤堆疊:', error.stack);
+
     return res.status(500).json({
       success: false,
       error: '解析失敗',
       message: error.message || '無法解析 Excel 文件',
       projectKey,
-      state
+      state,
+      details: {
+        errorType: error.constructor.name,
+        errorStack: error.stack
+      }
     });
   }
 }
