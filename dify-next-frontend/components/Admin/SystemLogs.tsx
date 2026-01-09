@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ContainerInfo {
@@ -21,7 +21,7 @@ export default function SystemLogs() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // 獲取容器列表
-  const fetchContainers = async () => {
+  const fetchContainers = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/docker-logs?action=list');
       if (!response.ok) throw new Error('Failed to fetch containers');
@@ -36,10 +36,10 @@ export default function SystemLogs() {
       console.error('Error fetching containers:', err);
       setError(err.message);
     }
-  };
+  }, [selectedContainer]);
 
   // 獲取日誌
-  const fetchLogs = async (containerName?: string) => {
+  const fetchLogs = useCallback(async (containerName?: string) => {
     const targetContainer = containerName || selectedContainer;
     if (!targetContainer) return;
 
@@ -65,19 +65,19 @@ export default function SystemLogs() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedContainer, lineCount]);
 
   // 初始化
   useEffect(() => {
     fetchContainers();
-  }, []);
+  }, [fetchContainers]);
 
   // 當選擇容器改變時獲取日誌
   useEffect(() => {
     if (selectedContainer) {
       fetchLogs();
     }
-  }, [selectedContainer, lineCount]);
+  }, [selectedContainer, lineCount, fetchLogs]);
 
   // 自動刷新
   useEffect(() => {
@@ -95,7 +95,7 @@ export default function SystemLogs() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [autoRefresh, selectedContainer, lineCount]);
+  }, [autoRefresh, selectedContainer, lineCount, fetchLogs]);
 
   const getStatusColor = (status: string) => {
     if (status.toLowerCase().includes('up')) {

@@ -21,9 +21,14 @@ interface ContainersResponse {
   timestamp: string;
 }
 
+interface ErrorResponse {
+  error: string;
+  details?: string;
+}
+
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ContainersResponse | LogsResponse | { error: string }>
+  res: NextApiResponse<ContainersResponse | LogsResponse | ErrorResponse>
 ) {
   const { action, container, lines = '100' } = req.query;
 
