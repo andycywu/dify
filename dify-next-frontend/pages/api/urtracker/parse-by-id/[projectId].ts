@@ -96,6 +96,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const jsonData = XLSX.utils.sheet_to_json<TestPlanIssue>(worksheet);
     console.log(`[Urtracker Parse ID] 解析出 ${jsonData.length} 筆數據`);
 
+    // 🔍 調試：檢查 State 欄位的實際值
+    if (jsonData.length > 0) {
+      const stateSamples = jsonData.slice(0, 5).map(item => ({
+        'Issue Code': item['Issue Code'],
+        'State': item.State,
+        'State (raw)': JSON.stringify(item.State),
+        'Is Closed': item['Is Closed']
+      }));
+      console.log(`[Urtracker Parse ID] State 範例數據:`, JSON.stringify(stateSamples, null, 2));
+
+      // 檢查所有不重複的 State 值
+      const uniqueStates = Array.from(new Set(jsonData.map(item => item.State)));
+      console.log(`[Urtracker Parse ID] 所有不重複的 State 值:`, uniqueStates);
+    }
+
     // 獲取欄位名稱
     const columns = jsonData.length > 0 ? Object.keys(jsonData[0]) : [];
     console.log(`[Urtracker Parse ID] 欄位: ${columns.join(', ')}`);

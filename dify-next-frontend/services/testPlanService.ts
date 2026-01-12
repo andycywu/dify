@@ -122,11 +122,29 @@ export async function fetchTestPlanData(projectId: number): Promise<TestPlanIssu
  * - 已完成：State === 'Closed(0)'
  */
 export function calculateODMStats(data: TestPlanIssue[], odmName: string): ODMStats {
-  // 追蹤中的測試項目（State 不是 Closed(0)）
-  const trackingItems = data.filter(item => item.State !== 'Closed(0)');
+  // 🔍 調試：打印前幾筆數據的 State 值
+  if (data.length > 0) {
+    console.log(`[Test Plan Stats ${odmName}] 數據範例:`, data.slice(0, 3).map(item => ({
+      'Issue Code': item['Issue Code'],
+      'State': item.State,
+      'State (trimmed)': item.State?.trim(),
+      'Is Closed': item['Is Closed']
+    })));
+  }
 
-  // 已完成的項目（State 是 Closed(0)）
-  const completedItems = data.filter(item => item.State === 'Closed(0)');
+  // 處理可能的空格和大小寫問題
+  const trackingItems = data.filter(item => {
+    const state = (item.State || '').trim().toLowerCase();
+    const isClosed = state === 'closed(0)' || state === 'closed (0)';
+    return !isClosed;
+  });
+
+  const completedItems = data.filter(item => {
+    const state = (item.State || '').trim().toLowerCase();
+    return state === 'closed(0)' || state === 'closed (0)';
+  });
+
+  console.log(`[Test Plan Stats ${odmName}] 總計: ${data.length}, 追蹤中: ${trackingItems.length}, 已完成: ${completedItems.length}`);
 
   // 提取不重複的機種列表（從追蹤中的項目）
   const models = Array.from(new Set(
