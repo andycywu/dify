@@ -127,6 +127,8 @@ router.get('/download/:projectId', async (req, res) => {
     try {
       const username = process.env.URTRACKER_USERNAME;
       const password = process.env.URTRACKER_PASSWORD;
+      console.log(`   📌 環境變數 URTRACKER_USERNAME: ${username || '(未設置)'}`);
+      console.log(`   📌 環境變數 URTRACKER_PASSWORD: ${password ? '***已設置***' : '(未設置)'}`);
 
       if (!username || !password) {
         console.error('❌ 缺少 URTRACKER_USERNAME 或 URTRACKER_PASSWORD 環境變數');
@@ -220,6 +222,8 @@ router.post('/download/:projectId', async (req, res) => {
     try {
       const username = process.env.URTRACKER_USERNAME;
       const password = process.env.URTRACKER_PASSWORD;
+      console.log(`   📌 環境變數 URTRACKER_USERNAME: ${username || '(未設置)'}`);
+      console.log(`   📌 環境變數 URTRACKER_PASSWORD: ${password ? '***已設置***' : '(未設置)'}`);
 
       if (!username || !password) {
         console.error('❌ 缺少 URTRACKER_USERNAME 或 URTRACKER_PASSWORD 環境變數');
@@ -336,6 +340,8 @@ router.get('/download-by-name/:projectKey', async (req, res) => {
     try {
       const username = process.env.URTRACKER_USERNAME;
       const password = process.env.URTRACKER_PASSWORD;
+      console.log(`   📌 環境變數 URTRACKER_USERNAME: ${username || '(未設置)'}`);
+      console.log(`   📌 環境變數 URTRACKER_PASSWORD: ${password ? '***已設置***' : '(未設置)'}`);
 
       if (!username || !password) {
         console.error('❌ 缺少 URTRACKER_USERNAME 或 URTRACKER_PASSWORD 環境變數');

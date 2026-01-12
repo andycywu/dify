@@ -67,6 +67,8 @@ class UrtrackerHttpsClient {
     const loginURL = `${this.baseURL}/Accounts/login.aspx?ReturnUrl=%2fdefault.aspx`;
 
     console.log('🔐 開始登入 Urtracker...');
+    console.log(`   👤 使用帳號: ${username}`);
+    console.log(`   🔑 密碼: ${'*'.repeat(Math.min(password.length, 12))}`);
     try {
       // 1. 導航到登入頁面
       console.log(`   步驟1: 導航到登入頁面...`);
@@ -138,19 +140,19 @@ class UrtrackerHttpsClient {
         throw new Error('Session 已過期，請重新登入');
       }
 
-      // 簡化錯誤檢查 - 只檢查明確的權限和專案不存在錯誤
-      // 移除所有可能誤判的通用錯誤檢查
+      // 檢查頁面是否有錯誤訊息（更精確的檢查）
       const pageContent = await this.page.content();
+      const errorChecks = [
+        { pattern: /access denied|沒有權限|無權限|permission denied/i, message: '沒有權限訪問此專案' },
+        { pattern: /project not found|專案不存在|找不到專案/i, message: '專案不存在或ID錯誤' }
+        // ⚠️ 已移除過於寬泛的 HTML error 元素檢查，避免誤判
+      ];
 
-      // 只檢查非常具體的錯誤訊息
-      if (/access denied|沒有權限|無權限|permission denied/i.test(pageContent)) {
-        console.log(`   ⚠️  檢測到權限錯誤`);
-        throw new Error(`沒有權限訪問此專案 (Project ID: ${projectId})`);
-      }
-
-      if (/project not found|專案不存在|找不到專案/i.test(pageContent)) {
-        console.log(`   ⚠️  檢測到專案不存在錯誤`);
-        throw new Error(`專案不存在或ID錯誤 (Project ID: ${projectId})`);
+      for (const check of errorChecks) {
+        if (check.pattern.test(pageContent)) {
+          console.log(`   ⚠️  檢測到錯誤模式: ${check.message}`);
+          throw new Error(`${check.message} (Project ID: ${projectId})`);
+        }
       }
 
       // 檢查導出按鈕是否存在
@@ -160,8 +162,8 @@ class UrtrackerHttpsClient {
       });
 
       if (!exportButtonExists) {
-        console.log(`   ⚠️  找不到導出按鈕，嘗試直接下載...`);
-        // 不立即拋出錯誤，繼續嘗試下載流程
+        console.log(`   ⚠️  找不到導出按鈕，但繼續嘗試下載流程...`);
+        // 不立即拋出錯誤，有些頁面可能用不同的方式實現下載
       }
 
       // 步驟 2: 配置下載行為並點擊按鈕

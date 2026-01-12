@@ -17,12 +17,21 @@ docker build -t docker-rest-to-soap-proxy .
 
 # 啟動新容器
 echo "▶️  啟動新容器..."
+
+# 檢查必要的環境變數
+if [ -z "$URTRACKER_USERNAME" ] || [ -z "$URTRACKER_PASSWORD" ]; then
+  echo "❌ 錯誤: 請先設定 URTRACKER_USERNAME 和 URTRACKER_PASSWORD 環境變數"
+  echo "範例: export URTRACKER_USERNAME='your_username'"
+  echo "     export URTRACKER_PASSWORD='your_password'"
+  exit 1
+fi
+
 docker run -d \
   --name docker-rest-to-soap-proxy-1 \
   -p 5100:5001 \
   --restart unless-stopped \
-  -e URTRACKER_USERNAME="${URTRACKER_USERNAME:-andycy.wu}" \
-  -e URTRACKER_PASSWORD="${URTRACKER_PASSWORD:-XrnkE\$F4S.kAuyV1}" \
+  -e URTRACKER_USERNAME="$URTRACKER_USERNAME" \
+  -e URTRACKER_PASSWORD="$URTRACKER_PASSWORD" \
   docker-rest-to-soap-proxy
 
 # 檢查容器狀態

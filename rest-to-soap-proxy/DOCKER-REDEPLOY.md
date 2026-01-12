@@ -22,13 +22,14 @@ docker rm docker-rest-to-soap-proxy-1
 # 2. 構建新鏡像
 docker build -t docker-rest-to-soap-proxy .
 
-# 3. 啟動新容器
+# 3. 啟動新容器（需要先設定環境變數）
+# 請確保已在伺服器上設定 URTRACKER_USERNAME 和 URTRACKER_PASSWORD 環境變數
 docker run -d \
   --name docker-rest-to-soap-proxy-1 \
   -p 5100:5001 \
   --restart unless-stopped \
-  -e URTRACKER_USERNAME="andycy.wu" \
-  -e URTRACKER_PASSWORD='XrnkE$F4S.kAuyV1' \
+  -e URTRACKER_USERNAME="$URTRACKER_USERNAME" \
+  -e URTRACKER_PASSWORD="$URTRACKER_PASSWORD" \
   docker-rest-to-soap-proxy
 
 # 4. 查看日誌

@@ -24,8 +24,9 @@ URTRACKER_APP_ID=your_app_id
 URTRACKER_API_PWD=your_api_password
 
 # HTTPS 模式認證（用於新的 Puppeteer 下載模式）
-URTRACKER_USERNAME=andycy.wu
-URTRACKER_PASSWORD=your_password
+# 請在伺服器上設定實際的帳號密碼
+URTRACKER_USERNAME=
+URTRACKER_PASSWORD=
 ```
 
 ### 2. 服務配置
@@ -44,8 +45,8 @@ rest-to-soap-proxy:
   environment:
     APP_ID: ${URTRACKER_APP_ID:-}
     API_PWD: ${URTRACKER_API_PWD:-}
-    URTRACKER_USERNAME: ${URTRACKER_USERNAME:-andycy.wu}
-    URTRACKER_PASSWORD: ${URTRACKER_PASSWORD:-}
+    URTRACKER_USERNAME: ${URTRACKER_USERNAME}
+    URTRACKER_PASSWORD: ${URTRACKER_PASSWORD}
   volumes:
     - ./volumes/rest-to-soap-proxy/logs:/app/logs
     - ./volumes/rest-to-soap-proxy/temp:/app/src/clients/temp_downloads

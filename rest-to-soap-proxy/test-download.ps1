@@ -4,8 +4,16 @@ $ErrorActionPreference = "Stop"
 
 # 配置
 $baseUrl = "https://fwtrack.tpv-tech.com"
-$username = "andycy.wu"
-$password = "XrnkE$F4S.kAuyV1"
+# 從環境變數讀取或提示輸入
+$username = $env:URTRACKER_USERNAME
+$password = $env:URTRACKER_PASSWORD
+
+if (-not $username -or -not $password) {
+    Write-Host "請設定環境變數 URTRACKER_USERNAME 和 URTRACKER_PASSWORD" -ForegroundColor Red
+    Write-Host "或在此腳本中手動設定" -ForegroundColor Yellow
+    exit 1
+}
+
 $projectId = 2561
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -19,12 +27,12 @@ $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 
 try {
     $loginPage = Invoke-WebRequest -Uri $loginUrl -SessionVariable session -UseBasicParsing
-    
+
     $viewState = ($loginPage.Content | Select-String -Pattern 'id="__VIEWSTATE" value="([^"]+)"').Matches[0].Groups[1].Value
     $viewStateGen = ($loginPage.Content | Select-String -Pattern 'id="__VIEWSTATEGENERATOR" value="([^"]+)"').Matches[0].Groups[1].Value
-    
+
     Write-Host "  ViewState 長度: $($viewState.Length)" -ForegroundColor Gray
-    
+
     $loginBody = @{
         '__VIEWSTATE' = $viewState
         '__VIEWSTATEGENERATOR' = $viewStateGen
@@ -32,15 +40,15 @@ try {
         'txtPassword' = $password
         'btnLogin' = '登  录'
     }
-    
+
     $loginResponse = Invoke-WebRequest -Uri $loginUrl -Method POST -Body $loginBody -WebSession $session -MaximumRedirection 5 -UseBasicParsing
-    
+
     # 檢查 cookies
     $cookies = $session.Cookies.GetCookies($baseUrl)
     $urTracker = $cookies | Where-Object { $_.Name -eq '.URTracker' }
-    
+
     Write-Host "  獲取到的 Cookies: $($cookies.Name -join ', ')" -ForegroundColor Gray
-    
+
     if ($urTracker) {
         Write-Host "  ✓ 成功獲取 .URTracker cookie" -ForegroundColor Green
     } else {
@@ -58,14 +66,14 @@ $exportUrl = "$baseUrl/pts/ProblemListExport.aspx?project=$projectId&FilterType=
 
 try {
     $exportPage = Invoke-WebRequest -Uri $exportUrl -WebSession $session -UseBasicParsing
-    
+
     $exportViewState = ($exportPage.Content | Select-String -Pattern 'id="__VIEWSTATE" value="([^"]+)"').Matches[0].Groups[1].Value
     $exportViewStateGen = ($exportPage.Content | Select-String -Pattern 'id="__VIEWSTATEGENERATOR" value="([^"]+)"').Matches[0].Groups[1].Value
-    
+
     # 嘗試提取 __EVENTVALIDATION
     $eventValidationMatch = ($exportPage.Content | Select-String -Pattern 'id="__EVENTVALIDATION" value="([^"]+)"')
     $exportEventValidation = if ($eventValidationMatch) { $eventValidationMatch.Matches[0].Groups[1].Value } else { '' }
-    
+
     Write-Host "  ✓ ViewState 長度: $($exportViewState.Length)" -ForegroundColor Green
     if ($exportEventValidation) {
         Write-Host "  ✓ EventValidation 長度: $($exportEventValidation.Length)" -ForegroundColor Green
@@ -109,14 +117,14 @@ Write-Host "  POST 欄位數量: $($exportBody.Count)" -ForegroundColor Gray
 
 try {
     $downloadResponse = Invoke-WebRequest -Uri $exportUrl -Method POST -Body $exportBody -WebSession $session -UseBasicParsing
-    
+
     $outputFile = "MNT-Data_$(Get-Date -Format 'yyyy-MM-dd_HHmmss').xls"
     [System.IO.File]::WriteAllBytes($outputFile, $downloadResponse.Content)
-    
+
     $fileSize = (Get-Item $outputFile).Length
     Write-Host "  文件大小: $([Math]::Round($fileSize / 1KB, 2)) KB" -ForegroundColor Gray
     Write-Host "  Content-Type: $($downloadResponse.Headers['Content-Type'])" -ForegroundColor Gray
-    
+
     # 檢查文件類型
     $fileContent = Get-Content $outputFile -Encoding UTF8 -TotalCount 1 -Raw
     if ($fileContent -match '<html|<!DOCTYPE') {
