@@ -80,7 +80,7 @@ export interface CategoryStats {
 export async function fetchTestPlanData(projectId: number): Promise<TestPlanIssue[]> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/parse/${projectId}?state=all`
+      `${API_BASE_URL}/parse-by-id/${projectId}?state=all`
     );
 
     if (!response.ok) {
@@ -241,7 +241,7 @@ export function getODMConfig(category: TestPlanCategory, odmName: string): ODMCo
 export async function downloadTestPlanExcel(projectId: number, projectName: string): Promise<void> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/download/${projectId}?state=all`
+      `${API_BASE_URL}/download-by-id/${projectId}?state=all`
     );
 
     if (!response.ok) {
