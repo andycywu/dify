@@ -40,6 +40,8 @@ export default function UrtrackerTable({ data, loading = false }: UrtrackerTable
   const [itemsPerPage] = useState(20);
   const [sortColumn, setSortColumn] = useState<keyof UrtrackerIssue | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [selectedIssue, setSelectedIssue] = useState<UrtrackerIssue | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 排序和搜索邏輯
   const filteredAndSortedData = useMemo(() => {
@@ -95,6 +97,18 @@ export default function UrtrackerTable({ data, loading = false }: UrtrackerTable
   const getSortIcon = (column: keyof UrtrackerIssue) => {
     if (sortColumn !== column) return '⇅';
     return sortDirection === 'asc' ? '↑' : '↓';
+  };
+
+  // 處理 Issue Code 點擊
+  const handleIssueClick = (issue: UrtrackerIssue) => {
+    setSelectedIssue(issue);
+    setIsModalOpen(true);
+  };
+
+  // 關閉對話框
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedIssue(null), 300); // 等待動畫結束後清除數據
   };
 
   if (loading) {
@@ -196,8 +210,13 @@ export default function UrtrackerTable({ data, loading = false }: UrtrackerTable
           <tbody className="bg-white divide-y divide-gray-200">
             {currentData.map((item, index) => (
               <tr key={index} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600">
-                  {item['Issue Code']}
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => handleIssueClick(item)}
+                    className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                  >
+                    {item['Issue Code']}
+                  </button>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -292,6 +311,216 @@ export default function UrtrackerTable({ data, loading = false }: UrtrackerTable
           >
             下一頁
           </button>
+        </div>
+      )}
+
+      {/* 詳細內容對話框 */}
+      {isModalOpen && selectedIssue && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={closeModal}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 標題欄 */}
+            <div className="bg-blue-600 text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold">
+                Issue 詳細資訊：{selectedIssue['Issue Code']}
+              </h2>
+              <button
+                onClick={closeModal}
+                className="text-white hover:text-gray-200 text-2xl font-bold leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* 內容區 */}
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 基本資訊 */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">基本資訊</h3>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Issue Code</label>
+                    <p className="text-gray-900 font-semibold">{selectedIssue['Issue Code']}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">State</label>
+                    <p>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        selectedIssue.State === 'Open' || selectedIssue.State === 'New'
+                          ? 'bg-green-100 text-green-800'
+                          : selectedIssue.State === 'Closed'
+                          ? 'bg-gray-100 text-gray-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {selectedIssue.State}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Priority</label>
+                    <p>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        selectedIssue.Priority === 'High' || selectedIssue.Priority === 'Urgent'
+                          ? 'bg-red-100 text-red-800'
+                          : selectedIssue.Priority === 'Medium'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {selectedIssue.Priority}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Classification</label>
+                    <p className="text-gray-900">{selectedIssue.Classification}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Issue Category</label>
+                    <p className="text-gray-900">{selectedIssue['Issue Category']}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Is Closed</label>
+                    <p className="text-gray-900">{selectedIssue['Is Closed']}</p>
+                  </div>
+                </div>
+
+                {/* 產品資訊 */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">產品資訊</h3>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Brand</label>
+                    <p className="text-gray-900">{selectedIssue.Brand}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Model Name</label>
+                    <p className="text-gray-900">{selectedIssue['Model Name']}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Region</label>
+                    <p className="text-gray-900">{selectedIssue.Region}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Vendor</label>
+                    <p className="text-gray-900">{selectedIssue.Vendor}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Parent ID</label>
+                    <p className="text-gray-900">{selectedIssue.ParentID}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Child Count</label>
+                    <p className="text-gray-900">{selectedIssue.ChildCount}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Record Num</label>
+                    <p className="text-gray-900">{selectedIssue['Record Num']}</p>
+                  </div>
+                </div>
+
+                {/* 人員資訊 */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">人員資訊</h3>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Create User</label>
+                    <p className="text-gray-900">{selectedIssue['Create User']}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Assignee</label>
+                    <p className="text-gray-900">{selectedIssue.Assignee}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Last Process User</label>
+                    <p className="text-gray-900">{selectedIssue['Last Process User']}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Supervisor/Owner</label>
+                    <p className="text-gray-900">{selectedIssue['Supervisor/Owner']}</p>
+                  </div>
+                </div>
+
+                {/* 時間資訊 */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">時間資訊</h3>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Create Time</label>
+                    <p className="text-gray-900">{selectedIssue['Create Time']}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Close Time</label>
+                    <p className="text-gray-900">{selectedIssue['Close Time'] || '尚未關閉'}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Last Process Time</label>
+                    <p className="text-gray-900">{selectedIssue['Last Process Time']}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Due Date</label>
+                    <p className="text-gray-900">{selectedIssue.DueDate}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 詳細描述 - 全寬 */}
+              <div className="mt-6 space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-3">Description</h3>
+                  <p className="text-gray-900 whitespace-pre-wrap bg-gray-50 p-4 rounded border">
+                    {selectedIssue.Description || '無描述'}
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-3">Impact</h3>
+                  <p className="text-gray-900 whitespace-pre-wrap bg-gray-50 p-4 rounded border">
+                    {selectedIssue.Impact || '無影響說明'}
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-3">Action</h3>
+                  <p className="text-gray-900 whitespace-pre-wrap bg-gray-50 p-4 rounded border">
+                    {selectedIssue.Action || '無處理動作'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 底部按鈕 */}
+            <div className="bg-gray-50 px-6 py-4 flex justify-end border-t">
+              <button
+                onClick={closeModal}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              >
+                關閉
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
