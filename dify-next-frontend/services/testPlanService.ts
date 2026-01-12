@@ -116,17 +116,17 @@ export async function fetchTestPlanData(projectId: number): Promise<TestPlanIssu
 
 /**
  * 計算 ODM 的統計數據
- * 根據 Is Closed 欄位判斷：
+ * 根據 State 欄位判斷：
  * - 總計：全部項目
- * - 追蹤中：Is Closed !== TRUE (還沒關閉的)
- * - 已完成：Is Closed === TRUE
+ * - 追蹤中：State !== 'Closed (0)' (不是 Closed (0) 的都是追蹤中)
+ * - 已完成：State === 'Closed (0)'
  */
 export function calculateODMStats(data: TestPlanIssue[], odmName: string): ODMStats {
-  // 追蹤中的測試項目（Is Closed 不是 TRUE）
-  const trackingItems = data.filter(item => item['Is Closed'] !== 'TRUE');
+  // 追蹤中的測試項目（State 不是 Closed (0)）
+  const trackingItems = data.filter(item => item.State !== 'Closed (0)');
 
-  // 已完成的項目（Is Closed 是 TRUE）
-  const completedItems = data.filter(item => item['Is Closed'] === 'TRUE');
+  // 已完成的項目（State 是 Closed (0)）
+  const completedItems = data.filter(item => item.State === 'Closed (0)');
 
   // 提取不重複的機種列表（從追蹤中的項目）
   const models = Array.from(new Set(

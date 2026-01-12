@@ -138,6 +138,12 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
                 State {getSortIcon('State')}
               </th>
               <th
+                onClick={() => handleSort('Is Closed')}
+                className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                Is Closed {getSortIcon('Is Closed')}
+              </th>
+              <th
                 onClick={() => handleSort('Product')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
@@ -189,12 +195,15 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    item['Is Closed'] === 'TRUE'
+                    item.State === 'Closed (0)'
                       ? 'bg-gray-100 text-gray-800'
                       : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {item['Is Closed'] === 'TRUE' ? '已完成' : '追蹤中'}
+                    {item.State || '-'}
                   </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                  {item['Is Closed'] || '-'}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                   {item.Product || '-'}
