@@ -136,7 +136,7 @@ export default function TestPlanDashboard() {
               🎯 Test Plan 戰情室
             </h1>
             <p className="text-gray-600">
-              統計 TV/MNT/PD 各家 ODM 正在進行的測試項目數量
+              統計 TV/MNT/PD 各家 ODM 的測試項目：總計/追蹤中/已完成
             </p>
           </div>
 
@@ -202,8 +202,9 @@ export default function TestPlanDashboard() {
                   <p className="font-semibold">💡 使用說明</p>
                   <ul className="list-disc list-inside mt-2 space-y-1">
                     <li>點擊「📊 載入統計數據」按鈕來查看各 ODM 的測試項目統計</li>
-                    <li>點擊 ODM 卡片查看該 ODM 正在執行的所有測試項目</li>
+                    <li>點擊 ODM 卡片查看該 ODM 追蹤中的所有測試項目</li>
                     <li>可以切換 TV/MNT/PD 分類查看不同類別的統計</li>
+                    <li>統計基於 Is Closed 欄位：FALSE=追蹤中，TRUE=已完成</li>
                   </ul>
                 </div>
               )}
@@ -216,7 +217,7 @@ export default function TestPlanDashboard() {
                     </h2>
                     <p className="text-gray-600 mt-1">
                       共 {currentCategoryStats.odmStats.length} 家 ODM，
-                      總計進行中項目: <span className="font-bold text-blue-600">{currentCategoryStats.totalInProgress}</span>
+                      總計追蹤中項目: <span className="font-bold text-blue-600">{currentCategoryStats.totalInProgress}</span>
                     </p>
                   </div>
 
@@ -248,7 +249,7 @@ export default function TestPlanDashboard() {
                     {selectedCategory} - {selectedODM.odmName}
                   </h2>
                   <p className="text-gray-600 mt-1">
-                    正在進行的測試項目
+                    追蹤中的測試項目（Is Closed = FALSE）
                   </p>
                 </div>
 

@@ -98,32 +98,21 @@ export async function fetchTestPlanData(projectId: number): Promise<TestPlanIssu
 
 /**
  * 計算 ODM 的統計數據
+ * 根據 Is Closed 欄位判斷：
+ * - 總計：全部項目
+ * - 追蹤中：Is Closed !== TRUE (還沒關閉的)
+ * - 已完成：Is Closed === TRUE
  */
 export function calculateODMStats(data: TestPlanIssue[], odmName: string): ODMStats {
-  // 過濾進行中的測試項目 (State 為 Open/New/In Progress 等)
-  const inProgressStates = ['Open', 'New', 'In Progress', 'Assigned', 'Tracking'];
-  const inProgressItems = data.filter(item =>
-    inProgressStates.some(state =>
-      item.State?.toLowerCase().includes(state.toLowerCase())
-    )
-  );
+  // 追蹤中的測試項目（Is Closed 不是 TRUE）
+  const trackingItems = data.filter(item => item['Is Closed'] !== 'TRUE');
 
-  // 過濾 Tracking 狀態
-  const trackingItems = data.filter(item =>
-    item.State?.toLowerCase().includes('tracking')
-  );
+  // 已完成的項目（Is Closed 是 TRUE）
+  const completedItems = data.filter(item => item['Is Closed'] === 'TRUE');
 
-  // 過濾完成的項目
-  const completedStates = ['Closed', 'Resolved', 'Done', 'Completed'];
-  const completedItems = data.filter(item =>
-    completedStates.some(state =>
-      item.State?.toLowerCase().includes(state.toLowerCase())
-    )
-  );
-
-  // 提取不重複的機種列表
+  // 提取不重複的機種列表（從追蹤中的項目）
   const models = Array.from(new Set(
-    inProgressItems
+    trackingItems
       .map(item => item['Model Name'])
       .filter(Boolean)
   ));
@@ -131,7 +120,7 @@ export function calculateODMStats(data: TestPlanIssue[], odmName: string): ODMSt
   return {
     odm: odmName,
     total: data.length,
-    inProgress: inProgressItems.length,
+    inProgress: trackingItems.length,  // 使用 tracking 數量作為進行中
     tracking: trackingItems.length,
     completed: completedItems.length,
     models: models as string[],
@@ -208,13 +197,8 @@ export async function getODMModelTestItems(
 
   const data = await fetchTestPlanData(odmConfig.id);
 
-  // 過濾進行中的測試項目
-  const inProgressStates = ['Open', 'New', 'In Progress', 'Assigned', 'Tracking'];
-  let filteredData = data.filter(item =>
-    inProgressStates.some(state =>
-      item.State?.toLowerCase().includes(state.toLowerCase())
-    )
-  );
+  // 過濾追蹤中的測試項目（Is Closed 不是 TRUE）
+  let filteredData = data.filter(item => item['Is Closed'] !== 'TRUE');
 
   // 如果指定了機種，則進一步過濾
   if (modelName) {

@@ -19,13 +19,13 @@ export default function ODMStatsCard({ stats, onODMClick }: ODMStatsCardProps) {
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-bold text-gray-800">{stats.odm}</h3>
         <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-          stats.inProgress > 50
+          stats.tracking > 50
             ? 'bg-red-100 text-red-700'
-            : stats.inProgress > 20
+            : stats.tracking > 20
             ? 'bg-yellow-100 text-yellow-700'
             : 'bg-green-100 text-green-700'
         }`}>
-          進行中: {stats.inProgress}
+          追蹤中: {stats.tracking}
         </span>
       </div>
 
@@ -35,7 +35,7 @@ export default function ODMStatsCard({ stats, onODMClick }: ODMStatsCardProps) {
           <span className="font-semibold text-gray-900">{stats.total}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-600">Tracking</span>
+          <span className="text-gray-600">追蹤中</span>
           <span className="font-semibold text-blue-600">{stats.tracking}</span>
         </div>
         <div className="flex justify-between">
@@ -61,7 +61,7 @@ export default function ODMStatsCard({ stats, onODMClick }: ODMStatsCardProps) {
       {/* 機種數量 */}
       <div className="mt-3 pt-3 border-t border-gray-200">
         <span className="text-xs text-gray-600">
-          🎯 進行中機種: <span className="font-semibold text-gray-900">{stats.models.length}</span>
+          🎯 追蹤中機種: <span className="font-semibold text-gray-900">{stats.models.length}</span>
         </span>
       </div>
     </div>
