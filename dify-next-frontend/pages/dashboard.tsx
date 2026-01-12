@@ -40,6 +40,12 @@ export default function Dashboard() {
           <p className="text-gray-600 mb-2 text-center">查詢 Urtracker 專案數據</p>
           <Link href="/aic-dashboard" className="text-red-600 hover:underline">前往戰情室</Link>
         </div>
+        <div className="bg-orange-50 rounded-lg p-6 shadow flex flex-col items-center">
+          <span className="text-4xl mb-2">📋</span>
+          <h2 className="text-xl font-semibold mb-1">Test Plan 戰情室</h2>
+          <p className="text-gray-600 mb-2 text-center">統計各 ODM 測試進度</p>
+          <Link href="/test-plan-dashboard" className="text-orange-600 hover:underline">前往 Test Plan</Link>
+        </div>
       </div>
     </MainLayout>
   );
