@@ -126,28 +126,22 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
           <thead className="bg-gray-50">
             <tr>
               <th
-                onClick={() => handleSort('Issue Code')}
+                onClick={() => handleSort('事務編碼')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                Issue Code {getSortIcon('Issue Code')}
+                事務編碼 {getSortIcon('事務編碼')}
               </th>
               <th
-                onClick={() => handleSort('State')}
+                onClick={() => handleSort('狀態')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                State {getSortIcon('State')}
+                狀態 {getSortIcon('狀態')}
               </th>
               <th
-                onClick={() => handleSort('Priority')}
+                onClick={() => handleSort('Product')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                Priority {getSortIcon('Priority')}
-              </th>
-              <th
-                onClick={() => handleSort('Model Name')}
-                className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-              >
-                Model Name {getSortIcon('Model Name')}
+                Product {getSortIcon('Product')}
               </th>
               <th
                 onClick={() => handleSort('Brand')}
@@ -156,22 +150,34 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
                 Brand {getSortIcon('Brand')}
               </th>
               <th
-                onClick={() => handleSort('Assignee')}
+                onClick={() => handleSort('Model')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                Assignee {getSortIcon('Assignee')}
+                Model {getSortIcon('Model')}
               </th>
               <th
-                onClick={() => handleSort('Create Time')}
+                onClick={() => handleSort('Stage')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                Create Time {getSortIcon('Create Time')}
+                Stage {getSortIcon('Stage')}
               </th>
               <th
-                onClick={() => handleSort('DueDate')}
+                onClick={() => handleSort('Test Item')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                Due Date {getSortIcon('DueDate')}
+                Test Item {getSortIcon('Test Item')}
+              </th>
+              <th
+                onClick={() => handleSort('待辦人')}
+                className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                待辦人 {getSortIcon('待辦人')}
+              </th>
+              <th
+                onClick={() => handleSort('創建時間')}
+                className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                創建時間 {getSortIcon('創建時間')}
               </th>
             </tr>
           </thead>
@@ -179,42 +185,37 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
             {currentData.map((item, index) => (
               <tr key={index} className="hover:bg-gray-50">
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600">
-                  {item['Issue Code']}
+                  {item['事務編碼']}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    item['Is Closed'] === 'TRUE'
+                    item['是否關閉'] === 'TRUE'
                       ? 'bg-gray-100 text-gray-800'
                       : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {item['Is Closed'] === 'TRUE' ? '已完成' : '追蹤中'}
+                    {item['是否關閉'] === 'TRUE' ? '已完成' : '追蹤中'}
                   </span>
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    item.Priority === 'High' || item.Priority === 'Urgent'
-                      ? 'bg-red-100 text-red-800'
-                      : item.Priority === 'Medium'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {item.Priority || 'N/A'}
-                  </span>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                  {item.Product || '-'}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                  {item.Brand || '-'}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
-                  {item['Model Name']}
+                  {item.Model || '-'}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {item.Brand}
+                  {item.Stage || '-'}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900">
+                  {item['Test Item'] || '-'}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {item.Assignee}
+                  {item['待辦人'] || '-'}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                  {item['Create Time']}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                  {item.DueDate}
+                  {item['創建時間'] || '-'}
                 </td>
               </tr>
             ))}

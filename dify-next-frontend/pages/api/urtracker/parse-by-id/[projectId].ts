@@ -3,31 +3,37 @@ import * as XLSX from 'xlsx';
 
 const REST_TO_SOAP_BASE_URL = process.env.REST_TO_SOAP_PROXY_URL || 'http://rest-to-soap-proxy:5001';
 
-export interface UrtrackerIssue {
+export interface TestPlanIssue {
   ParentID: string;
   ChildCount: number;
-  'Issue Code': string;
-  'Create Time': string;
-  'Is Closed': string;
-  'Close Time': string;
-  'Create User': string;
-  Assignee: string;
-  'Record Num': string;
-  'Last Process User': string;
-  'Last Process Time': string;
-  State: string;
+  '事務編碼': string;  // Issue Code
+  '創建時間': string;  // Create Time
+  '是否關閉': string;  // Is Closed (TRUE/FALSE)
+  '關閉時間': string;  // Close Time
+  '創建人': string;    // Create User
+  '待辦人': string;    // Assignee
+  '記錄數': string;    // Record Num
+  '最后處理人': string; // Last Process User
+  '最后處理時間': string; // Last Process Time
+  '狀態': string;      // State
+  Product: string;
   Brand: string;
-  'Model Name': string;
-  Priority: string;
-  Classification: string;
-  'Issue Category': string;
-  Region: string;
-  Vendor: string;
-  Description: string;
-  Impact: string;
-  Action: string;
-  DueDate: string;
-  'Supervisor/Owner': string;
+  Model: string;
+  Stage: string;
+  '试跑类别': string;
+  '试跑内容': string;
+  'Stage Plan Start': string;
+  'Stage Plan Exit': string;
+  'Production Plan date': string;
+  'Test Item': string;
+  'Test Set Counts': string;
+  'Test Set Resused?': string;
+  'Test Plan Start': string;
+  'Test Plan Finish': string;
+  'Test Actual Start': string;
+  'Test Actual Finish': string;
+  'Report upload Address (FTP/others)': string;
+  [key: string]: any;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -87,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`[Urtracker Parse ID] 使用工作表: ${sheetName}`);
 
     // 轉換為 JSON
-    const jsonData = XLSX.utils.sheet_to_json<UrtrackerIssue>(worksheet);
+    const jsonData = XLSX.utils.sheet_to_json<TestPlanIssue>(worksheet);
     console.log(`[Urtracker Parse ID] 解析出 ${jsonData.length} 筆數據`);
 
     // 獲取欄位名稱

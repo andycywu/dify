@@ -45,17 +45,35 @@ export interface ODMConfig {
 }
 
 export interface TestPlanIssue {
-  'Issue Code': string;
-  State: string;
-  Priority: string;
+  ParentID: string;
+  ChildCount: number;
+  '事務編碼': string;  // Issue Code
+  '創建時間': string;  // Create Time
+  '是否關閉': string;  // Is Closed (TRUE/FALSE)
+  '關閉時間': string;  // Close Time
+  '創建人': string;    // Create User
+  '待辦人': string;    // Assignee
+  '記錄數': string;    // Record Num
+  '最后處理人': string; // Last Process User
+  '最后處理時間': string; // Last Process Time
+  '狀態': string;      // State
+  Product: string;
   Brand: string;
-  'Model Name': string;
-  Assignee: string;
-  'Create Time': string;
-  DueDate: string;
-  Description: string;
-  Vendor: string;
-  Region: string;
+  Model: string;
+  Stage: string;
+  '试跑类别': string;
+  '试跑内容': string;
+  'Stage Plan Start': string;
+  'Stage Plan Exit': string;
+  'Production Plan date': string;
+  'Test Item': string;
+  'Test Set Counts': string;
+  'Test Set Resused?': string;
+  'Test Plan Start': string;
+  'Test Plan Finish': string;
+  'Test Actual Start': string;
+  'Test Actual Finish': string;
+  'Report upload Address (FTP/others)': string;
   [key: string]: any;
 }
 
@@ -104,16 +122,16 @@ export async function fetchTestPlanData(projectId: number): Promise<TestPlanIssu
  * - 已完成：Is Closed === TRUE
  */
 export function calculateODMStats(data: TestPlanIssue[], odmName: string): ODMStats {
-  // 追蹤中的測試項目（Is Closed 不是 TRUE）
-  const trackingItems = data.filter(item => item['Is Closed'] !== 'TRUE');
+  // 追蹤中的測試項目（是否關閉 不是 TRUE）
+  const trackingItems = data.filter(item => item['是否關閉'] !== 'TRUE');
 
-  // 已完成的項目（Is Closed 是 TRUE）
-  const completedItems = data.filter(item => item['Is Closed'] === 'TRUE');
+  // 已完成的項目（是否關閉 是 TRUE）
+  const completedItems = data.filter(item => item['是否關閉'] === 'TRUE');
 
   // 提取不重複的機種列表（從追蹤中的項目）
   const models = Array.from(new Set(
     trackingItems
-      .map(item => item['Model Name'])
+      .map(item => item.Model)
       .filter(Boolean)
   ));
 
@@ -197,13 +215,13 @@ export async function getODMModelTestItems(
 
   const data = await fetchTestPlanData(odmConfig.id);
 
-  // 過濾追蹤中的測試項目（Is Closed 不是 TRUE）
-  let filteredData = data.filter(item => item['Is Closed'] !== 'TRUE');
+  // 過濾追蹤中的測試項目（是否關閉 不是 TRUE）
+  let filteredData = data.filter(item => item['是否關閉'] !== 'TRUE');
 
   // 如果指定了機種，則進一步過濾
   if (modelName) {
     filteredData = filteredData.filter(item =>
-      item['Model Name']?.toLowerCase().includes(modelName.toLowerCase())
+      item.Model?.toLowerCase().includes(modelName.toLowerCase())
     );
   }
 
