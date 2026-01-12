@@ -38,6 +38,12 @@ export const TEST_PLAN_PROJECTS = {
 export type TestPlanCategory = keyof typeof TEST_PLAN_PROJECTS;
 export type TestPlanODM<T extends TestPlanCategory> = keyof typeof TEST_PLAN_PROJECTS[T];
 
+export interface ODMConfig {
+  id: number;
+  key: string;
+  name: string;
+}
+
 export interface TestPlanIssue {
   'Issue Code': string;
   State: string;
@@ -194,8 +200,7 @@ export async function getODMModelTestItems(
   odmName: string,
   modelName?: string
 ): Promise<TestPlanIssue[]> {
-  const odms = TEST_PLAN_PROJECTS[category];
-  const odmConfig = odms[odmName as keyof typeof odms];
+  const odmConfig = getODMConfig(category, odmName);
 
   if (!odmConfig) {
     throw new Error(`找不到 ODM: ${odmName} 在分類 ${category} 中`);
@@ -219,6 +224,15 @@ export async function getODMModelTestItems(
   }
 
   return filteredData;
+}
+
+/**
+ * 獲取 ODM 配置
+ */
+export function getODMConfig(category: TestPlanCategory, odmName: string): ODMConfig | null {
+  const odms = TEST_PLAN_PROJECTS[category];
+  const odmConfig = (odms as any)[odmName];
+  return odmConfig || null;
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   getAllCategoriesStats,
   getODMModelTestItems,
   downloadTestPlanExcel,
+  getODMConfig,
 } from '../services/testPlanService';
 import ODMStatsCard from '../components/TestPlan/ODMStatsCard';
 import TestPlanTable from '../components/TestPlan/TestPlanTable';
@@ -100,12 +101,12 @@ export default function TestPlanDashboard() {
 
   // 下載 Excel
   const handleDownloadExcel = async (odmName: string) => {
-    const odms = TEST_PLAN_PROJECTS[selectedCategory];
-    const odmConfig = odms[odmName as keyof typeof odms];
+    const odmConfig = getODMConfig(selectedCategory, odmName);
 
-    if (!odmConfig) return;
-
-    try {
+    if (!odmConfig) {
+      alert('找不到 ODM 配置');
+      return;
+    }
       await downloadTestPlanExcel(odmConfig.id, odmConfig.key);
       alert('下載成功！');
     } catch (error: any) {
