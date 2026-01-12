@@ -126,16 +126,16 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
           <thead className="bg-gray-50">
             <tr>
               <th
-                onClick={() => handleSort('事務編碼')}
+                onClick={() => handleSort('Issue Code')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                事務編碼 {getSortIcon('事務編碼')}
+                Issue Code {getSortIcon('Issue Code')}
               </th>
               <th
-                onClick={() => handleSort('狀態')}
+                onClick={() => handleSort('State')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                狀態 {getSortIcon('狀態')}
+                State {getSortIcon('State')}
               </th>
               <th
                 onClick={() => handleSort('Product')}
@@ -168,16 +168,16 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
                 Test Item {getSortIcon('Test Item')}
               </th>
               <th
-                onClick={() => handleSort('待辦人')}
+                onClick={() => handleSort('Assignee')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                待辦人 {getSortIcon('待辦人')}
+                Assignee {getSortIcon('Assignee')}
               </th>
               <th
-                onClick={() => handleSort('創建時間')}
+                onClick={() => handleSort('Create Time')}
                 className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
-                創建時間 {getSortIcon('創建時間')}
+                Create Time {getSortIcon('Create Time')}
               </th>
             </tr>
           </thead>
@@ -185,15 +185,15 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
             {currentData.map((item, index) => (
               <tr key={index} className="hover:bg-gray-50">
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600">
-                  {item['事務編碼']}
+                  {item['Issue Code']}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    item['是否關閉'] === 'TRUE'
+                    item['Is Closed'] === 'TRUE'
                       ? 'bg-gray-100 text-gray-800'
                       : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {item['是否關閉'] === 'TRUE' ? '已完成' : '追蹤中'}
+                    {item['Is Closed'] === 'TRUE' ? '已完成' : '追蹤中'}
                   </span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
@@ -212,10 +212,10 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
                   {item['Test Item'] || '-'}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {item['待辦人'] || '-'}
+                  {item.Assignee || '-'}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                  {item['創建時間'] || '-'}
+                  {item['Create Time'] || '-'}
                 </td>
               </tr>
             ))}

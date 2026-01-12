@@ -6,16 +6,16 @@ const REST_TO_SOAP_BASE_URL = process.env.REST_TO_SOAP_PROXY_URL || 'http://rest
 export interface TestPlanIssue {
   ParentID: string;
   ChildCount: number;
-  '事務編碼': string;  // Issue Code
-  '創建時間': string;  // Create Time
-  '是否關閉': string;  // Is Closed (TRUE/FALSE)
-  '關閉時間': string;  // Close Time
-  '創建人': string;    // Create User
-  '待辦人': string;    // Assignee
-  '記錄數': string;    // Record Num
-  '最后處理人': string; // Last Process User
-  '最后處理時間': string; // Last Process Time
-  '狀態': string;      // State
+  'Issue Code': string;
+  'Create Time': string;
+  'Is Closed': string;  // TRUE/FALSE
+  'Close Time': string;
+  'Create User': string;
+  Assignee: string;
+  'Record Num': string;
+  'Last Process User': string;
+  'Last Process Time': string;
+  State: string;
   Product: string;
   Brand: string;
   Model: string;

@@ -47,16 +47,16 @@ export interface ODMConfig {
 export interface TestPlanIssue {
   ParentID: string;
   ChildCount: number;
-  '事務編碼': string;  // Issue Code
-  '創建時間': string;  // Create Time
-  '是否關閉': string;  // Is Closed (TRUE/FALSE)
-  '關閉時間': string;  // Close Time
-  '創建人': string;    // Create User
-  '待辦人': string;    // Assignee
-  '記錄數': string;    // Record Num
-  '最后處理人': string; // Last Process User
-  '最后處理時間': string; // Last Process Time
-  '狀態': string;      // State
+  'Issue Code': string;
+  'Create Time': string;
+  'Is Closed': string;  // TRUE/FALSE
+  'Close Time': string;
+  'Create User': string;
+  Assignee: string;
+  'Record Num': string;
+  'Last Process User': string;
+  'Last Process Time': string;
+  State: string;
   Product: string;
   Brand: string;
   Model: string;
@@ -122,11 +122,11 @@ export async function fetchTestPlanData(projectId: number): Promise<TestPlanIssu
  * - 已完成：Is Closed === TRUE
  */
 export function calculateODMStats(data: TestPlanIssue[], odmName: string): ODMStats {
-  // 追蹤中的測試項目（是否關閉 不是 TRUE）
-  const trackingItems = data.filter(item => item['是否關閉'] !== 'TRUE');
+  // 追蹤中的測試項目（Is Closed 不是 TRUE）
+  const trackingItems = data.filter(item => item['Is Closed'] !== 'TRUE');
 
-  // 已完成的項目（是否關閉 是 TRUE）
-  const completedItems = data.filter(item => item['是否關閉'] === 'TRUE');
+  // 已完成的項目（Is Closed 是 TRUE）
+  const completedItems = data.filter(item => item['Is Closed'] === 'TRUE');
 
   // 提取不重複的機種列表（從追蹤中的項目）
   const models = Array.from(new Set(
