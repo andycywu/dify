@@ -122,11 +122,11 @@ export function calculateODMStats(data: TestPlanIssue[], odmName: string): ODMSt
   );
 
   // 提取不重複的機種列表
-  const models = [...new Set(
+  const models = Array.from(new Set(
     inProgressItems
       .map(item => item['Model Name'])
       .filter(Boolean)
-  )];
+  ));
 
   return {
     odm: odmName,
