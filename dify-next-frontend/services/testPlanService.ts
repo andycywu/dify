@@ -118,8 +118,8 @@ export async function fetchTestPlanData(projectId: number): Promise<TestPlanIssu
  * 計算 ODM 的統計數據
  * 根據 State 欄位判斷：
  * - 總計：全部項目
- * - 追蹤中：State !== 'Closed(0)' (不是 Closed(0) 的都是追蹤中)
- * - 已完成：State === 'Closed(0)'
+ * - 追蹤中：State !== 'Close(0)' (不是 Close(0) 的都是追蹤中)
+ * - 已完成：State === 'Close(0)'
  */
 export function calculateODMStats(data: TestPlanIssue[], odmName: string): ODMStats {
   // 🔍 調試：打印前幾筆數據的 State 值
@@ -132,16 +132,15 @@ export function calculateODMStats(data: TestPlanIssue[], odmName: string): ODMSt
     })));
   }
 
-  // 處理可能的空格和大小寫問題
+  // 使用正確的 State 值判斷：Close(0) 而非 Closed(0)
   const trackingItems = data.filter(item => {
-    const state = (item.State || '').trim().toLowerCase();
-    const isClosed = state === 'closed(0)' || state === 'closed (0)';
-    return !isClosed;
+    const state = (item.State || '').trim();
+    return state !== 'Close(0)';
   });
 
   const completedItems = data.filter(item => {
-    const state = (item.State || '').trim().toLowerCase();
-    return state === 'closed(0)' || state === 'closed (0)';
+    const state = (item.State || '').trim();
+    return state === 'Close(0)';
   });
 
   console.log(`[Test Plan Stats ${odmName}] 總計: ${data.length}, 追蹤中: ${trackingItems.length}, 已完成: ${completedItems.length}`);
