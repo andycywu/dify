@@ -107,6 +107,8 @@ export default function TestPlanDashboard() {
       alert('找不到 ODM 配置');
       return;
     }
+
+    try {
       await downloadTestPlanExcel(odmConfig.id, odmConfig.key);
       alert('下載成功！');
     } catch (error: any) {
