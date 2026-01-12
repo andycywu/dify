@@ -195,7 +195,7 @@ export default function TestPlanTable({ data, loading = false, title }: TestPlan
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    item.State === 'Closed (0)'
+                    item.State === 'Closed(0)'
                       ? 'bg-gray-100 text-gray-800'
                       : 'bg-blue-100 text-blue-800'
                   }`}>
