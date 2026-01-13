@@ -19,7 +19,7 @@ interface ChunkRecord {
 }
 
 // 解析內容函數：將結構化資料轉換為可讀格式
-const parseContent = (content: string): JSX.Element => {
+const parseContent = (content: string): React.ReactElement => {
   // 嘗試解析為 JSON
   try {
     const parsed = JSON.parse(content);
