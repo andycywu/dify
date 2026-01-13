@@ -18,10 +18,106 @@ interface ChunkRecord {
   [key: string]: any;
 }
 
+// 解析內容函數：將結構化資料轉換為可讀格式
+const parseContent = (content: string): JSX.Element => {
+  // 嘗試解析為 JSON
+  try {
+    const parsed = JSON.parse(content);
+    return (
+      <div className="space-y-2">
+        {Object.entries(parsed).map(([key, value], idx) => (
+          <div key={idx} className="flex border-b border-gray-200 pb-2 last:border-b-0">
+            <span className="font-semibold text-gray-700 min-w-[200px]">{key}:</span>
+            <span className="text-gray-600 flex-1">{String(value)}</span>
+          </div>
+        ))}
+      </div>
+    );
+  } catch (e) {
+    // 如果不是 JSON，嘗試解析為 CSV 格式的單行資料
+    if (content.includes(',') && content.split(',').length > 3) {
+      const fields = content.split(',').map(f => f.trim());
+
+      // 如果看起來像是帶有欄位名稱的資料
+      if (fields.length % 2 === 0) {
+        const pairs: [string, string][] = [];
+        for (let i = 0; i < fields.length - 1; i += 2) {
+          pairs.push([fields[i], fields[i + 1]]);
+        }
+        return (
+          <div className="space-y-2">
+            {pairs.map(([key, value], idx) => (
+              <div key={idx} className="flex border-b border-gray-200 pb-2 last:border-b-0">
+                <span className="font-semibold text-gray-700 min-w-[200px]">{key}:</span>
+                <span className="text-gray-600 flex-1">{value}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      // 否則，嘗試用表格形式顯示
+      return (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                {fields.map((field, idx) => (
+                  <td key={idx} className="px-3 py-2 text-sm text-gray-700 border border-gray-200">
+                    {field}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    // 嘗試將多行文字格式化
+    if (content.includes('\n')) {
+      const lines = content.split('\n').filter(line => line.trim());
+      if (lines.length > 1) {
+        return (
+          <div className="space-y-1">
+            {lines.map((line, idx) => {
+              // 檢查是否是 key: value 格式
+              if (line.includes(':')) {
+                const [key, ...valueParts] = line.split(':');
+                const value = valueParts.join(':').trim();
+                return (
+                  <div key={idx} className="flex border-b border-gray-200 pb-1 last:border-b-0">
+                    <span className="font-semibold text-gray-700 min-w-[200px]">{key.trim()}:</span>
+                    <span className="text-gray-600 flex-1">{value}</span>
+                  </div>
+                );
+              }
+              return <div key={idx} className="text-gray-700">{line}</div>;
+            })}
+          </div>
+        );
+      }
+    }
+
+    // 如果都不是，顯示原始內容（但縮短長度）
+    const maxLength = 500;
+    const displayContent = content.length > maxLength
+      ? content.substring(0, maxLength) + '...'
+      : content;
+
+    return (
+      <div className="text-gray-700 whitespace-pre-wrap">
+        {displayContent}
+      </div>
+    );
+  }
+};
+
 export default function BigTableSearch() {
   const { user } = useAuth();
   const [keyword, setKeyword] = useState('');
   const [selectedDataset, setSelectedDataset] = useState<'inhouse' | 'outsourcing' | 'both'>('both');
+  const [topN, setTopN] = useState<5 | 10>(10);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +213,7 @@ export default function BigTableSearch() {
 
           {/* 搜尋區域 */}
           <div className="bg-gray-50 rounded-lg p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               {/* 關鍵字輸入 */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -146,6 +242,21 @@ export default function BigTableSearch() {
                   <option value="both">全部 (InHouse + Outsourcing)</option>
                   <option value="inhouse">InHouse 專案</option>
                   <option value="outsourcing">Outsourcing 專案</option>
+                </select>
+              </div>
+
+              {/* Top N 選擇 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  顯示數量
+                </label>
+                <select
+                  value={topN}
+                  onChange={(e) => setTopN(Number(e.target.value) as 5 | 10)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={5}>Top 5</option>
+                  <option value={10}>Top 10</option>
                 </select>
               </div>
             </div>
@@ -183,21 +294,26 @@ export default function BigTableSearch() {
             <div>
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-800">
-                  搜尋結果
+                  搜尋結果 (顯示前 {topN} 筆)
                 </h2>
                 <span className="text-sm text-gray-600">
-                  共找到 {results.length} 筆資料
+                  共找到 {results.length} 筆資料 | 顯示 Top {topN}
                 </span>
               </div>
 
               <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {results.map((result, index) => (
+                {results.slice(0, topN).map((result, index) => (
                   <div
                     key={index}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative"
                   >
+                    {/* 排名標籤 */}
+                    <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg">
+                      {index + 1}
+                    </div>
+
                     {/* 標題列 */}
-                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2 pl-10">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
                           {result.dataset_name}
@@ -206,14 +322,17 @@ export default function BigTableSearch() {
                           📄 {result.document_name}
                         </span>
                       </div>
-                      <span className="text-sm text-gray-500">
-                        相關度: {(result.score * 100).toFixed(1)}%
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">相關度</span>
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
+                          {(result.score * 100).toFixed(1)}%
+                        </span>
+                      </div>
                     </div>
 
                     {/* 內容 */}
-                    <div className="text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded border border-gray-200 text-sm">
-                      {result.content}
+                    <div className="text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 text-sm">
+                      {parseContent(result.content)}
                     </div>
                   </div>
                 ))}
@@ -244,7 +363,9 @@ export default function BigTableSearch() {
                 <li>輸入關鍵字進行全文搜尋</li>
                 <li>支援模糊匹配和語義搜尋</li>
                 <li>可選擇特定 Dataset 或搜尋全部</li>
-                <li>結果按相關度排序</li>
+                <li>選擇顯示 Top 5 或 Top 10 結果</li>
+                <li>結果按相關度自動排序</li>
+                <li>資料以結構化格式清晰呈現</li>
                 <li>可匯出搜尋結果為 CSV 檔案</li>
               </ul>
 
