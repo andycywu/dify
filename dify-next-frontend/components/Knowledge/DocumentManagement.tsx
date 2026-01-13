@@ -294,13 +294,13 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           setError('上傳檔案超過 15MB，請先切小一點再上傳。')
           return
         }
-        // File 模式：針對 CSV / Excel 先在前端轉成 Markdown（分段以 <!--DIFY_SEGMENT-->）
+        // File 模式：針對 CSV / Excel 先在前端轉成 Markdown（分段以雙換行符 \n\n）
         let fileToUpload = selectedFile!
         const lowerName = fileToUpload.name.toLowerCase()
         const isCsv = lowerName.endsWith('.csv') || fileToUpload.type === 'text/csv'
         const isXlsx = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || fileToUpload.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || fileToUpload.type === 'application/vnd.ms-excel'
 
-        const SEG = '<!--DIFY_SEGMENT-->'
+        const SEG = '\n\n'
         const MAX_CHUNK_BYTES = 2048
         const utf8ByteLength = (s: string) => {
           try {
@@ -342,7 +342,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               { id: 'remove_urls_emails', enabled: true },
             ],
             segmentation: {
-              separator: SEG,
+              separator: '\n\n',
               max_tokens: 4000,
             },
           },
