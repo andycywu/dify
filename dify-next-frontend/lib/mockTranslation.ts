@@ -84,6 +84,8 @@ const translations: Record<string, Record<string, string>> = {
     'logout': 'Logout',
     'OBM I&D KB': 'OBM I&D Knowledge Base',
     'Wiki Sync': 'Wiki Synchronization'
+    ,
+    'big_table_search': 'Big Table Search'
   },
   zh: {
     // Loading and common
@@ -158,6 +160,8 @@ const translations: Record<string, Record<string, string>> = {
     'logout': '登出',
     'OBM I&D KB': 'OBM I&D 知識庫',
     'Wiki Sync': 'Wiki 同步管理'
+    ,
+    'big_table_search': '大表檢索'
   }
 };
 

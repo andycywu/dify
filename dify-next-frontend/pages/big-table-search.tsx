@@ -43,16 +43,33 @@ const parseContent = (content: string): React.ReactElement => {
       </div>
     );
   } catch (e) {
-    // 如果不是 JSON，嘗試解析為 CSV 格式的單行資料
-    if (content.includes(',') && content.split(',').length > 3) {
-      const fields = content.split(',').map(f => f.trim());
+    // 如果不是 JSON，先處理以分號分隔或逗號分隔的 key:value 對
+    const normalizeKey = (k: string) => k.replace(/^\s*\d+\.?\s*/, '').trim();
 
-      // 如果看起來像是帶有欄位名稱的資料
-      if (fields.length % 2 === 0) {
-        const pairs: [string, string][] = [];
-        for (let i = 0; i < fields.length - 1; i += 2) {
-          pairs.push([fields[i], fields[i + 1]]);
+    const tryParseKeyValueList = (items: string[]) => {
+      const pairs: [string, string][] = [];
+      for (const item of items) {
+        const part = item.trim();
+        if (!part) continue;
+        if (part.includes(':')) {
+          const [k, ...v] = part.split(':');
+          pairs.push([normalizeKey(k), v.join(':').trim()]);
+        } else if (part.includes('=')) {
+          const [k, ...v] = part.split('=');
+          pairs.push([normalizeKey(k), v.join('=').trim()]);
+        } else {
+          pairs.push([normalizeKey(part), '']);
         }
+      }
+      return pairs;
+    };
+
+    // 處理以分號分隔的情況（Outsourcing 與 InHouse 的大表常見）
+    if (content.includes(';')) {
+      const parts = content.split(';').map(s => s.trim()).filter(Boolean);
+      const pairs = tryParseKeyValueList(parts);
+      // 若有至少一個 pair 有值，視為 key:value 列表
+      if (pairs.length > 0 && pairs.some(p => p[1] !== '')) {
         return (
           <div className="space-y-2">
             {pairs.map(([key, value], idx) => (
@@ -64,8 +81,41 @@ const parseContent = (content: string): React.ReactElement => {
           </div>
         );
       }
+      // 否則退回為普通表格顯示
+      return (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                {parts.map((field, idx) => (
+                  <td key={idx} className="px-3 py-2 text-sm text-gray-700 border border-gray-200">
+                    {field}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      );
+    }
 
-      // 否則，嘗試用表格形式顯示
+    // 處理以逗號分隔但可能為 key:value 列表的情況
+    if (content.includes(',') && content.split(',').length > 3) {
+      const fields = content.split(',').map(f => f.trim()).filter(Boolean);
+      const pairs = tryParseKeyValueList(fields);
+      if (pairs.length > 0 && pairs.some(p => p[1] !== '')) {
+        return (
+          <div className="space-y-2">
+            {pairs.map(([key, value], idx) => (
+              <div key={idx} className="flex border-b border-gray-200 pb-2 last:border-b-0">
+                <span className="font-semibold text-gray-700 min-w-[200px]">{key}:</span>
+                <span className="text-gray-600 flex-1">{value}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      // 否則表格顯示
       return (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -96,7 +146,7 @@ const parseContent = (content: string): React.ReactElement => {
                 const value = valueParts.join(':').trim();
                 return (
                   <div key={idx} className="flex border-b border-gray-200 pb-1 last:border-b-0">
-                    <span className="font-semibold text-gray-700 min-w-[200px]">{key.trim()}:</span>
+                    <span className="font-semibold text-gray-700 min-w-[200px]">{normalizeKey(key)}:</span>
                     <span className="text-gray-600 flex-1">{value}</span>
                   </div>
                 );
