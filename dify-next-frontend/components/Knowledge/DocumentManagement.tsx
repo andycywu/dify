@@ -348,6 +348,20 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           },
         })
 
+        const buildStandardProcessRule = () => ({
+          mode: 'custom',
+          rules: {
+            pre_processing_rules: [
+              { id: 'remove_extra_spaces', enabled: true },
+              { id: 'remove_urls_emails', enabled: true },
+            ],
+            segmentation: {
+              separator: '\n',
+              max_tokens: 4000,
+            },
+          },
+        })
+
         const parseCsv = (text: string) => {
           const normalized = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
           const candidates = [',', ';', '\t', '|']
@@ -497,12 +511,13 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
           uploadProcessRule = buildCustomProcessRule()
         } else {
           console.log('[Preprocessor][Modal] No preprocessing applied.', { name: fileToUpload.name, type: fileToUpload.type })
+          uploadProcessRule = buildStandardProcessRule()
         }
 
         const created = await createDocumentFromFile(knowledgeBaseId, {
           name: formData.name,
           file: fileToUpload,
-          ...(uploadProcessRule ? { process_rule: uploadProcessRule } : {}),
+          process_rule: uploadProcessRule,
         })
 
         console.log('[Preprocessor][Modal] Upload response:', created)
