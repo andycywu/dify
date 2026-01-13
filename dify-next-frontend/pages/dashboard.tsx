@@ -46,6 +46,18 @@ export default function Dashboard() {
           <p className="text-gray-600 mb-2 text-center">統計各 ODM 測試進度</p>
           <Link href="/test-plan-dashboard" className="text-orange-600 hover:underline">前往 Test Plan</Link>
         </div>
+        <div className="bg-indigo-50 rounded-lg p-6 shadow flex flex-col items-center">
+          <span className="text-4xl mb-2">🔍</span>
+          <h2 className="text-xl font-semibold mb-1">大表檢索</h2>
+          <p className="text-gray-600 mb-2 text-center">搜尋 InHouse 和 Outsourcing 專案資料</p>
+          <Link href="/big-table-search" className="text-indigo-600 hover:underline">前往檢索</Link>
+        </div>
+        <div className="bg-teal-50 rounded-lg p-6 shadow flex flex-col items-center">
+          <span className="text-4xl mb-2">📚</span>
+          <h2 className="text-xl font-semibold mb-1">Knowledge 管理</h2>
+          <p className="text-gray-600 mb-2 text-center">管理知識庫和文檔</p>
+          <Link href="/knowledge-management" className="text-teal-600 hover:underline">前往管理</Link>
+        </div>
       </div>
     </MainLayout>
   );

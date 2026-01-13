@@ -85,6 +85,9 @@ const Header: React.FC = () => {
           <Link href="/dashboard" className="text-blue-900 font-medium hover:text-cyan-700 transition-colors duration-200">
             {t('dashboard')}
           </Link>
+          <Link href="/big-table-search" className="text-blue-900 font-medium hover:text-cyan-700 transition-colors duration-200">
+            🔍 大表檢索
+          </Link>
           <Link href="/test-agentic" className="text-blue-900 font-medium hover:text-cyan-700 transition-colors duration-200">
             {t('chat_to_agentic')}
           </Link>
