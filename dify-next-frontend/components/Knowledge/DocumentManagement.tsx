@@ -344,6 +344,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             segmentation: {
               separator: '\n\n',
               max_tokens: 4000,
+              chunk_overlap: 50,
             },
           },
         })
@@ -356,8 +357,9 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
               { id: 'remove_urls_emails', enabled: false },
             ],
             segmentation: {
-              separator: '\n',
+              separator: '\n\n',
               max_tokens: 4000,
+              chunk_overlap: 50,
             },
           },
         })
