@@ -163,11 +163,11 @@ export default function BigTableSearch() {
         try {
           const response = await retrieveChunks(datasetId, keyword, 50);
 
-          // 將結果加上 dataset 標籤
+          // 將結果加上 dataset 標籤，優先使用 record.content，其次 segment.content，再其次 text
           const results = response.records.map((record: ChunkRecord) => ({
-            content: record.content,
+            content: record.content || (record.segment && record.segment.content) || record.text || '',
             score: record.score,
-            document_name: record.document_name || 'Unknown',
+            document_name: record.document_name || (record.segment && record.segment.document_name) || 'Unknown',
             dataset_name: dataset === 'inhouse' ? 'Project KB (InHouse)' : 'Project KB (Outsourcing)',
           }));
 
