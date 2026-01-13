@@ -240,6 +240,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [enablePreprocessing, setEnablePreprocessing] = useState(true);
 
   const supportedFileTypes = [
     'txt', 'markdown', 'mdx', 'pdf', 'html', 'xlsx', 'xls',
@@ -342,7 +343,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             ],
             segmentation: {
               separator: SEG,
-              max_tokens: 2000,
+              max_tokens: 4000,
             },
           },
         })
@@ -422,7 +423,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
 
         let uploadProcessRule: any | undefined
 
-        if (isCsv) {
+        if (enablePreprocessing && isCsv) {
           console.log('[Preprocessor][Modal] CSV detected, preprocessing before upload...', { name: fileToUpload.name, type: fileToUpload.type })
           const text = await (new Response(fileToUpload).text())
           const { rows: csvRows, delimiter } = parseCsv(text)
@@ -453,7 +454,7 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             return
           }
           uploadProcessRule = buildCustomProcessRule()
-        } else if (isXlsx) {
+        } else if (enablePreprocessing && isXlsx) {
           console.log('[Preprocessor][Modal] XLSX detected, preprocessing before upload...', { name: fileToUpload.name, type: fileToUpload.type })
           const [XLSX, buffer] = await Promise.all([
             import('xlsx'),
@@ -563,14 +564,37 @@ const CreateDocumentModal: React.FC<CreateDocumentModalProps> = ({
             </button>
           </div>
 
-          {/* 前處理功能提示 */}
+          {/* 前處理選項 */}
           {activeTab === 'file' && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>✨ 自動前處理已啟用</strong>
-                <br />
-                CSV / Excel / PDF / DOCX / HTML / VTT / TXT / MD 將自動轉換成標準 Markdown chunks。
-              </p>
+            <div className="mb-4">
+              <label className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100">
+                <input
+                  type="checkbox"
+                  checked={enablePreprocessing}
+                  onChange={(e) => setEnablePreprocessing(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900">
+                    啟用自動前處理 (推薦)
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    CSV / Excel 將轉換成標準 Markdown chunks，其他格式直接上傳
+                  </div>
+                </div>
+              </label>
+
+              {enablePreprocessing && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>✨ 前處理說明</strong>
+                    <br />
+                    • CSV / Excel: 轉換為 Markdown (每行 = 1 段落，max_tokens: 4000)
+                    <br />
+                    • 其他格式: 直接上傳，由後端處理
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
