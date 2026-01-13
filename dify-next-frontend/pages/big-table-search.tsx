@@ -10,6 +10,14 @@ interface SearchResult {
   dataset_name: string;
 }
 
+interface ChunkRecord {
+  content: string;
+  score: number;
+  document_name: string;
+  document_id: string;
+  [key: string]: any;
+}
+
 export default function BigTableSearch() {
   const { user } = useAuth();
   const [keyword, setKeyword] = useState('');
@@ -51,7 +59,7 @@ export default function BigTableSearch() {
           const response = await retrieveChunks(datasetId, keyword, 50);
 
           // 將結果加上 dataset 標籤
-          const results = response.records.map(record => ({
+          const results = response.records.map((record: ChunkRecord) => ({
             content: record.content,
             score: record.score,
             document_name: record.document_name || 'Unknown',
