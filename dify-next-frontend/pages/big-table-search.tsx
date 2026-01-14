@@ -266,7 +266,7 @@ export default function BigTableSearch() {
           const content = record.content || (record.segment && record.segment.content) || record.text || '';
           const m = content.match(/Project\s*Number[:=]\s*([A-Z0-9\-]+)/i) || content.match(/專案編號[:=]\s*([A-Z0-9\-]+)/i);
           if (m && m[1]) return m[1];
-          const firstLine = (content || '').split(/\r?\n/).find(l => l.trim());
+          const firstLine = (content || '').split(/\r?\n/).find((l: string) => Boolean(l && l.trim()));
           if (firstLine && firstLine.length < 120) return firstLine.trim().slice(0, 120);
         } catch {}
         return 'Unknown';
