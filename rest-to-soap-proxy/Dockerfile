@@ -43,6 +43,12 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
+# 設置 Puppeteer cache 目錄
+ENV PUPPETEER_CACHE_DIR=/root/.cache/puppeteer
+
+# 確保 cache 目錄存在
+RUN mkdir -p /root/.cache/puppeteer
+
 # 複製 package 文件
 COPY package*.json ./
 
