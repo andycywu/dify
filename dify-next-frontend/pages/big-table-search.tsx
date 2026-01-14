@@ -77,14 +77,19 @@ const parseContent = (content: string, full = false): React.ReactElement => {
   // 嘗試解析為 JSON
   try {
     const parsed = JSON.parse(content);
+    const entries = Object.entries(parsed);
+    const shown = full ? entries : entries.slice(0, 5);
     return (
       <div className="space-y-2">
-        {Object.entries(parsed).map(([key, value], idx) => (
+        {shown.map(([key, value], idx) => (
           <div key={idx} className="flex border-b border-gray-200 pb-2 last:border-b-0">
             <span className="font-semibold text-gray-700 min-w-[200px]">{key}:</span>
             <span className="text-gray-600 flex-1">{String(value)}</span>
           </div>
         ))}
+        {!full && entries.length > shown.length && (
+          <div className="text-sm text-gray-500">... {entries.length - shown.length} more</div>
+        )}
       </div>
     );
   } catch (e) {
@@ -115,14 +120,18 @@ const parseContent = (content: string, full = false): React.ReactElement => {
       const pairs = tryParseKeyValueList(parts);
       // 若有至少一個 pair 有值，視為 key:value 列表
       if (pairs.length > 0 && pairs.some(p => p[1] !== '')) {
+        const shown = full ? pairs : pairs.slice(0, 5);
         return (
           <div className="space-y-2">
-            {pairs.map(([key, value], idx) => (
+            {shown.map(([key, value], idx) => (
               <div key={idx} className="flex border-b border-gray-200 pb-2 last:border-b-0">
                 <span className="font-semibold text-gray-700 min-w-[200px]">{key}:</span>
                 <span className="text-gray-600 flex-1">{value}</span>
               </div>
             ))}
+            {!full && pairs.length > shown.length && (
+              <div className="text-sm text-gray-500">... {pairs.length - shown.length} more</div>
+            )}
           </div>
         );
       }
@@ -149,14 +158,18 @@ const parseContent = (content: string, full = false): React.ReactElement => {
       const fields = content.split(',').map(f => f.trim()).filter(Boolean);
       const pairs = tryParseKeyValueList(fields);
       if (pairs.length > 0 && pairs.some(p => p[1] !== '')) {
+        const shown = full ? pairs : pairs.slice(0, 5);
         return (
           <div className="space-y-2">
-            {pairs.map(([key, value], idx) => (
+            {shown.map(([key, value], idx) => (
               <div key={idx} className="flex border-b border-gray-200 pb-2 last:border-b-0">
                 <span className="font-semibold text-gray-700 min-w-[200px]">{key}:</span>
                 <span className="text-gray-600 flex-1">{value}</span>
               </div>
             ))}
+            {!full && pairs.length > shown.length && (
+              <div className="text-sm text-gray-500">... {pairs.length - shown.length} more</div>
+            )}
           </div>
         );
       }
@@ -182,9 +195,10 @@ const parseContent = (content: string, full = false): React.ReactElement => {
     if (content.includes('\n')) {
       const lines = content.split('\n').filter(line => line.trim());
       if (lines.length > 1) {
+        const shownLines = full ? lines : lines.slice(0, 5);
         return (
           <div className="space-y-1">
-            {lines.map((line, idx) => {
+            {shownLines.map((line, idx) => {
               // 檢查是否是 key: value 格式
               if (line.includes(':')) {
                 const [key, ...valueParts] = line.split(':');
@@ -198,6 +212,9 @@ const parseContent = (content: string, full = false): React.ReactElement => {
               }
               return <div key={idx} className="text-gray-700">{line}</div>;
             })}
+            {!full && lines.length > shownLines.length && (
+              <div className="text-sm text-gray-500">... {lines.length - shownLines.length} more</div>
+            )}
           </div>
         );
       }
@@ -495,16 +512,7 @@ export default function BigTableSearch() {
 
                       {/* 內容 + 展開/收合 + 查看原始 */}
                       <div className="text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 text-sm relative">
-                        {expandedIndices.includes(index) ? (
-                          <div>
-                            {parseContent(result.content, true)}
-                            <div className="mt-3 bg-white border border-gray-100 p-3 rounded">
-                              <pre className="whitespace-pre-wrap text-sm text-gray-800 max-h-[40vh] overflow-y-auto">{result.content}</pre>
-                            </div>
-                          </div>
-                        ) : (
-                          parseContent(result.content)
-                        )}
+                        {parseContent(result.content, expandedIndices.includes(index))}
                         <div className="absolute top-2 right-2 flex gap-2">
                           <button
                             data-index={index}
