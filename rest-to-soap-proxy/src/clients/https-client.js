@@ -69,24 +69,18 @@ class UrtrackerHttpsClient {
     const { execSync } = require('child_process');
 
     const cacheDir = process.env.PUPPETEER_CACHE_DIR || path.join(require('os').homedir(), '.cache', 'puppeteer');
-    const chromeDir = path.join(cacheDir, 'chrome');
 
     try {
-      // 檢查 Chrome 目錄是否存在
-      if (!fs.existsSync(chromeDir)) {
-        console.log('   📦 Chrome 未安裝，正在安裝...');
-        execSync('npx puppeteer browsers install chrome', { stdio: 'inherit' });
-        console.log('   ✅ Chrome 安裝完成');
-      } else {
-        // 檢查是否有可用的 Chrome 版本
+      console.log('   📦 檢查並安裝最新版 Chrome...');
+      // 總是安裝最新版本的 Chrome，以確保版本匹配
+      execSync('npx puppeteer browsers install chrome', { stdio: 'inherit' });
+      console.log('   ✅ Chrome 安裝/更新完成');
+
+      // 檢查安裝結果
+      const chromeDir = path.join(cacheDir, 'chrome');
+      if (fs.existsSync(chromeDir)) {
         const versions = fs.readdirSync(chromeDir).filter(dir => dir.startsWith('linux-'));
-        if (versions.length === 0) {
-          console.log('   📦 沒有可用的 Chrome 版本，正在安裝...');
-          execSync('npx puppeteer browsers install chrome', { stdio: 'inherit' });
-          console.log('   ✅ Chrome 安裝完成');
-        } else {
-          console.log(`   ✅ Chrome 已安裝 (版本: ${versions.join(', ')})`);
-        }
+        console.log(`   📋 可用的 Chrome 版本: ${versions.join(', ')}`);
       }
     } catch (error) {
       console.error('   ❌ Chrome 安裝失敗:', error.message);
