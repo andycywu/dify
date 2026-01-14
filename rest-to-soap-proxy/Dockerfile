@@ -52,17 +52,11 @@ RUN mkdir -p /root/.cache/puppeteer
 # 複製 package 文件
 COPY package*.json ./
 
+# 複製安裝腳本
+COPY install.sh ./
 
 # 安裝依賴並強制安裝 puppeteer chrome，並顯示安裝結果（避免 cache 問題）
-RUN set -x && \
-    echo "=== Installing dependencies ===" && \
-    npm install && \
-    echo "=== Installing Chrome ===" && \
-    npx puppeteer browsers install chrome && \
-    echo "=== Chrome installation result ===" && \
-    ls -la /root/.cache/puppeteer/chrome/ || echo "Chrome cache not found" && \
-    echo "=== Puppeteer version ===" && \
-    npx puppeteer --version || echo "Puppeteer not found"
+RUN chmod +x install.sh && ./install.sh
 
 # 複製應用代碼
 COPY . .
