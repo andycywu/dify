@@ -332,10 +332,12 @@ export default function BigTableSearch() {
   const [expandedIndices, setExpandedIndices] = useState<number[]>([]);
 
   const toggleExpanded = (idx: number) => {
+    console.debug('toggleExpanded called for', idx);
     setExpandedIndices(prev => {
       const found = prev.includes(idx);
-      if (found) return prev.filter(i => i !== idx);
-      return [...prev, idx];
+      const next = found ? prev.filter(i => i !== idx) : [...prev, idx];
+      console.debug('expandedIndices =>', next);
+      return next;
     });
   };
 
@@ -500,14 +502,18 @@ export default function BigTableSearch() {
                         )}
                         <div className="absolute top-2 right-2 flex gap-2">
                           <button
-                            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300"
+                            data-index={index}
+                            aria-expanded={expandedIndices.includes(index)}
+                            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300 cursor-pointer"
                             onClick={() => toggleExpanded(index)}
                           >
                             {expandedIndices.includes(index) ? '收合' : '展開'}
                           </button>
                           <button
-                            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300"
+                            data-index={index}
+                            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300 cursor-pointer"
                             onClick={() => {
+                              console.debug('open modal for', index);
                               setModalContent(result.content);
                               setModalOpen(true);
                             }}
