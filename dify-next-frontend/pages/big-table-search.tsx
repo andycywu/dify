@@ -314,7 +314,7 @@ export default function BigTableSearch() {
             mapped = mapped
               .filter((r: SearchResult) => (r.content || '').toLowerCase().includes(q) || (r.document_name || '').toLowerCase().includes(q))
               .map((r: SearchResult) => ({ ...r, score: (r.content.toLowerCase().includes(q) || r.document_name.toLowerCase().includes(q)) ? 1 : 0 }));
-            mapped.sort((a, b) => (b.score - a.score));
+            mapped.sort((a: SearchResult, b: SearchResult) => (b.score - a.score));
           }
 
           allResults.push(...mapped);
