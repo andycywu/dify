@@ -257,7 +257,7 @@ export const retrieveChunks = async (
   datasetId: string,
   query: string,
   limit = 10,
-  searchMethod: 'semantic_search' | 'text_search' = 'semantic_search'
+  searchMethod: 'keyword_search' | 'semantic_search' | 'full_text_search' | 'hybrid_search' = 'semantic_search'
 ) => {
   try {
     const payload = {

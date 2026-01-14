@@ -298,7 +298,7 @@ export default function BigTableSearch() {
         }
 
         try {
-          const method = searchMode === 'semantic' ? 'semantic_search' : 'text_search';
+          const method = searchMode === 'semantic' ? 'semantic_search' : 'full_text_search';
           const response = await retrieveChunks(datasetId, keyword, 50, method);
 
           // 將結果加上 dataset 標籤，優先使用 record.content，其次 segment.content，再其次 text
