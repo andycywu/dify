@@ -255,8 +255,7 @@ export const getDocumentChunks = async (datasetId: string, documentId: string) =
 // Updated to use Proxy
 export const retrieveChunks = async (datasetId: string, query: string, limit = 10) => {
   try {
-    console.log(`[knowledgeAdmin] Retrieving chunks for dataset ${datasetId} via proxy...`);
-    const response = await axios.post(`${API_PROXY_BASE}/dataset/${datasetId}/retrieve`, {
+    const payload = {
       query,
       retrieval_model: {
         search_method: 'semantic_search',
@@ -268,10 +267,31 @@ export const retrieveChunks = async (datasetId: string, query: string, limit = 1
         top_k: limit,
         score_threshold_enabled: false
       }
-    });
+    };
+
+    console.log(`[knowledgeAdmin] retrieveChunks -> dataset: ${datasetId} payload:`, JSON.stringify(payload));
+    const startTime = Date.now();
+    const response = await axios.post(`${API_PROXY_BASE}/dataset/${datasetId}/retrieve`, payload);
+    const duration = Date.now() - startTime;
+    console.log(`[knowledgeAdmin] retrieveChunks response (dataset: ${datasetId}, duration: ${duration}ms): status=${response.status}`);
+    // For debugging, log a summarized response (avoid dumping extremely large bodies)
+    try {
+      console.log('[knowledgeAdmin] retrieveChunks response data sample:', Array.isArray(response.data) ? response.data.slice(0, 5) : response.data);
+    } catch (e) {
+      console.log('[knowledgeAdmin] retrieveChunks response data (unable to stringify sample)');
+    }
+
     return response.data;
   } catch (error: any) {
     console.error('[knowledgeAdmin] retrieveChunks failed:', error.response?.data || error.message);
+    if (error.response) {
+      try {
+        console.error('[knowledgeAdmin] retrieveChunks error response status:', error.response.status);
+        console.error('[knowledgeAdmin] retrieveChunks error response data:', error.response.data);
+      } catch (e) {
+        // ignore
+      }
+    }
     throw error;
   }
 };
