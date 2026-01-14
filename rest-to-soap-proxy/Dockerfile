@@ -54,9 +54,14 @@ COPY package*.json ./
 
 
 # 安裝依賴並強制安裝 puppeteer chrome，並顯示安裝結果（避免 cache 問題）
-RUN npm install \
+RUN echo "=== Installing dependencies ===" \
+    && npm install \
+    && echo "=== Installing Chrome ===" \
     && npx puppeteer browsers install chrome \
-    && ls -l /root/.cache/puppeteer/chrome || true
+    && echo "=== Chrome installation result ===" \
+    && ls -la /root/.cache/puppeteer/chrome/ || echo "Chrome cache not found" \
+    && echo "=== Puppeteer version ===" \
+    && npx puppeteer --version || echo "Puppeteer not found"
 
 # 複製應用代碼
 COPY . .
