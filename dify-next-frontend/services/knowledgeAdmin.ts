@@ -253,12 +253,17 @@ export const getDocumentChunks = async (datasetId: string, documentId: string) =
 
 // Retrieve chunks from knowledge base (for search)
 // Updated to use Proxy
-export const retrieveChunks = async (datasetId: string, query: string, limit = 10) => {
+export const retrieveChunks = async (
+  datasetId: string,
+  query: string,
+  limit = 10,
+  searchMethod: 'semantic_search' | 'text_search' = 'semantic_search'
+) => {
   try {
     const payload = {
       query,
       retrieval_model: {
-        search_method: 'semantic_search',
+        search_method: searchMethod,
         reranking_enable: false,
         reranking_model: {
           reranking_provider_name: '',
@@ -269,7 +274,7 @@ export const retrieveChunks = async (datasetId: string, query: string, limit = 1
       }
     };
 
-    console.log(`[knowledgeAdmin] retrieveChunks -> dataset: ${datasetId} payload:`, JSON.stringify(payload));
+    console.log(`[knowledgeAdmin] retrieveChunks -> dataset: ${datasetId} search_method=${searchMethod} payload:`, JSON.stringify(payload));
     const startTime = Date.now();
     const response = await axios.post(`${API_PROXY_BASE}/dataset/${datasetId}/retrieve`, payload);
     const duration = Date.now() - startTime;
