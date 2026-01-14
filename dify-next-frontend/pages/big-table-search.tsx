@@ -22,18 +22,24 @@ interface ChunkRecord {
 // 優先欄位清單
 const PRIORITY_FIELDS = [
   'Project Number', 'Model Name', 'Supplier', 'KO Date', 'MP Date',
-  '專案編號', '機種名稱', '供應商', 'KO日期', 'MP日期',
+  'EIT Plan Start Date', 'EIT Plan End Date',
+  '專案編號', '機種名稱', '供應商', 'KO日期', 'MP日期', 'EIT開始日期', 'EIT結束日期',
 ];
 
 // 提取 summary line 欄位
 function extractSummaryFields(content: string): { [key: string]: string } {
-  // 嘗試 JSON
+  // 嘗試 JSON（並以不區分大小寫/空白的方式比對欄位）
   try {
     const parsed = JSON.parse(content);
     if (typeof parsed === 'object' && parsed !== null) {
       const summary: { [key: string]: string } = {};
+      const normalizedMap: { [lower: string]: string } = {};
+      for (const k of Object.keys(parsed)) {
+        normalizedMap[k.trim().toLowerCase().replace(/\s+/g, ' ')] = String((parsed as any)[k]);
+      }
       for (const key of PRIORITY_FIELDS) {
-        if (parsed[key]) summary[key] = String(parsed[key]);
+        const nk = key.trim().toLowerCase().replace(/\s+/g, ' ');
+        if (normalizedMap[nk]) summary[key] = normalizedMap[nk];
       }
       return summary;
     }
@@ -58,7 +64,7 @@ function extractSummaryFields(content: string): { [key: string]: string } {
 }
 
 // 解析內容函數：將結構化資料轉換為可讀格式
-const parseContent = (content: string): React.ReactElement => {
+const parseContent = (content: string, full = false): React.ReactElement => {
   // 檢查內容是否有效
   if (!content || typeof content !== 'string') {
     return (
@@ -197,7 +203,14 @@ const parseContent = (content: string): React.ReactElement => {
       }
     }
 
-    // 如果都不是，顯示原始內容（但縮短長度）
+    // 如果都不是，顯示原始內容（縮短長度，除非要求 full）
+    if (full) {
+      return (
+        <div className="text-gray-700 whitespace-pre-wrap">
+          {content}
+        </div>
+      );
+    }
     const maxLength = 500;
     const displayContent = content.length > maxLength
       ? content.substring(0, maxLength) + '...'
@@ -298,6 +311,16 @@ export default function BigTableSearch() {
   // Modal 狀態
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<string>('');
+  // 展開狀態：使用 index 作為 key
+  const [expandedIndices, setExpandedIndices] = useState<number[]>([]);
+
+  const toggleExpanded = (idx: number) => {
+    setExpandedIndices(prev => {
+      const found = prev.includes(idx);
+      if (found) return prev.filter(i => i !== idx);
+      return [...prev, idx];
+    });
+  };
 
   return (
     <MainLayout title="大表檢索系統">
@@ -446,18 +469,26 @@ export default function BigTableSearch() {
                         </div>
                       )}
 
-                      {/* 內容 + 展開按鈕 */}
+                      {/* 內容 + 展開/收合 + 查看原始內容 */}
                       <div className="text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 text-sm relative">
-                        {parseContent(result.content)}
-                        <button
-                          className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300"
-                          onClick={() => {
-                            setModalContent(result.content);
-                            setModalOpen(true);
-                          }}
-                        >
-                          查看原始內容
-                        </button>
+                        {parseContent(result.content, expandedIndices.includes(index))}
+                        <div className="absolute top-2 right-2 flex gap-2">
+                          <button
+                            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300"
+                            onClick={() => toggleExpanded(index)}
+                          >
+                            {expandedIndices.includes(index) ? '收合' : '展開'}
+                          </button>
+                          <button
+                            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300"
+                            onClick={() => {
+                              setModalContent(result.content);
+                              setModalOpen(true);
+                            }}
+                          >
+                            查看原始
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
