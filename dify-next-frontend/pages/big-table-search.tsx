@@ -255,6 +255,23 @@ export default function BigTableSearch() {
         ? ['inhouse', 'outsourcing']
         : [selectedDataset];
 
+      // helper: 嘗試從 record 裡取得可讀的 document name
+      const getDocumentName = (record: ChunkRecord, dataset: string) => {
+        if (record.document_name) return record.document_name;
+        if (record.segment && record.segment.document_name) return record.segment.document_name;
+        if (record.metadata && (record.metadata.title || record.metadata.name)) return record.metadata.title || record.metadata.name;
+        if (record.document_id) return String(record.document_id);
+        // 嘗試從 content 中抽取 Project Number 或第一行作為替代名稱
+        try {
+          const content = record.content || (record.segment && record.segment.content) || record.text || '';
+          const m = content.match(/Project\s*Number[:=]\s*([A-Z0-9\-]+)/i) || content.match(/專案編號[:=]\s*([A-Z0-9\-]+)/i);
+          if (m && m[1]) return m[1];
+          const firstLine = (content || '').split(/\r?\n/).find(l => l.trim());
+          if (firstLine && firstLine.length < 120) return firstLine.trim().slice(0, 120);
+        } catch {}
+        return 'Unknown';
+      };
+
       for (const dataset of datasetsToSearch) {
         const datasetId = DATASETS[dataset as keyof typeof DATASETS];
         if (!datasetId) {
@@ -269,7 +286,7 @@ export default function BigTableSearch() {
           const results = response.records.map((record: ChunkRecord) => ({
             content: record.content || (record.segment && record.segment.content) || record.text || '',
             score: record.score,
-            document_name: record.document_name || (record.segment && record.segment.document_name) || 'Unknown',
+            document_name: getDocumentName(record, dataset),
             dataset_name: dataset === 'inhouse' ? 'Project KB (InHouse)' : 'Project KB (Outsourcing)',
           }));
 
@@ -469,9 +486,18 @@ export default function BigTableSearch() {
                         </div>
                       )}
 
-                      {/* 內容 + 展開/收合 + 查看原始內容 */}
+                      {/* 內容 + 展開/收合 + 查看原始 */}
                       <div className="text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 text-sm relative">
-                        {parseContent(result.content, expandedIndices.includes(index))}
+                        {expandedIndices.includes(index) ? (
+                          <div>
+                            {parseContent(result.content, true)}
+                            <div className="mt-3 bg-white border border-gray-100 p-3 rounded">
+                              <pre className="whitespace-pre-wrap text-sm text-gray-800 max-h-[40vh] overflow-y-auto">{result.content}</pre>
+                            </div>
+                          </div>
+                        ) : (
+                          parseContent(result.content)
+                        )}
                         <div className="absolute top-2 right-2 flex gap-2">
                           <button
                             className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300"
