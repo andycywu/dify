@@ -21,7 +21,7 @@ interface ProjectData {
 export default function AICDashboard() {
   const { t } = useTranslation('auth');
   const [selectedProject, setSelectedProject] = useState<string>('TV');
-  const [filterState, setFilterState] = useState<string>('all');
+  const [filterState, setFilterState] = useState<string>('open');
   const [projects, setProjects] = useState<Record<string, ProjectData>>({
     TV: { key: 'TV', name: 'TV-Data', loading: false, error: null, data: null, totalRows: 0 },
     PD: { key: 'PD', name: 'PD-Data', loading: false, error: null, data: null, totalRows: 0 },

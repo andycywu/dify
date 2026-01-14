@@ -198,13 +198,13 @@ export async function getCategoryStats(category: TestPlanCategory): Promise<Cate
 }
 
 /**
- * 獲取所有分類的統計數據
+ * 獲取所有分類的統計數據，或指定分類的統計數據
  */
-export async function getAllCategoriesStats(): Promise<CategoryStats[]> {
-  const categories: TestPlanCategory[] = ['TV', 'MNT', 'PD'];
+export async function getAllCategoriesStats(categories?: TestPlanCategory[]): Promise<CategoryStats[]> {
+  const targetCategories: TestPlanCategory[] = categories || ['TV', 'MNT', 'PD'];
   const results: CategoryStats[] = [];
 
-  for (const category of categories) {
+  for (const category of targetCategories) {
     try {
       const stats = await getCategoryStats(category);
       results.push(stats);

@@ -31,14 +31,25 @@ export default function TestPlanDashboard() {
   const [odmTestItems, setOdmTestItems] = useState<TestPlanIssue[]>([]);
   const [loadingTestItems, setLoadingTestItems] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedCategoriesToLoad, setSelectedCategoriesToLoad] = useState<TestPlanCategory[]>([]);
 
   // 載入統計數據
   const loadStats = async () => {
+    if (selectedCategoriesToLoad.length === 0) {
+      alert('請至少選擇一個產品別來載入');
+      return;
+    }
+
     setLoading(true);
     try {
-      const stats = await getAllCategoriesStats();
+      const stats = await getAllCategoriesStats(selectedCategoriesToLoad);
       setCategoriesStats(stats);
       setStatsLoaded(true);
+
+      // 如果當前選擇的分類沒有被載入，設置為第一個載入的分類
+      if (stats.length > 0 && !stats.find(s => s.category === selectedCategory)) {
+        setSelectedCategory(stats[0].category);
+      }
     } catch (error: any) {
       console.error('載入統計數據失敗:', error);
       alert(`載入統計數據失敗: ${error.message}`);
@@ -144,10 +155,49 @@ export default function TestPlanDashboard() {
             <>
               {/* 分類選擇和載入按鈕 */}
               <div className="mb-6 bg-gray-50 rounded-lg p-4">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold">選擇要載入的產品別</h3>
+                    <button
+                      onClick={() => {
+                        if (selectedCategoriesToLoad.length === 3) {
+                          setSelectedCategoriesToLoad([]);
+                        } else {
+                          setSelectedCategoriesToLoad(['TV', 'MNT', 'PD']);
+                        }
+                      }}
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {selectedCategoriesToLoad.length === 3 ? '取消全選' : '全選'}
+                    </button>
+                  </div>
+                  <div className="flex gap-4">
+                    {(['TV', 'MNT', 'PD'] as TestPlanCategory[]).map((category) => (
+                      <label key={category} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategoriesToLoad.includes(category)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedCategoriesToLoad(prev => [...prev, category]);
+                            } else {
+                              setSelectedCategoriesToLoad(prev => prev.filter(c => c !== category));
+                            }
+                          }}
+                          className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-700">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
                     {(['TV', 'MNT', 'PD'] as TestPlanCategory[]).map((category) => {
                       const categoryStats = categoriesStats.find(s => s.category === category);
+                      // 只顯示已載入的分類
+                      if (!statsLoaded || !categoryStats) return null;
                       return (
                         <button
                           key={category}
@@ -173,13 +223,31 @@ export default function TestPlanDashboard() {
                     })}
                   </div>
 
-                  <button
-                    onClick={loadStats}
-                    disabled={loading}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
-                  >
-                    {loading ? '載入中...' : statsLoaded ? '🔄 重新整理' : '📊 載入統計數據'}
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={loadStats}
+                      disabled={loading}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
+                    >
+                      {loading ? '載入中...' : statsLoaded ? '🔄 重新整理' : '📊 載入統計數據'}
+                    </button>
+
+                    {statsLoaded && (
+                      <button
+                        onClick={() => {
+                          setCategoriesStats([]);
+                          setStatsLoaded(false);
+                          setSelectedCategoriesToLoad([]);
+                          setSelectedODM(null);
+                          setOdmTestItems([]);
+                          setSelectedModel('');
+                        }}
+                        className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium transition-colors"
+                      >
+                        🗑️ 清除數據
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {statsLoaded && (
