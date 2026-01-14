@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Dialog } from '@headlessui/react';
 import MainLayout from '../components/Layout/MainLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { retrieveChunks } from '../services/knowledgeAdmin';
@@ -16,6 +17,44 @@ interface ChunkRecord {
   document_name: string;
   document_id: string;
   [key: string]: any;
+}
+
+// 優先欄位清單
+const PRIORITY_FIELDS = [
+  'Project Number', 'Model Name', 'Supplier', 'KO Date', 'MP Date',
+  '專案編號', '機種名稱', '供應商', 'KO日期', 'MP日期',
+];
+
+// 提取 summary line 欄位
+function extractSummaryFields(content: string): { [key: string]: string } {
+  // 嘗試 JSON
+  try {
+    const parsed = JSON.parse(content);
+    if (typeof parsed === 'object' && parsed !== null) {
+      const summary: { [key: string]: string } = {};
+      for (const key of PRIORITY_FIELDS) {
+        if (parsed[key]) summary[key] = String(parsed[key]);
+      }
+      return summary;
+    }
+  } catch {}
+  // 嘗試 key:value 解析
+  const tryExtract = (sep: string) => {
+    const fields: { [key: string]: string } = {};
+    const parts = content.split(sep).map(s => s.trim()).filter(Boolean);
+    for (const part of parts) {
+      let k = '', v = '';
+      if (part.includes(':')) [k, v] = part.split(/:(.+)/).map(s => s.trim());
+      else if (part.includes('=')) [k, v] = part.split(/=(.+)/).map(s => s.trim());
+      if (k && v && PRIORITY_FIELDS.includes(k)) fields[k] = v;
+    }
+    return fields;
+  };
+  // 分號、逗號、換行
+  let summary = tryExtract(';');
+  if (Object.keys(summary).length === 0) summary = tryExtract(',');
+  if (Object.keys(summary).length === 0) summary = tryExtract('\n');
+  return summary;
 }
 
 // 解析內容函數：將結構化資料轉換為可讀格式
@@ -256,6 +295,10 @@ export default function BigTableSearch() {
     link.click();
   };
 
+  // Modal 狀態
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState<string>('');
+
   return (
     <MainLayout title="大表檢索系統">
       <div className="w-full max-w-6xl">
@@ -361,41 +404,85 @@ export default function BigTableSearch() {
               </div>
 
               <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {results.slice(0, topN).map((result, index) => (
-                  <div
-                    key={index}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative"
-                  >
-                    {/* 排名標籤 */}
-                    <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg">
-                      {index + 1}
-                    </div>
-
-                    {/* 標題列 */}
-                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2 pl-10">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                          {result.dataset_name}
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          📄 {result.document_name}
-                        </span>
+                {results.slice(0, topN).map((result, index) => {
+                  // 提取 summary 欄位
+                  const summaryFields = extractSummaryFields(result.content);
+                  return (
+                    <div
+                      key={index}
+                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative"
+                    >
+                      {/* 排名標籤 */}
+                      <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg">
+                        {index + 1}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">相關度</span>
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
-                          {(result.score * 100).toFixed(1)}%
-                        </span>
+
+                      {/* 標題列 */}
+                      <div className="flex items-center justify-between mb-3 flex-wrap gap-2 pl-10">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                            {result.dataset_name}
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            📄 {result.document_name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">相關度</span>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-bold rounded">
+                            {(result.score * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* summary line */}
+                      {Object.keys(summaryFields).length > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-x-6 gap-y-1 pl-10">
+                          {PRIORITY_FIELDS.filter(f => summaryFields[f]).map(f => (
+                            <span key={f} className="inline-block text-sm text-blue-900 bg-blue-50 border border-blue-200 rounded px-2 py-0.5 font-semibold">
+                              {f}: {summaryFields[f]}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 內容 + 展開按鈕 */}
+                      <div className="text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 text-sm relative">
+                        {parseContent(result.content)}
+                        <button
+                          className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300"
+                          onClick={() => {
+                            setModalContent(result.content);
+                            setModalOpen(true);
+                          }}
+                        >
+                          查看原始內容
+                        </button>
                       </div>
                     </div>
-
-                    {/* 內容 */}
-                    <div className="text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 text-sm">
-                      {parseContent(result.content)}
+                  );
+                })}
+              </div>
+              {/* Modal for 原始內容 */}
+              <Dialog open={modalOpen} onClose={() => setModalOpen(false)} className="fixed z-50 inset-0 overflow-y-auto">
+                <div className="flex items-center justify-center min-h-screen px-4">
+                  <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+                  <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto p-6 z-10">
+                    <Dialog.Title className="text-lg font-bold mb-2">原始內容</Dialog.Title>
+                    <pre className="whitespace-pre-wrap text-gray-800 bg-gray-50 p-4 rounded border border-gray-200 max-h-[60vh] overflow-y-auto text-sm">
+                      {modalContent}
+                    </pre>
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        onClick={() => setModalOpen(false)}
+                      >
+                        關閉
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              </Dialog>
             </div>
           )}
 
