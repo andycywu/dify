@@ -246,6 +246,7 @@ export default function BigTableSearch() {
   const [keyword, setKeyword] = useState('');
   const [selectedDataset, setSelectedDataset] = useState<'inhouse' | 'outsourcing' | 'both'>('both');
   const [topN, setTopN] = useState<5 | 10>(10);
+  const [searchMode, setSearchMode] = useState<'semantic' | 'text'>('semantic');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -300,14 +301,23 @@ export default function BigTableSearch() {
           const response = await retrieveChunks(datasetId, keyword, 50);
 
           // 將結果加上 dataset 標籤，優先使用 record.content，其次 segment.content，再其次 text
-          const results = response.records.map((record: ChunkRecord) => ({
-            content: record.content || (record.segment && record.segment.content) || record.text || '',
-            score: record.score,
+          let mapped = response.records.map((record: ChunkRecord) => ({
+            content: (record.content || (record.segment && record.segment.content) || record.text || '').toString(),
+            score: typeof record.score === 'number' ? record.score : 0,
             document_name: getDocumentName(record, dataset),
             dataset_name: dataset === 'inhouse' ? 'Project KB (InHouse)' : 'Project KB (Outsourcing)',
           }));
 
-          allResults.push(...results);
+          // 如果使用全文檢索模式，於 client-side 做簡單的 substring 過濾與排序
+          if (searchMode === 'text') {
+            const q = keyword.trim().toLowerCase();
+            mapped = mapped
+              .filter(r => (r.content || '').toLowerCase().includes(q) || (r.document_name || '').toLowerCase().includes(q))
+              .map(r => ({ ...r, score: (r.content.toLowerCase().includes(q) || r.document_name.toLowerCase().includes(q)) ? 1 : 0 }));
+            mapped.sort((a, b) => (b.score - a.score));
+          }
+
+          allResults.push(...mapped);
         } catch (err) {
           console.error(`Failed to search ${dataset}:`, err);
         }
@@ -422,6 +432,17 @@ export default function BigTableSearch() {
                 >
                   <option value={5}>Top 5</option>
                   <option value={10}>Top 10</option>
+                </select>
+                <label className="block text-sm font-medium text-gray-700 mt-3 mb-2">
+                  搜尋模式
+                </label>
+                <select
+                  value={searchMode}
+                  onChange={(e) => setSearchMode(e.target.value as 'semantic' | 'text')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="semantic">語義搜尋 (預設)</option>
+                  <option value="text">全文檢索 (文字比對)</option>
                 </select>
               </div>
             </div>
