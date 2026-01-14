@@ -455,8 +455,9 @@ export default function BigTableSearch() {
                   const summaryFields = extractSummaryFields(result.content);
                   return (
                     <div
-                      key={index}
-                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative"
+                      key={`${result.document_name || 'doc'}-${index}`}
+                      aria-expanded={expandedIndices.includes(index)}
+                      className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative ${expandedIndices.includes(index) ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}
                     >
                       {/* 排名標籤 */}
                       <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg">
