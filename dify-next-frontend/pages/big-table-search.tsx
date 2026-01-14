@@ -244,9 +244,9 @@ const parseContent = (content: string, full = false): React.ReactElement => {
 export default function BigTableSearch() {
   const { user } = useAuth();
   const [keyword, setKeyword] = useState('');
-  const [selectedDataset, setSelectedDataset] = useState<'inhouse' | 'outsourcing' | 'both'>('both');
-  const [topN, setTopN] = useState<5 | 10>(10);
-  const [searchMode, setSearchMode] = useState<'semantic' | 'text'>('semantic');
+  const [selectedDataset, setSelectedDataset] = useState<'inhouse' | 'outsourcing' | 'both'>('outsourcing');
+  const [topN, setTopN] = useState<number>(3);
+  const [searchMode, setSearchMode] = useState<'semantic' | 'text'>('text');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -427,9 +427,10 @@ export default function BigTableSearch() {
                 </label>
                 <select
                   value={topN}
-                  onChange={(e) => setTopN(Number(e.target.value) as 5 | 10)}
+                  onChange={(e) => setTopN(Number(e.target.value))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
+                  <option value={3}>Top 3</option>
                   <option value={5}>Top 5</option>
                   <option value={10}>Top 10</option>
                 </select>
