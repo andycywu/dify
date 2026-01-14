@@ -332,11 +332,11 @@ export default function BigTableSearch() {
   const [expandedIndices, setExpandedIndices] = useState<number[]>([]);
 
   const toggleExpanded = (idx: number) => {
-    console.debug('toggleExpanded called for', idx);
+    console.log('toggleExpanded called for', idx);
     setExpandedIndices(prev => {
       const found = prev.includes(idx);
       const next = found ? prev.filter(i => i !== idx) : [...prev, idx];
-      console.debug('expandedIndices =>', next);
+      console.log('expandedIndices =>', next);
       return next;
     });
   };
@@ -344,6 +344,10 @@ export default function BigTableSearch() {
   return (
     <MainLayout title="大表檢索系統">
       <div className="w-full max-w-6xl">
+        {/* Debug badge: shows expanded indices for quick visual verification */}
+        <div className="fixed bottom-4 right-4 bg-yellow-100 text-xs text-gray-800 px-3 py-1 rounded shadow z-50">
+          展開: {expandedIndices.length} {expandedIndices.length ? `(${expandedIndices.join(',')})` : ''}
+        </div>
         <div className="bg-white rounded-lg shadow-lg p-6">
           {/* 標題 */}
           <div className="mb-6">
@@ -513,7 +517,7 @@ export default function BigTableSearch() {
                             data-index={index}
                             className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300 cursor-pointer"
                             onClick={() => {
-                              console.debug('open modal for', index);
+                              console.log('open modal for', index);
                               setModalContent(result.content);
                               setModalOpen(true);
                             }}
