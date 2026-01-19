@@ -245,7 +245,8 @@ export default function BigTableSearch() {
   const { user } = useAuth();
   const [keyword, setKeyword] = useState('');
   const [selectedDataset, setSelectedDataset] = useState<'inhouse' | 'outsourcing' | 'both'>('outsourcing');
-  const [topN, setTopN] = useState<number>(3);
+  const [pageSize, setPageSize] = useState<number>(3); // 每頁顯示筆數
+  const [currentPage, setCurrentPage] = useState<number>(1); // 當前頁碼
   const [searchMode, setSearchMode] = useState<'semantic' | 'text'>('text');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -258,6 +259,7 @@ export default function BigTableSearch() {
   };
 
   const handleSearch = async () => {
+    setCurrentPage(1); // 新查詢時重設頁碼
     if (!keyword.trim()) {
       setError('請輸入搜尋關鍵字');
       return;
@@ -356,18 +358,24 @@ export default function BigTableSearch() {
   // Modal 狀態
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<string>('');
-  // 展開狀態：使用 index 作為 key
+  // 展開狀態：使用 index 作為 key（全域 index，非分頁內 index）
   const [expandedIndices, setExpandedIndices] = useState<number[]>([]);
 
-  const toggleExpanded = (idx: number) => {
-    console.log('toggleExpanded called for', idx);
+  const toggleExpanded = (globalIdx: number) => {
     setExpandedIndices(prev => {
-      const found = prev.includes(idx);
-      const next = found ? prev.filter(i => i !== idx) : [...prev, idx];
-      console.log('expandedIndices =>', next);
+      const found = prev.includes(globalIdx);
+      const next = found ? prev.filter(i => i !== globalIdx) : [...prev, globalIdx];
       return next;
     });
   };
+
+  // 分頁相關
+  const totalResults = results.length;
+  const totalPages = Math.max(1, Math.ceil(totalResults / pageSize));
+  const pagedResults = results.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handlePrevPage = () => setCurrentPage(p => Math.max(1, p - 1));
+  const handleNextPage = () => setCurrentPage(p => Math.min(totalPages, p + 1));
 
   return (
     <MainLayout title="大表檢索系統">
@@ -421,19 +429,19 @@ export default function BigTableSearch() {
                 </select>
               </div>
 
-              {/* Top N 選擇 */}
+              {/* 每頁顯示數量選擇 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  顯示數量
+                  每頁顯示
                 </label>
                 <select
-                  value={topN}
-                  onChange={(e) => setTopN(Number(e.target.value))}
+                  value={pageSize}
+                  onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value={3}>Top 3</option>
-                  <option value={5}>Top 5</option>
-                  <option value={10}>Top 10</option>
+                  <option value={3}>3 筆</option>
+                  <option value={5}>5 筆</option>
+                  <option value={10}>10 筆</option>
                 </select>
                 <label className="block text-sm font-medium text-gray-700 mt-3 mb-2">
                   搜尋模式
@@ -482,26 +490,26 @@ export default function BigTableSearch() {
             <div>
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-800">
-                  搜尋結果 (顯示前 {topN} 筆)
+                  搜尋結果（第 {currentPage} / {totalPages} 頁，每頁 {pageSize} 筆）
                 </h2>
                 <span className="text-sm text-gray-600">
-                  共找到 {results.length} 筆資料 | 顯示 Top {topN}
+                  共找到 {results.length} 筆資料
                 </span>
               </div>
 
               <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {results.slice(0, topN).map((result, index) => {
-                  // 提取 summary 欄位
+                {pagedResults.map((result, idx) => {
+                  const globalIdx = (currentPage - 1) * pageSize + idx;
                   const summaryFields = extractSummaryFields(result.content);
                   return (
                     <div
-                      key={`${result.document_name || 'doc'}-${index}`}
-                      aria-expanded={expandedIndices.includes(index)}
-                      className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative ${expandedIndices.includes(index) ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}
+                      key={`${result.document_name || 'doc'}-${globalIdx}`}
+                      aria-expanded={expandedIndices.includes(globalIdx)}
+                      className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative ${expandedIndices.includes(globalIdx) ? 'ring-2 ring-blue-300 bg-blue-50' : ''}`}
                     >
                       {/* 排名標籤 */}
                       <div className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg">
-                        {index + 1}
+                        {globalIdx + 1}
                       </div>
 
                       {/* 標題列 */}
@@ -535,21 +543,20 @@ export default function BigTableSearch() {
 
                       {/* 內容 + 展開/收合 + 查看原始 */}
                       <div className="text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 text-sm relative">
-                        {parseContent(result.content, expandedIndices.includes(index))}
+                        {parseContent(result.content, expandedIndices.includes(globalIdx))}
                         <div className="absolute top-2 right-2 flex gap-2">
                           <button
-                            data-index={index}
-                            aria-expanded={expandedIndices.includes(index)}
+                            data-index={globalIdx}
+                            aria-expanded={expandedIndices.includes(globalIdx)}
                             className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300 cursor-pointer"
-                            onClick={() => toggleExpanded(index)}
+                            onClick={() => toggleExpanded(globalIdx)}
                           >
-                            {expandedIndices.includes(index) ? '收合' : '展開'}
+                            {expandedIndices.includes(globalIdx) ? '收合' : '展開'}
                           </button>
                           <button
-                            data-index={index}
+                            data-index={globalIdx}
                             className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-700 border border-gray-300 cursor-pointer"
                             onClick={() => {
-                              console.log('open modal for', index);
                               setModalContent(result.content);
                               setModalOpen(true);
                             }}
@@ -562,6 +569,26 @@ export default function BigTableSearch() {
                   );
                 })}
               </div>
+
+              {/* 分頁按鈕 */}
+              <div className="flex justify-center items-center gap-4 mt-6">
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                >
+                  上一頁
+                </button>
+                <span className="text-gray-700">第 {currentPage} / {totalPages} 頁</span>
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                >
+                  下一頁
+                </button>
+              </div>
+
               {/* Modal for 原始內容 */}
               <Dialog open={modalOpen} onClose={() => setModalOpen(false)} className="fixed z-50 inset-0 overflow-y-auto">
                 <div className="flex items-center justify-center min-h-screen px-4">
