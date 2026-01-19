@@ -26,8 +26,205 @@ const PRIORITY_FIELDS = [
   '專案編號', '機種名稱', '供應商', 'KO日期', 'MP日期', 'EIT開始日期', 'EIT結束日期',
 ];
 
+// InHouse 欄位映射表
+const INHOUSE_FIELD_MAPPING: { [key: string]: string } = {
+  '1專案難易度': 'Project Difficulty',
+  '2.專案難易度': 'Project Difficulty 2',
+  '3.PIF Project Number': 'Project Number',
+  '4.Site': 'Site',
+  '5.TPV機種名稱13碼': 'TPV Model Name 13',
+  '6.對外機種名': 'External Model Name',
+  '7.Resolution': 'Resolution',
+  '8.Panel size': 'Panel Size',
+  '9.EE負責人': 'EE Owner',
+  '10.TV功能分類': 'TV Function Category',
+  '11.客戶品牌': 'Customer Brand',
+  '12.地區': 'Region',
+  '13.Scalar supplier': 'Scalar Supplier',
+  '14.Scaler IC Type': 'Scaler IC Type',
+  '15.Lcm/Module': 'LCM/Module',
+  '16.面板類型': 'Panel Type',
+  '17.Panel供應商': 'Panel Supplier',
+  '18.Panel型號': 'Panel Model',
+  '19.Cabinet (ID Code)': 'Cabinet ID Code',
+  '20.Power Board/Adapter': 'Power Board/Adapter',
+  '21.Finish': 'Finish',
+  '22.Project Status': 'Project Status',
+  '23.Cause-1': 'Cause 1',
+  '24.Cause-2': 'Cause 2',
+  '25.影響': 'Impact',
+  '26.對策計畫': 'Countermeasure Plan',
+  '27.部門': 'Department',
+  '28.擔當': 'Responsible',
+  '29.Deadline': 'Deadline',
+  '30.ODM OBM(BG)': 'ODM OBM BG',
+  '31.L=Leading or D=Derivative': 'Leading or Derivative',
+  '32.Panel Source (1, 2nd or 3th)': 'Panel Source',
+  '33.DM Team': 'DM Team',
+  '34.HW Leader': 'HW Leader',
+  '35.PjM Team': 'PjM Team',
+  '36.PM (Schedule PjM)': 'PM Schedule PjM',
+  '37.A Project Y Or N': 'A Project Y/N',
+  '39.MQE Name': 'MQE Name',
+  '40.面板比例': 'Panel Ratio',
+  '41.系列': 'Series',
+  '42.Product Category': 'Product Category',
+  '43.規格': 'Specification',
+  '44.Virtual Project Part No.(Create By Sys.)': 'Virtual Project Part No',
+  '45.PLM Project Name': 'PLM Project Name',
+  '46.BP': 'BP',
+  '47.實際出貨數量': 'Actual Shipment Quantity',
+  '48.預估人力': 'Estimated Manpower',
+  '49.KO UC Ratio (Unique Parts 比率)': 'KO UC Ratio',
+  '50.Panel 2nd Source Reason': 'Panel 2nd Source Reason',
+  '51.KO Project Reason': 'KO Project Reason',
+  '52.Create Date': 'Create Date',
+  '53.Update Date': 'Update Date',
+  '54.KO 日期': 'KO Date',
+  '55.EIT 計畫開始日期': 'EIT Plan Start Date',
+  '56.EIT 計畫完成日期': 'EIT Plan End Date',
+  '57.EIT實際開始日期': 'EIT Actual Start Date',
+  '58.EIT實際完成日期': 'EIT Actual End Date',
+  '60.SVT 計畫開始日期': 'SVT Plan Start Date',
+  '60.SVT 計畫完成日期': 'SVT Plan End Date',
+  '61.SVT實際開始日期': 'SVT Actual Start Date',
+  '62.SVT實際完成日期': 'SVT Actual End Date',
+  '62.SVT 計畫評審會': 'SVT Plan Review',
+  '63.SVT 實際評審會': 'SVT Actual Review',
+  '64.MP Plan BOM Release': 'MP Plan BOM Release',
+  '65.MP Actual BOM Release': 'MP Actual BOM Release',
+  '66.MP Planning Date': 'MP Planning Date',
+  '67.MP Actual Date': 'MP Actual Date',
+  '68.VTM Planning Date': 'VTM Planning Date',
+  '69.VTM Actual Date': 'VTM Actual Date',
+  '70.量產Site': 'Production Site',
+  '71.Project List-EIT': 'Project List EIT',
+  '72.Project List-SVT': 'Project List SVT',
+  '73.Project List-MP': 'Project List MP',
+  '74.NPNPCL': 'NPNPCL',
+  '75.Tooling': 'Tooling',
+  '76.SW Tracking': 'SW Tracking',
+  '77.Sample Distribution': 'Sample Distribution',
+  '78.Certificate': 'Certificate',
+  '79.Testing': 'Testing',
+  '80.Cost': 'Cost',
+  '81.Risk Assessment': 'Risk Assessment',
+  '82.DDR Size': 'DDR Size',
+  '83.Flash/EMMC Size': 'Flash/EMMC Size',
+  '84.WiFi/BT Type': 'WiFi/BT Type',
+  '85.WiFi/BT (IC P/N)': 'WiFi/BT IC P/N',
+  '86.Speaker': 'Speaker',
+  '87.EE 板子形態': 'EE Board Type',
+  '88.MB PCB Size (X x Y) (mm)': 'MB PCB Size',
+  '89.MB PCB P/N (9碼)': 'MB PCB P/N',
+  '90.PWR 板子形態': 'PWR Board Type',
+  '91.Power Consumption (Pout) (W)': 'Power Consumption',
+  '92.PWR PCB Size (X x Y) (mm)': 'PWR PCB Size',
+  '93.PWR Type': 'PWR Type',
+  '94.後殼架構': 'Rear Shell Structure',
+  '95.後殼模具號': 'Rear Shell Mold No',
+  '96.底座架構': 'Base Structure',
+  '97.Stand': 'Stand',
+  '98.Cell 料號': 'Cell Part No',
+  '99.Cell版本': 'Cell Version',
+  '100.背板 (BMS/SEMI-SET)': 'Backplane',
+  '101.外框': 'Frame',
+  '102.OD': 'OD',
+  '103.LB': 'LB',
+  '104.Optical Film Structure': 'Optical Film Structure',
+  '105.WCG': 'WCG',
+  '106.L/D': 'L/D',
+  '107.Brightness (Min/Typ)': 'Brightness',
+  '108.Grouping 樣機數': 'Grouping Sample Count',
+  '109.EMS 標準樣機數': 'EMS Standard Sample Count',
+  '110.高/低阶机种': 'High/Low End Model',
+  '112. 產品型式': 'Product Type',
+  '113. 預計開始銷售年份': 'Expected Sales Start Year',
+  '114. Certifictaion Logo Hdmi': 'Certification Logo HDMI',
+  '115. Hdmi Certified Date': 'HDMI Certified Date',
+  '116. Certifictaion Logo Dts': 'Certification Logo DTS',
+  '117. Dts Certified Date': 'DTS Certified Date',
+  '118. Certifictaion Logo Dolby Audio': 'Certification Logo Dolby Audio',
+  '119. Dolby Audio Certified Date': 'Dolby Audio Certified Date',
+  '120. Certifictaion Logo Dolby Vision': 'Certification Logo Dolby Vision',
+  '121. Dolby Vision Certified Date': 'Dolby Vision Certified Date',
+};
+
+// 解析 Outsourcing 內容
+function parseOutsourcingContent(content: string): { [key: string]: string } {
+  const summary: { [key: string]: string } = {};
+  if (!content) return summary;
+
+  // 支援分號、逗號、換行分隔
+  const separators = [';', ',', '\n'];
+  let pairs: string[] = [];
+
+  for (const sep of separators) {
+    if (content.includes(sep)) {
+      pairs = content.split(sep).map(p => p.trim()).filter(p => p);
+      break;
+    }
+  }
+
+  pairs.forEach(pair => {
+    const colonIndex = pair.indexOf(':');
+    if (colonIndex > 0) {
+      const key = pair.substring(0, colonIndex).trim();
+      const value = pair.substring(colonIndex + 1).trim();
+      if (key && value) {
+        summary[key] = value;
+      }
+    }
+  });
+
+  return summary;
+}
+
+// 解析 InHouse 內容
+function parseInHouseContent(content: string): { [key: string]: string } {
+  const summary: { [key: string]: string } = {};
+  if (!content) return summary;
+
+  // 支援分號、逗號、換行分隔
+  const separators = [';', ',', '\n'];
+  let pairs: string[] = [];
+
+  for (const sep of separators) {
+    if (content.includes(sep)) {
+      pairs = content.split(sep).map(p => p.trim()).filter(p => p);
+      break;
+    }
+  }
+
+  pairs.forEach(pair => {
+    const colonIndex = pair.indexOf(':');
+    if (colonIndex > 0) {
+      let key = pair.substring(0, colonIndex).trim();
+      const value = pair.substring(colonIndex + 1).trim();
+
+      // 移除數字前綴（如 "1.", "2."）
+      key = key.replace(/^\d+\.?/, '').trim();
+
+      // 映射到標準欄位名稱
+      const mappedKey = INHOUSE_FIELD_MAPPING[key] || key;
+
+      if (mappedKey && value) {
+        summary[mappedKey] = value;
+      }
+    }
+  });
+
+  return summary;
+}
+
 // 提取 summary line 欄位
-function extractSummaryFields(content: string): { [key: string]: string } {
+function extractSummaryFields(content: string, datasetName: string): { [key: string]: string } {
+  if (datasetName.includes('InHouse')) {
+    return parseInHouseContent(content);
+  } else {
+    return parseOutsourcingContent(content);
+  }
+}
   // 嘗試 JSON（並以不區分大小寫/空白的方式比對欄位）
   try {
     const parsed = JSON.parse(content);
@@ -343,12 +540,42 @@ export default function BigTableSearch() {
   };
 
   const handleExport = () => {
-    const csv = results.map(r =>
-      `"${r.dataset_name}","${r.document_name}","${r.content.replace(/"/g, '""')}","${r.score}"`
-    ).join('\n');
+    // 收集所有欄位
+    const allFields = new Set<string>();
+    const processedResults = results.map(result => {
+      const parsed = extractSummaryFields(result.content, result.dataset_name);
+      Object.keys(parsed).forEach(key => allFields.add(key));
+      return { ...result, parsed };
+    });
 
-    const header = 'Dataset,Document,Content,Score\n';
-    const blob = new Blob([header + csv], { type: 'text/csv;charset=utf-8;' });
+    // 建立 CSV 標頭
+    const headers = ['Dataset', 'Document', 'Score', ...Array.from(allFields).sort()];
+
+    // 建立 CSV 資料
+    const csvData = processedResults.map(result => {
+      const row: any = {
+        Dataset: result.dataset_name,
+        Document: result.document_name,
+        Score: result.score,
+      };
+
+      // 填入解析後的欄位值
+      Array.from(allFields).forEach(field => {
+        row[field] = result.parsed[field] || '';
+      });
+
+      return row;
+    });
+
+    // 生成 CSV 字串
+    const csvString = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // 添加 UTF-8 BOM 以確保中文正常顯示
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `search_results_${new Date().toISOString().split('T')[0]}.csv`;
@@ -500,7 +727,7 @@ export default function BigTableSearch() {
               <div className="space-y-4 max-h-[600px] overflow-y-auto">
                 {pagedResults.map((result, idx) => {
                   const globalIdx = (currentPage - 1) * pageSize + idx;
-                  const summaryFields = extractSummaryFields(result.content);
+                  const summaryFields = extractSummaryFields(result.content, result.dataset_name);
                   return (
                     <div
                       key={`${result.document_name || 'doc'}-${globalIdx}`}
