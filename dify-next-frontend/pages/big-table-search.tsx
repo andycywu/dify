@@ -225,40 +225,6 @@ function extractSummaryFields(content: string, datasetName: string): { [key: str
     return parseOutsourcingContent(content);
   }
 }
-  // 嘗試 JSON（並以不區分大小寫/空白的方式比對欄位）
-  try {
-    const parsed = JSON.parse(content);
-    if (typeof parsed === 'object' && parsed !== null) {
-      const summary: { [key: string]: string } = {};
-      const normalizedMap: { [lower: string]: string } = {};
-      for (const k of Object.keys(parsed)) {
-        normalizedMap[k.trim().toLowerCase().replace(/\s+/g, ' ')] = String((parsed as any)[k]);
-      }
-      for (const key of PRIORITY_FIELDS) {
-        const nk = key.trim().toLowerCase().replace(/\s+/g, ' ');
-        if (normalizedMap[nk]) summary[key] = normalizedMap[nk];
-      }
-      return summary;
-    }
-  } catch {}
-  // 嘗試 key:value 解析
-  const tryExtract = (sep: string) => {
-    const fields: { [key: string]: string } = {};
-    const parts = content.split(sep).map(s => s.trim()).filter(Boolean);
-    for (const part of parts) {
-      let k = '', v = '';
-      if (part.includes(':')) [k, v] = part.split(/:(.+)/).map(s => s.trim());
-      else if (part.includes('=')) [k, v] = part.split(/=(.+)/).map(s => s.trim());
-      if (k && v && PRIORITY_FIELDS.includes(k)) fields[k] = v;
-    }
-    return fields;
-  };
-  // 分號、逗號、換行
-  let summary = tryExtract(';');
-  if (Object.keys(summary).length === 0) summary = tryExtract(',');
-  if (Object.keys(summary).length === 0) summary = tryExtract('\n');
-  return summary;
-}
 
 // 解析內容函數：將結構化資料轉換為可讀格式
 const parseContent = (content: string, full = false): React.ReactElement => {
