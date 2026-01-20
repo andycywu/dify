@@ -13,7 +13,7 @@ const WikiImportManager: React.FC = () => {
   const [departments, setDepartments] = useState<[string, DepartmentSyncStatus][]>([]);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
-  const [cronStatus, setCronStatus] = useState<{ hasWikiSyncCron: boolean; cronJobs: string[] } | null>(null);
+  const [cronStatus, setCronStatus] = useState<{ hasWikiSyncCron: boolean; cronJobs: string[]; isRunnerRunning?: boolean } | null>(null);
   const [autoSyncTime, setAutoSyncTime] = useState('02:00');
 
   const fetchSyncStatus = useCallback(async () => {
@@ -271,15 +271,21 @@ const WikiImportManager: React.FC = () => {
           </button>
         </div>
         <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 mb-2">
             <span className={`inline-block w-3 h-3 rounded-full ${cronStatus?.hasWikiSyncCron ? 'bg-green-500' : 'bg-red-500'}`}></span>
             <span className="font-medium">
               自動同步狀態: {cronStatus?.hasWikiSyncCron ? '已啟用' : '未啟用'}
             </span>
           </div>
           {cronStatus?.cronJobs && cronStatus.cronJobs.length > 0 && (
-            <div className="mt-2 text-sm text-gray-600">
+            <div className="text-sm text-gray-600 mb-2">
               <p>同步時間: {cronStatus.cronJobs[0]}</p>
+            </div>
+          )}
+          {cronStatus?.isRunnerRunning !== undefined && (
+            <div className="flex items-center space-x-2 text-sm">
+              <span className={`inline-block w-2 h-2 rounded-full ${cronStatus.isRunnerRunning ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+              <span>定時器進程: {cronStatus.isRunnerRunning ? '運行中' : '未運行'}</span>
             </div>
           )}
         </div>
