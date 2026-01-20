@@ -33,6 +33,17 @@ fi
 echo "✅ Node.js version: $(node --version)"
 echo "✅ NPM version: $(npm --version)"
 
+# 檢查 Node.js 版本
+NODE_VERSION=$(node --version | sed 's/v//')
+REQUIRED_VERSION="20.18.1"
+
+if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$NODE_VERSION" | sort -V | head -n1)" = "$REQUIRED_VERSION" ]; then
+    echo "✅ Node.js version is compatible"
+else
+    echo "⚠️  Warning: Node.js version $NODE_VERSION detected. Some packages require $REQUIRED_VERSION or higher."
+    echo "   This may cause compatibility issues. Consider upgrading Node.js if problems occur."
+fi
+
 # 安裝依賴
 echo ""
 echo "📦 Installing dependencies..."
@@ -88,6 +99,10 @@ else
     echo "✅ No existing cron runner process"
 fi
 
+# 設置管理腳本權限
+chmod +x cron-runner.sh
+echo "✅ Management script permissions set"
+
 echo ""
 echo "🎉 Deployment completed successfully!"
 echo ""
@@ -95,10 +110,17 @@ echo "📋 Next steps:"
 echo "1. Start the frontend: npm run build && npm start"
 echo "2. Access Admin Panel: http://172.27.197.100:3001/admin"
 echo "3. Go to Wiki Import tab and configure auto sync"
-echo "4. Monitor logs: tail -f logs/cron-runner.log"
+echo "4. Monitor logs: ./cron-runner.sh logs"
 echo ""
 echo "🔧 Useful commands:"
-echo "• Check process: pgrep -f 'cron-runner.js'"
-echo "• View logs: tail -f logs/cron-runner.log"
-echo "• Stop cron runner: pkill -f 'cron-runner.js'"
+echo "• Start cron runner: ./cron-runner.sh start"
+echo "• Stop cron runner: ./cron-runner.sh stop"
+echo "• Check status: ./cron-runner.sh status"
+echo "• View logs: ./cron-runner.sh logs"
+echo "• Restart cron runner: ./cron-runner.sh restart"
 echo "• Test API: curl -X POST http://172.27.197.100:3001/api/admin/auto-sync"
+echo ""
+echo "📝 Notes:"
+echo "• Cron runner will be started automatically when you configure auto sync in Admin Panel"
+echo "• Use the management script to manually control the cron runner if needed"
+echo "• Check logs/cron-runner.log for detailed execution logs"
