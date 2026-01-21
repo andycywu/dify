@@ -8,31 +8,31 @@
 ```mermaid
 graph TB
     subgraph "前端層 (Frontend Layer)"
-        A[Next.js 前端 (dify-next-frontend)]
-        A1[知識庫管理]
-        A2[AIC 戰情室]
-        A3[Test Plan 戰情室]
-        A4[Wiki.js 批量導入]
+        A["Next.js 前端 (dify-next-frontend)"]
+        A1["知識庫管理"]
+        A2["AIC 戰情室"]
+        A3["Test Plan 戰情室"]
+        A4["Wiki.js 批量導入"]
     end
 
     subgraph "API 與代理層 (API & Proxy Layer)"
-        B[Flask 後端 (dify-api)]
-        C[REST-to-SOAP 代理 (rest-to-soap-proxy)]
-        D[Wiki.js 同步服務]
+        B["Flask 後端 (dify-api)"]
+        C["REST-to-SOAP 代理 (rest-to-soap-proxy)"]
+        D["Wiki.js 同步服務"]
     end
 
     subgraph "數據與外部層 (Data & External Layer)"
-        E[PostgreSQL 數據庫]
-        F[Redis 緩存]
-        G[Dify Core (向量 DB & LLM)]
-        H[Wiki.js (GraphQL)]
-        I[Urtracker (SOAP)]
+        E["PostgreSQL 數據庫"]
+        F["Redis 緩存"]
+        G["Dify Core (向量 DB & LLM)"]
+        H["Wiki.js (GraphQL)"]
+        I["Urtracker (SOAP)"]
     end
 
     subgraph "部署層 (Deployment Layer)"
-        J[Docker Compose]
-        K[Nginx 反向代理]
-        L[Cron 自動同步]
+        J["Docker Compose"]
+        K["Nginx 反向代理"]
+        L["Cron 自動同步"]
     end
 
     A --> K
@@ -52,16 +52,6 @@ graph TB
     J --> F
     J --> G
     L --> D
-
-    classDef frontend fill:#e1f5fe,stroke:#01579b;
-    classDef api fill:#fff3e0,stroke:#ef6c00;
-    classDef data fill:#f3e5f5,stroke:#6a1b9a;
-    classDef deploy fill:#e8f5e8,stroke:#2e7d32;
-
-    class A,A1,A2,A3,A4 frontend;
-    class B,C,D api;
-    class E,F,G,H,I data;
-    class J,K,L deploy;
 ```
 
 ### 架構說明
